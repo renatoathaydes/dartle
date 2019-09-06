@@ -1,0 +1,15 @@
+name: dartle
+description: A simple build system written in Dart.
+version: 0.0.0
+homepage: https://github.com/renatoathaydes/dartle
+author: renato <renato@athaydes.com>
+
+environment:
+  sdk: '>=2.4.0 <3.0.0'
+
+dependencies:
+  meta: ^1.1.7
+
+dev_dependencies:
+  pedantic: ^1.7.0
+  test: ^1.5.0
