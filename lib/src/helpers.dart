@@ -11,6 +11,15 @@ failBuild({String reason, int exitCode = 1}) {
   exit(exitCode);
 }
 
+/// Run the given action ignoring any Exceptions thrown by it.
+ignoreExceptions(Function() action) async {
+  try {
+    await action();
+  } on Exception {
+    // ignore
+  }
+}
+
 /// Executes the given process.
 ///
 /// Fails the build if the exit value is not 0.
