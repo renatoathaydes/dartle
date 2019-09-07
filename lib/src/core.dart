@@ -38,10 +38,8 @@ class Task {
   String toString() => 'Task{name: $name}';
 }
 
-Future<void> run(
-    {List<String> args = const [],
-    @required List<Task> tasks,
-    List<Task> defaultTasks}) async {
+Future<void> run(List<String> args,
+    {@required List<Task> tasks, List<Task> defaultTasks}) async {
   final taskMap = tasks.asMap().map((_, task) => MapEntry(task.name, task));
   if (args.isEmpty) {
     (defaultTasks ?? tasks).forEach(_runTask);
@@ -56,16 +54,16 @@ Future<void> runWithArgs(List<String> args, Map<String, Task> taskMap) async {
     if (task == null) return failBuild(reason: "Unknown task: ${task.name}");
   }
   for (final arg in args) {
-    _runTask(taskMap[arg]);
+    await _runTask(taskMap[arg]);
   }
 }
 
-Future<void> _runTask(Task task) {
+Future<void> _runTask(Task task) async {
   if (isLogEnabled(LogLevel.info)) {
     io.stdout.write("Running task: ${task.name}");
   }
   try {
-    task.action();
+    await task.action();
   } on Exception catch (e) {
     failBuild(reason: "Task ${task.name} failed due to $e");
   } finally {

@@ -14,6 +14,11 @@ failBuild({String reason, int exitCode = 1}) {
 /// Executes the given process.
 ///
 /// Fails the build if the exit value is not 0.
+///
+/// The [Process]'s streams are always consumed, but only shown to the user
+/// if the selected [LogLevel] is [LogLevel.debug] or finer.
+///
+/// In case of an error, the [Process]'s stderr is shown.
 Future<void> exec(Future<Process> process) async {
   final proc = await process;
   if (isLogEnabled(LogLevel.debug)) {
