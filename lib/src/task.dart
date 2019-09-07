@@ -16,7 +16,12 @@ class Task {
         final match =
             _functionNamePatttern.firstMatch(funName.substring(firstQuote + 1));
         if (match != null) {
-          return match.group(0);
+          String inferredName = match.group(0);
+          // likely generated from JS lambda if it looks like 'main___closure',
+          // do not accept it
+          if (!inferredName.contains('___')) {
+            return inferredName;
+          }
         }
       }
 

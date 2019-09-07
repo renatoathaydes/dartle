@@ -76,6 +76,7 @@ class _EagerConsumer<T> with StreamConsumer<T> {
     _done.completeError(error, stackTrace);
   }
 
+  @override
   Future addStream(Stream<T> stream) async {
     _checkEventAllowed();
     if (_delegateAdded) {
@@ -88,12 +89,12 @@ class _EagerConsumer<T> with StreamConsumer<T> {
     _done.complete(null);
   }
 
-  /// Throws a [StateError] if [close] has been called or an [addStream] call is
-  /// pending.
+  /// Throws a [StateError] if [close] has been called.
   void _checkEventAllowed() {
     if (_closed) throw StateError("Cannot add to a closed sink.");
   }
 
+  @override
   Future close() {
     _closed = true;
     return _done.future;
