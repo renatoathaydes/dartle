@@ -57,20 +57,24 @@ final _logByLevel = <log.Level, _Log>{
 
 void _debug(String message) {
   print(_pen(message));
+  _pen.reset();
 }
 
 void _info(String message) {
   print(_pen(message));
+  _pen.reset();
 }
 
 void _warn(String message) {
   _pen.yellow();
   print(_pen(message));
+  _pen.reset();
 }
 
 void _error(String message) {
   _pen.red();
   print(_pen(message));
+  _pen.reset();
 }
 
 bool _loggingActivated = false;
