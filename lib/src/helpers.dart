@@ -1,13 +1,13 @@
 import 'dart:async';
 import 'dart:io';
 
-import '_options.dart';
+import '_log.dart';
 
 /// Fail the build for the given [reason].
 ///
 /// This function never returns.
 failBuild({String reason, int exitCode = 1}) {
-  stderr.writeln(reason);
+  logger.error(reason);
   exit(exitCode);
 }
 
@@ -21,13 +21,11 @@ failBuild({String reason, int exitCode = 1}) {
 /// In case of an error, the [Process]'s stderr is shown.
 Future<void> exec(Future<Process> process) async {
   final proc = await process;
-  if (isLogEnabled(LogLevel.debug)) {
-    print("Started process: ${proc.pid}");
-  }
+  logger.debug("Started process: ${proc.pid}");
   final out = _EagerConsumer<List<int>>();
   final err = _EagerConsumer<List<int>>();
 
-  if (isLogEnabled(LogLevel.debug)) {
+  if (logger.isLevelEnabled(LogLevel.debug)) {
     await stdout.addStream(proc.stdout);
   } else {
     await out.addStream(proc.stdout);
@@ -35,11 +33,9 @@ Future<void> exec(Future<Process> process) async {
 
   await err.addStream(proc.stderr);
 
-  int code = await proc.exitCode;
+  final code = await proc.exitCode;
 
-  if (isLogEnabled(LogLevel.debug)) {
-    print("Process ${proc.pid} exited with code: $code");
-  }
+  logger.debug("Process ${proc.pid} exited with code: $code");
 
   if (code != 0) {
     await stderr.addStream(Stream.fromIterable(await err.consumedData));

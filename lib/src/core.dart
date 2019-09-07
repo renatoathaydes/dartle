@@ -1,41 +1,66 @@
-import 'dart:io' as io;
-
 import 'package:meta/meta.dart';
 
+import '_log.dart';
 import '_options.dart';
 import 'helpers.dart';
 import 'task.dart';
 
 Future<void> run(List<String> args,
     {@required List<Task> tasks, List<Task> defaultTasks}) async {
-  final taskNames = parseOptionsAndGetTasks(args);
-  final taskMap = tasks.asMap().map((_, task) => MapEntry(task.name, task));
+  final stopWatch = Stopwatch()..start();
+  try {
+    activateLogging();
+    final taskNames = parseOptionsAndGetTasks(args);
+    final executableTasks = _getExecutableTasks(tasks, defaultTasks, taskNames);
+    await _runTasks(executableTasks, stopWatch);
+  } finally {
+    stopWatch.stop();
+    logger.info("Build succeeded in ${_elapsedTime(stopWatch)}");
+  }
+}
+
+List<Task> _getExecutableTasks(
+    List<Task> tasks, List<Task> defaultTasks, List<String> taskNames) {
   if (taskNames.isEmpty) {
-    (defaultTasks ?? tasks).forEach(_runTask);
+    return defaultTasks ?? tasks;
   } else {
-    await _runTasks(taskNames, taskMap);
+    final taskMap = tasks.asMap().map((_, task) => MapEntry(task.name, task));
+    final result = <Task>[];
+    for (final taskName in taskNames) {
+      final task = taskMap[taskName];
+      if (task == null) {
+        return failBuild(reason: "Unknown task or option: ${taskName}")
+            as List<Task>;
+      }
+      result.add(task);
+    }
+    return result;
   }
 }
 
-Future<void> _runTasks(List<String> tasks, Map<String, Task> taskMap) async {
-  for (final taskName in tasks) {
-    final task = taskMap[taskName];
-    if (task == null) return failBuild(reason: "Unknown task: ${task.name}");
-  }
-  for (final taskName in tasks) {
-    await _runTask(taskMap[taskName]);
+Future<void> _runTasks(List<Task> tasks, Stopwatch stopwatch) async {
+  for (final task in tasks) {
+    await _runTask(task, stopwatch);
   }
 }
 
-Future<void> _runTask(Task task) async {
-  if (isLogEnabled(LogLevel.info)) {
-    io.stdout.write("Running task: ${task.name}");
-  }
+Future<void> _runTask(Task task, Stopwatch stopwatch) async {
+  logger.info("Running task: ${task.name}");
   try {
     await task.action();
   } on Exception catch (e) {
     failBuild(reason: "Task ${task.name} failed due to $e");
   } finally {
-    print('');
+    logger.debug("Task ${task.name} completed in ${_elapsedTime(stopwatch)}");
+  }
+}
+
+String _elapsedTime(Stopwatch stopwatch) {
+  final millis = stopwatch.elapsedMilliseconds;
+  if (millis > 1000) {
+    final secs = (millis * 1e-3).toStringAsPrecision(4);
+    return "${secs} seconds";
+  } else {
+    return "${millis} ms";
   }
 }

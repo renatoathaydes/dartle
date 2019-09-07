@@ -1,32 +1,21 @@
 import 'dart:io';
 
 import 'package:args/args.dart';
+import 'package:logging/logging.dart' as log;
 
+import '_log.dart';
 import 'helpers.dart';
 
-enum LogLevel { fine, debug, info, warn, error }
-
-const logLevels = {
-  'fine': LogLevel.fine,
-  'debug': LogLevel.debug,
-  'info': LogLevel.info,
-  'warn': LogLevel.warn,
-  'error': LogLevel.error,
-};
-
 class _Options {
-  final LogLevel logLevel;
+  final log.Level logLevel;
 
-  const _Options({this.logLevel = LogLevel.info});
+  const _Options({this.logLevel = log.Level.INFO});
 }
 
 _Options _options = const _Options();
 
-bool isLogEnabled(LogLevel logLevel) =>
-    _options.logLevel.index <= logLevel.index;
-
-LogLevel _parseLogLevel(String value) {
-  final logLevel = logLevels[value];
+log.Level _parseLogLevel(String value) {
+  final logLevel = levelByName[value];
   if (logLevel == null) {
     throw StateError("Invalid log level: $value");
   }
@@ -40,7 +29,7 @@ List<String> parseOptionsAndGetTasks(List<String> args) {
       abbr: 'l',
       defaultsTo: 'info',
       help: 'sets the log level',
-      allowed: logLevels.keys,
+      allowed: levelByName.keys,
     )
     ..addFlag(
       'help',
@@ -52,7 +41,7 @@ List<String> parseOptionsAndGetTasks(List<String> args) {
   try {
     parseResult = parser.parse(args);
   } on FormatException catch (e) {
-    return failBuild(reason: 'ERROR: ${e.message}\nUsage:\n${parser.usage}')
+    return failBuild(reason: '${e.message}\nUsage:\n${parser.usage}')
         as List<String>;
   }
 
@@ -69,6 +58,8 @@ List<String> parseOptionsAndGetTasks(List<String> args) {
   _options = _Options(
     logLevel: _parseLogLevel(parseResult['log-level'].toString()),
   );
+
+  setLogLevel(_options.logLevel);
 
   return parseResult.rest;
 }
