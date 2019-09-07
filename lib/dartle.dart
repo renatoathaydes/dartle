@@ -2,4 +2,5 @@
 library dartle;
 
 export 'src/core.dart';
+export 'src/task.dart';
 export 'src/helpers.dart';

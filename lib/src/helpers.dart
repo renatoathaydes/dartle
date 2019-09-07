@@ -1,7 +1,7 @@
 import 'dart:async';
 import 'dart:io';
 
-import 'package:dartle/src/_options.dart';
+import '_options.dart';
 
 /// Fail the build for the given [reason].
 ///
@@ -44,8 +44,7 @@ Future<void> exec(Future<Process> process) async {
   if (code != 0) {
     await stderr.addStream(Stream.fromIterable(await err.consumedData));
     failBuild(
-        reason: 'Process exited with code $code: ${proc.pid}',
-        exitCode: code);
+        reason: 'Process exited with code $code: ${proc.pid}', exitCode: code);
   }
 }
 
