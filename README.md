@@ -73,6 +73,11 @@ Running task: bye
 Bye!
 ```
 
+Notice that the `dartle` executable will cache resources to make builds run faster.
+It uses the `.dartle_tool/` directory, in the working directory, to manage the cache.
+**You should not commit this directory into source control** as it caches resources based on their
+absolute paths.
+
 ##### Option 2: using dart
 
 As `dartle.dart` files are simple Dart files, you can also execute them with `dart`, of course:
