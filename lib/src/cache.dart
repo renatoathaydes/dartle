@@ -7,7 +7,6 @@ import 'package:dartle/src/_eager_consumer.dart';
 import 'package:path/path.dart' as path;
 
 import '_log.dart';
-import '_options.dart';
 import 'error.dart';
 import 'helpers.dart';
 
@@ -16,9 +15,7 @@ const _hashesDir = '$_dartleDir/hashes';
 const _snapshotsDir = '$_dartleDir/snapshots';
 
 class DartleCache {
-  DartleCache(List<String> args) {
-    activateLogging();
-    parseOptionsAndGetTasks(args);
+  DartleCache() {
     Directory(_dartleDir).createSync(recursive: true);
     Directory(_hashesDir).createSync();
     Directory(_snapshotsDir).createSync();

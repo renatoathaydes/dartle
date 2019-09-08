@@ -5,11 +5,24 @@ import '_options.dart';
 import 'helpers.dart';
 import 'task.dart';
 
+/// Initializes the dartle library's configuration without executing any
+/// tasks.
+void configure(List<String> args) {
+  activateLogging();
+  parseOptionsAndGetTasks(args);
+}
+
+/// Initializes the dartle library and runs the tasks selected by the user
+/// (or in the provided [args]).
+///
+/// This method may not return if some error is found, as dartle will
+/// call [exit(code)] with the appropriate error code.
 Future<void> run(List<String> args,
     {@required List<Task> tasks, List<Task> defaultTasks}) async {
   final stopWatch = Stopwatch()..start();
+  configure(args);
+  logger.debug("Configured dartle in ${stopWatch.elapsedMilliseconds} ms");
   try {
-    activateLogging();
     final taskNames = parseOptionsAndGetTasks(args);
     final executableTasks = _getExecutableTasks(tasks, defaultTasks, taskNames);
     await _runTasks(executableTasks, stopWatch);

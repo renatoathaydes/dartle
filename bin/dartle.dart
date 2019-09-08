@@ -6,8 +6,9 @@ import 'package:dartle/dartle_cache.dart';
 void main(List<String> args) async {
   final buildFile = File('dartle.dart').absolute;
   if (await buildFile.exists()) {
+    configure(args);
     try {
-      final cache = DartleCache(args);
+      final cache = DartleCache();
       final cachedFile = await cache.loadDartSnapshot(buildFile);
       final exitPort = ReceivePort();
       await Isolate.spawnUri(cachedFile.absolute.uri, args, null,

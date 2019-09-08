@@ -14,6 +14,17 @@ class _Options {
 
 _Options _options = const _Options();
 
+class _ParsedArguments {
+  final _Options options;
+  final List<String> taskNames;
+
+  const _ParsedArguments(this.options, this.taskNames);
+}
+
+// allows calling [parseOptionsAndGetTasks] more than once without actually
+// parsing all arguments again.
+final Map<String, _ParsedArguments> _argsCache = {};
+
 log.Level _parseLogLevel(String value) {
   final logLevel = levelByName[value];
   if (logLevel == null) {
@@ -22,7 +33,18 @@ log.Level _parseLogLevel(String value) {
   return logLevel;
 }
 
+/// Parse the given args, setting the options as appropriate and returning the
+/// tasks the user requested to run.
+///
+/// This method may be called several times with the same arguments without
+/// actually parsing them again as the results of a first invocation are
+/// cached, allowing different entry points of the library to call this
+/// method to initialize the user options without re-parsing arguments every
+/// time.
 List<String> parseOptionsAndGetTasks(List<String> args) {
+  final argsCacheKey = "$args";
+  final parsedArgs = _argsCache[argsCacheKey];
+  if (parsedArgs != null) return parsedArgs.taskNames;
   final parser = ArgParser()
     ..addOption(
       'log-level',
@@ -60,6 +82,8 @@ List<String> parseOptionsAndGetTasks(List<String> args) {
   );
 
   setLogLevel(_options.logLevel);
+
+  _argsCache[argsCacheKey] = _ParsedArguments(_options, parseResult.rest);
 
   return parseResult.rest;
 }
