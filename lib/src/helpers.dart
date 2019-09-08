@@ -1,8 +1,9 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:io';
 
-import '_log.dart';
 import '_eager_consumer.dart';
+import '_log.dart';
 
 /// Fail the build for the given [reason].
 ///
@@ -23,34 +24,47 @@ ignoreExceptions(Function() action) async {
 
 /// Executes the given process.
 ///
-/// Fails the build if the exit value is not 0.
+/// [stdoutConsumer] and [stderrConsumer] can be provided in order to consume
+/// the process' stdout and stderr streams, respectively (the process's output
+/// is interpreted as utf8 emitted line by line). If not provided,
+/// the streams are consumed but thrown away unless there's an error, in which
+/// case the both streams are logged at debug level (except if [onDone] is
+/// overridden).
 ///
-/// The [Process]'s streams are always consumed, but only shown to the user
-/// if the selected [LogLevel] is [LogLevel.debug] or finer.
+/// [onDone] is called when the process has exited, with the exit code given
+/// to the callback.
 ///
-/// In case of an error, the [Process]'s stderr is shown.
-Future<void> exec(Future<Process> process) async {
+/// By default, [onDone] fails the build if the exit code is not 0.
+Future<void> exec(
+  Future<Process> process, {
+  StreamConsumer<String> stdoutConsumer,
+  StreamConsumer<String> stderrConsumer,
+  FutureOr<void> Function(int exitCode) onDone,
+}) async {
   final proc = await process;
   logger.debug("Started process: ${proc.pid}");
-  final out = EagerConsumer<List<int>>();
-  final err = EagerConsumer<List<int>>();
+  stdoutConsumer ??= EagerConsumer<String>();
+  stderrConsumer ??= EagerConsumer<String>();
+  onDone ??= (code) async {
+    if (code != 0) {
+      final errOut =
+          await (stderrConsumer as EagerConsumer<String>).consumedData;
+      errOut.forEach(stderr.writeln);
+      failBuild(
+          reason: 'Process exited with code $code: ${proc.pid}',
+          exitCode: code);
+    }
+  };
 
-  if (logger.isLevelEnabled(LogLevel.debug)) {
-    await stdout.addStream(proc.stdout);
-  } else {
-    await out.addStream(proc.stdout);
-  }
+  await stdoutConsumer.addStream(
+      proc.stdout.transform(utf8.decoder).transform(const LineSplitter()));
 
-  await err.addStream(proc.stderr);
+  await stderrConsumer.addStream(
+      proc.stderr.transform(utf8.decoder).transform(const LineSplitter()));
 
   final code = await proc.exitCode;
 
   logger.debug("Process ${proc.pid} exited with code: $code");
 
-  if (code != 0) {
-    await stderr.addStream(Stream.fromIterable(await err.consumedData));
-    failBuild(
-        reason: 'Process exited with code $code: ${proc.pid}', exitCode: code);
-  }
+  onDone(code);
 }
-
