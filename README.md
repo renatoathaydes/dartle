@@ -41,14 +41,27 @@ bye() async {
 
 #### Run your build!
 
+##### Option 1: using dartle
+
+You can use the `dartle` executable directly, which will snapshot your `dartle.dart` file
+and potentially run it faster.
+
+First, activate it with `pub`:
+
 ```bash
-dart dartle.dart
+pub global activate dartle
+```
+
+Now, simply run `dartle` (it will execute the `dartle.dart` file found in the working directory):
+
+```bash
+dartle
 ```
 
 To run specific task(s), give them as arguments:
 
 ```bash
-dart dartle.dart hello bye
+dartle hello bye
 ```
 
 Output:
@@ -58,4 +71,18 @@ Running task: hello
 Hello!
 Running task: bye
 Bye!
+```
+
+##### Option 2: using dart
+
+As `dartle.dart` files are simple Dart files, you can also execute them with `dart`, of course:
+
+```bash
+dart dartle.dart
+```
+
+To run specific task(s), give them as arguments:
+
+```bash
+dart dartle.dart hello bye
 ```
