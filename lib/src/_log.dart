@@ -1,3 +1,5 @@
+import 'dart:isolate';
+
 import 'package:ansicolor/ansicolor.dart' as colors;
 import 'package:logging/logging.dart' as log;
 
@@ -85,7 +87,8 @@ void activateLogging() {
     setLogLevel(log.Level.WARNING);
     log.Logger.root.onRecord.listen((log.LogRecord rec) {
       final log = _logByLevel[rec.level] ?? _info;
-      log('${rec.time} - ${rec.loggerName} - ${_nameByLevel[rec.level] ?? rec.level} - ${rec.message}');
+      log('${rec.time} - ${rec.loggerName}[${Isolate.current.debugName}] - '
+          '${_nameByLevel[rec.level] ?? rec.level} - ${rec.message}');
     });
   }
 }
