@@ -3,9 +3,13 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:crypto/crypto.dart';
-import 'package:dartle/src/_log.dart';
-import 'package:dartle/src/_options.dart';
+import 'package:dartle/src/_eager_consumer.dart';
 import 'package:path/path.dart' as path;
+
+import '_log.dart';
+import '_options.dart';
+import 'error.dart';
+import 'helpers.dart';
 
 const _dartleDir = '.dartle_tool';
 const _hashesDir = '$_dartleDir/hashes';
@@ -64,23 +68,28 @@ Future<String> _hashContents(File file) async =>
 
 Future<void> _snapshot(File file, File snapshotFile) async {
   logger.debug("Snapshotting file ${file.path} as ${snapshotFile.path}");
-  final output = <String>[];
-  final proc = await runZoned(
-      () => Process.start('dart',
+  final procOut = EagerConsumer<String>();
+  final procErr = EagerConsumer<String>();
+  int code;
+  await exec(
+      Process.start('dart',
           ['--snapshot=${snapshotFile.absolute.path}', file.absolute.path]),
-      zoneSpecification: ZoneSpecification(
-          print: (Zone self, ZoneDelegate parent, Zone zone, String line) {
-    output.add(line);
-  }));
-  final code = await proc.exitCode;
+      stdoutConsumer: procOut,
+      stderrConsumer: procErr,
+      onDone: (c) => code = c);
+
   logger.debug("Snapshot process exited with $code");
   if (code != 0) {
     logger.error("Could not snapshot file ${file.path}, dart tool output:");
     print("------------ dart tool ----------------");
-    for (final out in output) {
-      print(out);
+    for (final out in await procOut.consumedData) {
+      print("out: $out");
+    }
+    for (final err in await procErr.consumedData) {
+      print("err: $err");
     }
     print("---------------------------------------");
-    throw Exception('Unable to snapshot dartle file');
+    await ignoreExceptions(snapshotFile.delete);
+    throw DartleException(exitCode: code);
   }
 }
