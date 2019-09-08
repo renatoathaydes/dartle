@@ -8,7 +8,7 @@ void main(List<String> args) async {
   if (await buildFile.exists()) {
     configure(args);
     try {
-      final cache = DartleCache();
+      final cache = DartleCache.instance;
       final cachedFile = await cache.loadDartSnapshot(buildFile);
       final exitPort = ReceivePort();
       await Isolate.spawnUri(cachedFile.absolute.uri, args, null,

@@ -1,11 +1,21 @@
+import 'dart:async';
+
+import 'package:meta/meta.dart';
+
+import 'cache.dart';
+import 'io.dart';
+
 final _functionNamePatttern = RegExp('[a-zA-Z_0-9]+');
 
+/// A Dartle task whose action is provided by user code in order to execute
+/// some logic during a build run.
 class Task {
   final String name;
   final String description;
   final Function() action;
+  final RunCondition runCondition;
 
-  Task(this.action, {this.description = '', String name})
+  Task(this.action, {this.description = '', String name, this.runCondition})
       : this.name = _resolveName(action, name);
 
   static String _resolveName(Function() action, String name) {
@@ -33,4 +43,28 @@ class Task {
 
   @override
   String toString() => 'Task{name: $name}';
+}
+
+/// A run condition for a [Task].
+///
+/// A [Task] will not run if its [RunCondition] does not allow it.
+mixin RunCondition {
+  /// Check if this task should run.
+  ///
+  /// Returns true if it should, false otherwise.
+  FutureOr<bool> shouldRun();
+}
+
+/// A [RunCondition] which reports that a task should run whenever its inputs
+/// or outputs have changed since the last build.
+class FilesRunCondition with RunCondition {
+  final FileCollection inputs;
+  final FileCollection outputs;
+
+  FilesRunCondition({@required this.inputs, @required this.outputs});
+
+  @override
+  FutureOr<bool> shouldRun() async =>
+      await DartleCache.instance.hasChanged(inputs, cache: true) ||
+      await DartleCache.instance.hasChanged(outputs, cache: false);
 }

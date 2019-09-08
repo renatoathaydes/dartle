@@ -1,3 +1,5 @@
+import 'package:dartle/dartle.dart';
+import 'package:dartle/dartle_cache.dart';
 import 'package:meta/meta.dart';
 
 import '_log.dart';
@@ -55,16 +57,32 @@ Future<void> _runTasks(List<Task> tasks, Stopwatch stopwatch) async {
   for (final task in tasks) {
     await _runTask(task, stopwatch);
   }
+  await _cacheTaskOutputs(tasks);
 }
 
 Future<void> _runTask(Task task, Stopwatch stopwatch) async {
-  logger.info("Running task: ${task.name}");
-  try {
-    await task.action();
-  } on Exception catch (e) {
-    failBuild(reason: "Task ${task.name} failed due to $e");
-  } finally {
-    logger.debug("Task ${task.name} completed in ${_elapsedTime(stopwatch)}");
+  if (await task.runCondition?.shouldRun() ?? true) {
+    logger.info("Running task: ${task.name}");
+    try {
+      await task.action();
+    } on Exception catch (e) {
+      failBuild(reason: "Task ${task.name} failed due to $e");
+    } finally {
+      logger.debug("Task ${task.name} completed in ${_elapsedTime(stopwatch)}");
+    }
+  } else {
+    logger.debug("Skipping task: ${task.name} as it is up-to-date");
+  }
+}
+
+Future<void> _cacheTaskOutputs(List<Task> tasks) async {
+  logger.debug("Caching the output of all tasks");
+  final cache = DartleCache.instance;
+  for (final task in tasks) {
+    final condition = task.runCondition;
+    if (condition is FilesRunCondition) {
+      await cache(condition.outputs);
+    }
   }
 }
 
