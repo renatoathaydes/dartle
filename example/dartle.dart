@@ -17,11 +17,11 @@ final allTasks = [
 main(List<String> args) async =>
     run(args, tasks: allTasks, defaultTasks: [allTasks[0]]);
 
-hello() async {
+hello() {
   print("Hello!");
 }
 
-bye() async {
+bye() {
   print("Bye!");
 }
 

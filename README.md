@@ -28,13 +28,13 @@ import 'package:dartle/dartle.dart';
 final allTasks = [Task(hello), Task(bye)];
 
 main(List<String> args) async =>
-    run(args, tasks: allTasks, defaultTasks: allTasks.sublist(0, 1));
+    run(args, tasks: allTasks, defaultTasks: [allTasks[0]]);
 
-hello() async {
+hello() {
   print("Hello!");
 }
 
-bye() async {
+bye() {
   print("Bye!");
 }
 ```
@@ -67,16 +67,14 @@ dartle hello bye
 Output:
 
 ```
-Running task: hello
-Hello!
-Running task: bye
+2019-09-09 21:00:48.079893 - dartle[main] - INFO - Running task: bye
 Bye!
+2019-09-09 21:00:48.086182 - dartle[main] - INFO - Build succeeded in 26 ms
 ```
 
 Notice that the `dartle` executable will cache resources to make builds run faster.
 It uses the `.dartle_tool/` directory, in the working directory, to manage the cache.
-**You should not commit this directory into source control** as it caches resources based on their
-absolute paths.
+**You should not commit the `.dartle_tool/` directory into source control**.
 
 ##### Option 2: using dart
 
