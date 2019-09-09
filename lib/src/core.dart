@@ -57,7 +57,6 @@ Future<void> _runTasks(List<Task> tasks, Stopwatch stopwatch) async {
   for (final task in tasks) {
     await _runTask(task, stopwatch);
   }
-  await _cacheTaskOutputs(tasks);
 }
 
 Future<void> _runTask(Task task, Stopwatch stopwatch) async {
@@ -65,6 +64,7 @@ Future<void> _runTask(Task task, Stopwatch stopwatch) async {
     logger.info("Running task: ${task.name}");
     try {
       await task.action();
+      await _cacheTaskOutputs(task);
     } on Exception catch (e) {
       failBuild(reason: "Task ${task.name} failed due to $e");
     } finally {
@@ -75,14 +75,12 @@ Future<void> _runTask(Task task, Stopwatch stopwatch) async {
   }
 }
 
-Future<void> _cacheTaskOutputs(List<Task> tasks) async {
-  logger.debug("Caching the output of all tasks");
+Future<void> _cacheTaskOutputs(Task task) async {
   final cache = DartleCache.instance;
-  for (final task in tasks) {
-    final condition = task.runCondition;
-    if (condition is FilesRunCondition) {
-      await cache(condition.outputs);
-    }
+  final condition = task.runCondition;
+  if (condition is FilesRunCondition) {
+    logger.debug("Caching the output of the '${task.name}' task");
+    await cache(condition.outputs);
   }
 }
 

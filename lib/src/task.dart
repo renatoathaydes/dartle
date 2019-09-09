@@ -66,5 +66,6 @@ class FilesRunCondition with RunCondition {
   @override
   FutureOr<bool> shouldRun() async =>
       await DartleCache.instance.hasChanged(inputs, cache: true) ||
+      // don't cache outputs, they will be cached after the task executes
       await DartleCache.instance.hasChanged(outputs, cache: false);
 }
