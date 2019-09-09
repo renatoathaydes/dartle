@@ -22,11 +22,11 @@ Future<void> run(List<String> args,
     {@required List<Task> tasks, List<Task> defaultTasks}) async {
   final stopWatch = Stopwatch()..start();
   configure(args);
-  logger.debug("Configured dartle in ${stopWatch.elapsedMilliseconds} ms");
+  logger.debug("Configured dartle in ${_elapsedTime(stopWatch)}");
   try {
     final taskNames = parseOptionsAndGetTasks(args);
     final executableTasks = _getExecutableTasks(tasks, defaultTasks, taskNames);
-    await _runTasks(executableTasks, stopWatch);
+    await _runTasks(executableTasks);
   } finally {
     stopWatch.stop();
     logger.info("Build succeeded in ${_elapsedTime(stopWatch)}");
@@ -52,19 +52,22 @@ List<Task> _getExecutableTasks(
   }
 }
 
-Future<void> _runTasks(List<Task> tasks, Stopwatch stopwatch) async {
+Future<void> _runTasks(List<Task> tasks) async {
   for (final task in tasks) {
-    await _runTask(task, stopwatch);
+    await _runTask(task);
   }
 }
 
-Future<void> _runTask(Task task, Stopwatch stopwatch) async {
+Future<void> _runTask(Task task) async {
   if (await task.runCondition?.shouldRun() ?? true) {
     logger.info("Running task: ${task.name}");
+    final stopwatch = Stopwatch()..start();
     try {
       await task.action();
+      stopwatch.stop(); // do not include runCondition in the reported time
       await task.runCondition?.afterRun(true);
     } on Exception catch (e) {
+      stopwatch.stop();
       try {
         await task.runCondition?.afterRun(false);
       } finally {
