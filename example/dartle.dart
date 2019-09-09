@@ -7,6 +7,7 @@ import 'package:dartle/src/io.dart';
 final allTasks = [
   Task(hello),
   Task(bye),
+  Task(clean),
   Task(encodeBase64,
       description: 'Encodes input.txt in base64, writing to output.txt',
       runCondition: FilesRunCondition(
@@ -29,3 +30,5 @@ encodeBase64() async {
   final input = await File('input.txt').readAsBytes();
   await File('output.txt').writeAsString(base64.encode(input));
 }
+
+clean() => deleteOutputs(allTasks);

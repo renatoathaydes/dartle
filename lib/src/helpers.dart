@@ -2,8 +2,11 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:dartle/src/io.dart';
+
 import '_eager_consumer.dart';
 import '_log.dart';
+import 'task.dart';
 
 /// Fail the build for the given [reason].
 ///
@@ -14,7 +17,7 @@ failBuild({String reason, int exitCode = 1}) {
 }
 
 /// Run the given action ignoring any Exceptions thrown by it.
-ignoreExceptions(Function() action) async {
+ignoreExceptions(FutureOr Function() action) async {
   try {
     await action();
   } on Exception {
@@ -67,4 +70,39 @@ Future<void> exec(
   logger.debug("Process ${proc.pid} exited with code: $code");
 
   onDone(code);
+}
+
+/// Deletes the outputs of all [tasks].
+///
+/// This method only works if the task's [RunCondition]s are instances of
+/// [FilesRunCondition].
+Future<void> deleteOutputs(Iterable<Task> tasks) async {
+  for (final task in tasks) {
+    final cond = task.runCondition;
+    if (cond is FilesRunCondition) {
+      await deleteAll(cond.outputs);
+    }
+  }
+}
+
+/// Delete all files and possibly directories included in the given
+/// [fileCollection].
+///
+/// Directories are only deleted if after deleting all
+/// [FileCollection.files], the directories end up being empty. In other words,
+/// directories are deleted as long as no filters belonging to the given
+/// [FileCollection] exclude files or sub-directories within such directory.
+Future<void> deleteAll(FileCollection fileCollection) async {
+  await for (final file in fileCollection.files) {
+    logger.debug("Deleting file ${file.path}");
+    await ignoreExceptions(file.delete);
+  }
+  await for (final dir in fileCollection.directories) {
+    if (await dir.exists()) {
+      if (await dir.list().isEmpty) {
+        logger.debug("Deleting directory ${dir.path}");
+        await ignoreExceptions(dir.delete);
+      }
+    }
+  }
 }
