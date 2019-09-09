@@ -53,6 +53,10 @@ mixin RunCondition {
   ///
   /// Returns true if it should, false otherwise.
   FutureOr<bool> shouldRun();
+
+  /// Callback that runs after the task associated with this [RunCondition]
+  /// has run, whether successfully or not.
+  FutureOr<void> afterRun(bool wasSuccessful);
 }
 
 /// A [RunCondition] which reports that a task should run whenever its inputs
@@ -68,4 +72,14 @@ class FilesRunCondition with RunCondition {
       await DartleCache.instance.hasChanged(inputs, cache: true) ||
       // don't cache outputs, they will be cached after the task executes
       await DartleCache.instance.hasChanged(outputs, cache: false);
+
+  @override
+  FutureOr<void> afterRun(bool wasSuccessful) async {
+    if (wasSuccessful) {
+      if (await outputs.isNotEmpty) {
+        final cache = DartleCache.instance;
+        await cache(outputs);
+      }
+    }
+  }
 }

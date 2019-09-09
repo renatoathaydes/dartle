@@ -1,5 +1,4 @@
 import 'package:dartle/dartle.dart';
-import 'package:dartle/dartle_cache.dart';
 import 'package:meta/meta.dart';
 
 import '_log.dart';
@@ -64,23 +63,18 @@ Future<void> _runTask(Task task, Stopwatch stopwatch) async {
     logger.info("Running task: ${task.name}");
     try {
       await task.action();
-      await _cacheTaskOutputs(task);
+      await task.runCondition?.afterRun(true);
     } on Exception catch (e) {
-      failBuild(reason: "Task ${task.name} failed due to $e");
+      try {
+        await task.runCondition?.afterRun(false);
+      } finally {
+        failBuild(reason: "Task ${task.name} failed due to $e");
+      }
     } finally {
       logger.debug("Task ${task.name} completed in ${_elapsedTime(stopwatch)}");
     }
   } else {
     logger.debug("Skipping task: ${task.name} as it is up-to-date");
-  }
-}
-
-Future<void> _cacheTaskOutputs(Task task) async {
-  final cache = DartleCache.instance;
-  final condition = task.runCondition;
-  if (condition is FilesRunCondition && await condition.outputs.isNotEmpty) {
-    logger.debug("Caching the outputs of the '${task.name}' task");
-    await cache(condition.outputs);
   }
 }
 
