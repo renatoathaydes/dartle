@@ -16,6 +16,12 @@ const _dartleDir = '.dartle_tool';
 const _hashesDir = '$_dartleDir/hashes';
 const _snapshotsDir = '$_dartleDir/snapshots';
 
+/// The cache used by dartle to figure out when files change between checks,
+/// typically between two builds.
+///
+/// It is a cache-based cache - it does not cache the contents of files or
+/// directories, it only associates a cache to them so that it can tell whether
+/// their contents have changed between two checks in a very efficient manner.
 class DartleCache {
   static final DartleCache instance = DartleCache._create();
 
