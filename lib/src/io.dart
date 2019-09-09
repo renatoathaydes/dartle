@@ -1,25 +1,64 @@
 import 'dart:async';
 import 'dart:io';
 
+/// Function that filters files, returning true to keep a file,
+/// false to exclude it.
 typedef FileFilter = FutureOr<bool> Function(File);
 
+/// Function that filters directories, returning true to keep a directory,
+/// false to exclude it.
 typedef DirectoryFilter = FutureOr<bool> Function(Directory);
 
+bool _noFileFilter(File f) => true;
+
+bool _noDirFilter(Directory f) => true;
+
+/// A collection of [File] and [Directory] which can be used to declare a set
+/// of inputs or outputs for a [Task].
 abstract class FileCollection {
+  /// Create a [FileCollection] consisting of a single file.
   factory FileCollection.file(File file) => _SingleFileCollection(file);
 
+  /// Create a [FileCollection] consisting of multiple files.
   factory FileCollection.files(Iterable<File> files) => _FileCollection(files);
 
+  /// Create a [FileCollection] consisting of a directory, possibly filtering
+  /// sub-directories and specific files.
+  ///
+  /// The provided [DirectoryFilter] can only be used to filter sub-directories
+  /// of the given directory.
+  ///
+  /// The contents of directories are included recursively. To not include any
+  /// sub-directories, simply provide a [DirectoryFilter] that always returns
+  /// false for all sub-directories.
   factory FileCollection.dir(Directory directory,
-          {FileFilter fileFilter, DirectoryFilter dirFilter}) =>
+          {FileFilter fileFilter = _noFileFilter,
+          DirectoryFilter dirFilter = _noDirFilter}) =>
       _DirectoryCollection([directory], fileFilter, dirFilter);
 
+  /// Create a [FileCollection] consisting of multiple directories, possibly
+  /// filtering sub-directories and specific files.
+  ///
+  /// The provided [DirectoryFilter] can only be used to filter sub-directories
+  /// of the given directories.
+  ///
+  /// The contents of directories are included recursively. To not include any
+  /// sub-directories, simply provide a [DirectoryFilter] that always returns
+  /// false for all sub-directories.
+  ///
+  /// The provided directories should not interleave.
   factory FileCollection.dirs(Iterable<Directory> directories,
-          {FileFilter fileFilter, DirectoryFilter dirFilter}) =>
+          {FileFilter fileFilter = _noFileFilter,
+          DirectoryFilter dirFilter = _noDirFilter}) =>
       _DirectoryCollection(directories, fileFilter, dirFilter);
 
+  /// All files in this collection.
+  ///
+  /// If this is a directory-based collection, all files in all sub-directories
+  /// of the included directories are returned, subject to the provided filters.
   Stream<File> get files;
 
+  /// All directories in this collection (non-recursive).
   Stream<Directory> get directories;
 }
 
