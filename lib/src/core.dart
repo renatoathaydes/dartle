@@ -78,8 +78,8 @@ Future<void> _runTask(Task task, Stopwatch stopwatch) async {
 Future<void> _cacheTaskOutputs(Task task) async {
   final cache = DartleCache.instance;
   final condition = task.runCondition;
-  if (condition is FilesRunCondition) {
-    logger.debug("Caching the output of the '${task.name}' task");
+  if (condition is FilesRunCondition && await condition.outputs.isNotEmpty) {
+    logger.debug("Caching the outputs of the '${task.name}' task");
     await cache(condition.outputs);
   }
 }

@@ -60,6 +60,20 @@ abstract class FileCollection {
 
   /// All directories in this collection (non-recursive).
   Stream<Directory> get directories;
+
+  /// Returns true if this collection does not contain any files,
+  /// false otherwise.
+  ///
+  /// Notice that if this collection only contains empty directories, then it
+  /// is considered empty.
+  FutureOr<bool> get isEmpty;
+
+  /// Returns true if this collection contains at least one file,
+  /// false otherwise.
+  ///
+  /// Notice that if this collection only contains empty directories, then it
+  /// is considered empty.
+  FutureOr<bool> get isNotEmpty;
 }
 
 class _SingleFileCollection implements FileCollection {
@@ -72,6 +86,10 @@ class _SingleFileCollection implements FileCollection {
 
   @override
   Stream<Directory> get directories => Stream.empty();
+
+  bool get isEmpty => false;
+
+  bool get isNotEmpty => true;
 }
 
 class _FileCollection implements FileCollection {
@@ -83,6 +101,10 @@ class _FileCollection implements FileCollection {
 
   @override
   Stream<Directory> get directories => Stream.empty();
+
+  bool get isEmpty => allFiles.isEmpty;
+
+  bool get isNotEmpty => allFiles.isNotEmpty;
 }
 
 class _DirectoryCollection implements FileCollection {
@@ -103,6 +125,10 @@ class _DirectoryCollection implements FileCollection {
 
   @override
   Stream<Directory> get directories => Stream.fromIterable(dirs);
+
+  Future<bool> get isEmpty => files.isEmpty;
+
+  Future<bool> get isNotEmpty async => !await isEmpty;
 
   Stream<File> _visit(Directory dir) async* {
     await for (final entity in dir.list(recursive: false)) {
