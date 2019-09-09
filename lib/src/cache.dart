@@ -20,6 +20,14 @@ class DartleCache {
   static final DartleCache instance = DartleCache._create();
 
   DartleCache._create() {
+    init();
+  }
+
+  /// Initialize the cache directories.
+  ///
+  /// This method does not normally need to be called explicitly as the
+  /// constructor will call it.
+  void init() {
     Directory(_dartleDir).createSync(recursive: true);
     Directory(_hashesDir).createSync();
     Directory(_snapshotsDir).createSync();
@@ -87,7 +95,7 @@ class DartleCache {
           logger.debug("File hash is still the same: ${file.path}");
           changed = false;
         } else {
-          logger.debug("File hash changed");
+          logger.debug("File hash changed: ${file.path}");
           changed = true;
         }
       } else {
