@@ -33,7 +33,7 @@ void main([List<String> args = const []]) {
       final interactions = <String, Object>{};
       await withFakeFileSystem(fs, () async {
         final dartleFile = File('dartle.dart');
-        final dartleFileCollection = FileCollection.file(dartleFile);
+        final dartleFileCollection = FileCollection.of([dartleFile]);
 
         await cache(dartleFileCollection);
         await Future.delayed(const Duration(milliseconds: 1));
@@ -73,7 +73,7 @@ void main([List<String> args = const []]) {
         () async {
       final isChanged = await withFakeFileSystem(fs, () async {
         final nonExistingFile = File('whatever');
-        final fileCollection = FileCollection.file(nonExistingFile);
+        final fileCollection = FileCollection.of([nonExistingFile]);
         return await cache.hasChanged(fileCollection, cache: false);
       });
       expect(isChanged, isFalse);
@@ -84,7 +84,7 @@ void main([List<String> args = const []]) {
       final isChanged = await withFakeFileSystem(fs, () async {
         final file = File('whatever');
         await file.writeAsString('hello');
-        final fileCollection = FileCollection.file(file);
+        final fileCollection = FileCollection.of([file]);
         await cache(fileCollection);
         await file.delete();
         await Future.delayed(const Duration(milliseconds: 1));
@@ -98,7 +98,7 @@ void main([List<String> args = const []]) {
       await withFakeFileSystem(fs, () async {
         final dir = Directory('example');
         await dir.create();
-        final dirCollection = FileCollection.dir(dir);
+        final dirCollection = FileCollection.dir(dir.path);
 
         await cache(dirCollection);
         await Future.delayed(const Duration(milliseconds: 1));

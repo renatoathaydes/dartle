@@ -11,8 +11,8 @@ final allTasks = [
   Task(encodeBase64,
       description: 'Encodes input.txt in base64, writing to output.txt',
       runCondition: FilesRunCondition(
-          inputs: FileCollection.file(File('input.txt')),
-          outputs: FileCollection.file(File('output.txt')))),
+          inputs: FileCollection.file('input.txt'),
+          outputs: FileCollection.file('output.txt'))),
 ];
 
 main(List<String> args) async =>

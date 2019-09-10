@@ -17,10 +17,11 @@ bool _noDirFilter(Directory f) => true;
 /// of inputs or outputs for a [Task].
 abstract class FileCollection {
   /// Create a [FileCollection] consisting of a single file.
-  factory FileCollection.file(File file) => _SingleFileCollection(file);
+  factory FileCollection.file(String file) => _SingleFileCollection(File(file));
 
   /// Create a [FileCollection] consisting of multiple files.
-  factory FileCollection.files(Iterable<File> files) => _FileCollection(files);
+  factory FileCollection.files(Iterable<String> files) =>
+      _FileCollection(files.map((f) => File(f)));
 
   /// Create a [FileCollection] consisting of a directory, possibly filtering
   /// sub-directories and specific files.
@@ -31,10 +32,11 @@ abstract class FileCollection {
   /// The contents of directories are included recursively. To not include any
   /// sub-directories, simply provide a [DirectoryFilter] that always returns
   /// false for all sub-directories.
-  factory FileCollection.dir(Directory directory,
+  factory FileCollection.dir(String directory,
           {FileFilter fileFilter = _noFileFilter,
           DirectoryFilter dirFilter = _noDirFilter}) =>
-      _DirectoryCollection([directory], fileFilter, dirFilter);
+      _DirectoryCollection(
+          [Directory(directory)], const [], fileFilter, dirFilter);
 
   /// Create a [FileCollection] consisting of multiple directories, possibly
   /// filtering sub-directories and specific files.
@@ -47,10 +49,34 @@ abstract class FileCollection {
   /// false for all sub-directories.
   ///
   /// The provided directories should not interleave.
-  factory FileCollection.dirs(Iterable<Directory> directories,
+  factory FileCollection.dirs(Iterable<String> directories,
           {FileFilter fileFilter = _noFileFilter,
           DirectoryFilter dirFilter = _noDirFilter}) =>
-      _DirectoryCollection(directories, fileFilter, dirFilter);
+      _DirectoryCollection(directories.map((d) => Directory(d)), const [],
+          fileFilter, dirFilter);
+
+  /// Create a [FileCollection] consisting of multiple files and directories,
+  /// possibly filtering sub-directories and specific files.
+  ///
+  /// The provided [DirectoryFilter] can only be used to filter sub-directories
+  /// of the given directories.
+  ///
+  /// The contents of directories are included recursively. To not include any
+  /// sub-directories, simply provide a [DirectoryFilter] that always returns
+  /// false for all sub-directories.
+  ///
+  /// The provided directories should not interleave.
+  factory FileCollection.of(Iterable<FileSystemEntity> fsEntities,
+      {FileFilter fileFilter = _noFileFilter,
+      DirectoryFilter dirFilter = _noDirFilter}) {
+    final dirs = fsEntities.whereType<Directory>();
+    final files = fsEntities.whereType<File>();
+    if (dirs.isEmpty) {
+      return _FileCollection(files);
+    } else {
+      return _DirectoryCollection(dirs, files, fileFilter, dirFilter);
+    }
+  }
 
   /// All files in this collection.
   ///
@@ -108,16 +134,21 @@ class _FileCollection implements FileCollection {
 }
 
 class _DirectoryCollection implements FileCollection {
+  final List<File> _extraFiles;
   final List<Directory> dirs;
   final FileFilter fileFilter;
   final DirectoryFilter dirFilter;
 
-  _DirectoryCollection(
-      Iterable<Directory> dirs, this.fileFilter, this.dirFilter)
-      : this.dirs = _sort(dirs);
+  _DirectoryCollection(Iterable<Directory> dirs, Iterable<File> files,
+      this.fileFilter, this.dirFilter)
+      : this.dirs = _sort(dirs),
+        _extraFiles = _sort(files);
 
   @override
   Stream<File> get files async* {
+    for (final file in _extraFiles) {
+      if (await fileFilter(file)) yield file;
+    }
     for (final dir in dirs) {
       yield* _visit(dir);
     }
