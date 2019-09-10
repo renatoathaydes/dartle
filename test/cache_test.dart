@@ -23,7 +23,7 @@ void main([List<String> args = const []]) {
 
     setUp(() async {
       fs = MemoryFileSystem();
-      await withFakeFileSystem(fs, cache.init);
+      await withFileSystem(fs, cache.init);
       await fs
           .file('dartle.dart')
           .writeAsString('main(){print("hello world");}');
@@ -31,7 +31,7 @@ void main([List<String> args = const []]) {
 
     test('caches files and detects changes', () async {
       final interactions = <String, Object>{};
-      await withFakeFileSystem(fs, () async {
+      await withFileSystem(fs, () async {
         final dartleFile = File('dartle.dart');
         final dartleFileCollection = FileCollection.of([dartleFile]);
 
@@ -71,7 +71,7 @@ void main([List<String> args = const []]) {
 
     test('reports non-existing files never seen before as not having changed',
         () async {
-      final isChanged = await withFakeFileSystem(fs, () async {
+      final isChanged = await withFileSystem(fs, () async {
         final nonExistingFile = File('whatever');
         final fileCollection = FileCollection.of([nonExistingFile]);
         return await cache.hasChanged(fileCollection, cache: false);
@@ -81,7 +81,7 @@ void main([List<String> args = const []]) {
 
     test('reports non-existing files that existed before as having changed',
         () async {
-      final isChanged = await withFakeFileSystem(fs, () async {
+      final isChanged = await withFileSystem(fs, () async {
         final file = File('whatever');
         await file.writeAsString('hello');
         final fileCollection = FileCollection.of([file]);
@@ -95,7 +95,7 @@ void main([List<String> args = const []]) {
 
     test('caches directory and detects changes', () async {
       final interactions = <String, Object>{};
-      await withFakeFileSystem(fs, () async {
+      await withFileSystem(fs, () async {
         final dir = Directory('example');
         await dir.create();
         final dirCollection = FileCollection.dir(dir.path);
