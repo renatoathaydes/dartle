@@ -11,3 +11,4 @@ library dartle_cache;
 export 'src/cache.dart';
 export 'src/core.dart' show configure;
 export 'src/error.dart';
+export 'src/io.dart';
