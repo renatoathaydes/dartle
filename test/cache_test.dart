@@ -8,6 +8,8 @@ import 'package:file/memory.dart';
 import 'package:logging/logging.dart';
 import 'package:test/test.dart';
 
+import 'test_utils.dart';
+
 void main([List<String> args = const []]) {
   if (args.contains('log')) {
     activateLogging();
@@ -19,14 +21,9 @@ void main([List<String> args = const []]) {
   group('DartleCache', () {
     MemoryFileSystem fs;
 
-    Future<R> withFakeFileSystem<R>(FutureOr<R> Function() action) async {
-      return await IOOverrides.runZoned(action,
-          createDirectory: fs.directory, createFile: fs.file);
-    }
-
     setUp(() async {
       fs = MemoryFileSystem();
-      await withFakeFileSystem(cache.init);
+      await withFakeFileSystem(fs, cache.init);
       await fs
           .file('dartle.dart')
           .writeAsString('main(){print("hello world");}');
@@ -34,7 +31,7 @@ void main([List<String> args = const []]) {
 
     test('caches files and detects changes', () async {
       final interactions = <String, Object>{};
-      await withFakeFileSystem(() async {
+      await withFakeFileSystem(fs, () async {
         final dartleFile = File('dartle.dart');
         final dartleFileCollection = FileCollection.file(dartleFile);
 
@@ -74,7 +71,7 @@ void main([List<String> args = const []]) {
 
     test('reports non-existing files never seen before as not having changed',
         () async {
-      final isChanged = await withFakeFileSystem(() async {
+      final isChanged = await withFakeFileSystem(fs, () async {
         final nonExistingFile = File('whatever');
         final fileCollection = FileCollection.file(nonExistingFile);
         return await cache.hasChanged(fileCollection, cache: false);
@@ -84,7 +81,7 @@ void main([List<String> args = const []]) {
 
     test('reports non-existing files that existed before as having changed',
         () async {
-      final isChanged = await withFakeFileSystem(() async {
+      final isChanged = await withFakeFileSystem(fs, () async {
         final file = File('whatever');
         await file.writeAsString('hello');
         final fileCollection = FileCollection.file(file);
@@ -98,7 +95,7 @@ void main([List<String> args = const []]) {
 
     test('caches directory and detects changes', () async {
       final interactions = <String, Object>{};
-      await withFakeFileSystem(() async {
+      await withFakeFileSystem(fs, () async {
         final dir = Directory('example');
         await dir.create();
         final dirCollection = FileCollection.dir(dir);
