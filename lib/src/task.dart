@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:dartle/dartle.dart';
 import 'package:meta/meta.dart';
 
 import 'cache.dart';
@@ -61,11 +62,17 @@ mixin RunCondition {
 
 /// A [RunCondition] which reports that a task should run whenever its inputs
 /// or outputs have changed since the last build.
-class FilesRunCondition with RunCondition {
+class RunOnChanges with RunCondition {
   final FileCollection inputs;
   final FileCollection outputs;
 
-  FilesRunCondition({@required this.inputs, @required this.outputs});
+  /// whether to verify that all declared outputs exist after the task has run.
+  final bool verifyOutputsExist;
+
+  RunOnChanges(
+      {@required this.inputs,
+      @required this.outputs,
+      this.verifyOutputsExist = true});
 
   @override
   FutureOr<bool> shouldRun() async =>
@@ -76,10 +83,28 @@ class FilesRunCondition with RunCondition {
   @override
   FutureOr<void> afterRun(bool wasSuccessful) async {
     if (wasSuccessful) {
+      if (verifyOutputsExist) {
+        await _verifyOutputs();
+      }
       if (await outputs.isNotEmpty) {
         final cache = DartleCache.instance;
         await cache(outputs);
       }
+    }
+  }
+
+  Future<void> _verifyOutputs() async {
+    final missingOutputs = <String>[];
+    await for (final file in outputs.files) {
+      if (!await file.exists()) missingOutputs.add(file.path);
+    }
+    await for (final dir in outputs.directories) {
+      if (!await dir.exists()) missingOutputs.add(dir.path);
+    }
+    if (missingOutputs.isNotEmpty) {
+      throw DartleException(
+          message: 'task did not produce the following expected outputs:\n' +
+              missingOutputs.map((f) => '  * $f').join('\n'));
     }
   }
 }

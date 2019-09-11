@@ -64,19 +64,27 @@ Future<void> _runTask(Task task) async {
     try {
       await task.action();
       stopwatch.stop(); // do not include runCondition in the reported time
-      await task.runCondition?.afterRun(true);
+      await _runTaskSuccessfulAfterRun(task);
     } on Exception catch (e) {
       stopwatch.stop();
       try {
         await task.runCondition?.afterRun(false);
       } finally {
-        failBuild(reason: "Task ${task.name} failed due to $e");
+        failBuild(reason: "Task ${task.name} failed due to: $e");
       }
     } finally {
       logger.debug("Task ${task.name} completed in ${_elapsedTime(stopwatch)}");
     }
   } else {
     logger.debug("Skipping task: ${task.name} as it is up-to-date");
+  }
+}
+
+Future _runTaskSuccessfulAfterRun(Task task) async {
+  try {
+    await task.runCondition?.afterRun(true);
+  } on Exception catch (e) {
+    failBuild(reason: "Task ${task.name} failed due to: $e");
   }
 }
 

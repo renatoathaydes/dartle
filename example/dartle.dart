@@ -9,7 +9,7 @@ final allTasks = [
   Task(clean),
   Task(encodeBase64,
       description: 'Encodes input.txt in base64, writing to output.txt',
-      runCondition: FilesRunCondition(
+      runCondition: RunOnChanges(
           inputs: FileCollection.file('input.txt'),
           outputs: FileCollection.file('output.txt'))),
 ];

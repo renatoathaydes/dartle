@@ -74,11 +74,11 @@ Future<void> exec(
 /// Deletes the outputs of all [tasks].
 ///
 /// This method only works if the task's [RunCondition]s are instances of
-/// [FilesRunCondition].
+/// [RunOnChanges].
 Future<void> deleteOutputs(Iterable<Task> tasks) async {
   for (final task in tasks) {
     final cond = task.runCondition;
-    if (cond is FilesRunCondition) {
+    if (cond is RunOnChanges) {
       await deleteAll(cond.outputs);
     }
   }
