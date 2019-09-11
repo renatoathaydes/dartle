@@ -3,7 +3,7 @@ import 'dart:async';
 import 'package:meta/meta.dart';
 
 import 'cache.dart';
-import 'io.dart';
+import 'file_collection.dart';
 
 final _functionNamePatttern = RegExp('[a-zA-Z_0-9]+');
 

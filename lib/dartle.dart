@@ -12,5 +12,5 @@ library dartle;
 export 'src/core.dart';
 export 'src/error.dart';
 export 'src/helpers.dart';
-export 'src/io.dart';
+export 'src/file_collection.dart';
 export 'src/task.dart';

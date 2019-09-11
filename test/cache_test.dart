@@ -3,7 +3,6 @@ import 'dart:io';
 
 import 'package:dartle/dartle_cache.dart';
 import 'package:dartle/src/_log.dart';
-import 'package:dartle/src/io.dart';
 import 'package:file/memory.dart';
 import 'package:logging/logging.dart';
 import 'package:test/test.dart';

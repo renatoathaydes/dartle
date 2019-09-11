@@ -2,10 +2,9 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
-import 'package:dartle/src/io.dart';
-
 import '_eager_consumer.dart';
 import '_log.dart';
+import 'file_collection.dart';
 import 'task.dart';
 
 /// Fail the build for the given [reason].

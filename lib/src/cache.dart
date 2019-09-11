@@ -3,14 +3,14 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:crypto/crypto.dart';
-import 'package:dartle/src/_eager_consumer.dart';
 import 'package:meta/meta.dart';
 import 'package:path/path.dart' as path;
 
+import '_eager_consumer.dart';
 import '_log.dart';
 import 'error.dart';
+import 'file_collection.dart';
 import 'helpers.dart';
-import 'io.dart';
 
 const _dartleDir = '.dartle_tool';
 const _hashesDir = '$_dartleDir/hashes';
