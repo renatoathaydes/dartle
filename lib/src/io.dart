@@ -162,12 +162,12 @@ class _DirectoryCollection implements FileCollection {
   Future<bool> get isNotEmpty async => !await isEmpty;
 
   Stream<File> _visit(Directory dir) async* {
-    await for (final entity in dir.list(recursive: false)) {
-      if (entity is File && await fileFilter(entity)) {
-        yield entity;
-      } else if (entity is Directory && await dirFilter(entity)) {
-        yield* _visit(entity);
-      }
+    final entities = _sort(await dir.list(recursive: false).toList());
+    for (final entity in entities.whereType<File>()) {
+      if (await fileFilter(entity)) yield entity;
+    }
+    for (final entity in entities.whereType<Directory>()) {
+      if (await dirFilter(entity)) yield* _visit(entity);
     }
   }
 }

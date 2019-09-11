@@ -11,34 +11,80 @@ void main() {
 
     setUpAll(() async {
       fs = await createFileSystem([
+        ...['dartle', 'a', 'b', 'c', 'd', 'A/B/C', 'A/B/D', 'A/B/D/E']
+            .map((d) => Entry.directory(d)),
         Entry.fileWithText('dartle.dart', 'hello world'),
-        ...['dartle', 'a', 'b', 'c', 'd', 'e'].map((d) => Entry.directory(d))
+        Entry.fileWithText('dartle/some.txt', 'text'),
+        Entry.fileWithText('b/b.txt', 'BBBB'),
+        Entry.fileWithText('A/B/C/c.txt', 'CCCC'),
+        Entry.fileWithText('A/B/D/d.txt', 'DDDD'),
+        Entry.fileWithText('A/B/D/E/e.txt', 'EEEE'),
       ]);
     });
     test('can be created for a single file', () async {
       final files = FileCollection.file('dartle.dart');
-      expectFiles(files, files: ['dartle.dart']);
+      await expectFiles(files, files: ['dartle.dart']);
       await expectEmpty(files.directories);
     });
     test('can be created for multiple files', () async {
       final files = FileCollection.files(const ['a', 'b', 'c', 'd', 'e']);
-      expectFiles(files, files: const ['a', 'b', 'c', 'd', 'e']);
+      await expectFiles(files, files: const ['a', 'b', 'c', 'd', 'e']);
+      await expectEmpty(files.directories);
+    });
+    test('can be created for multiple file entities', () async {
+      final files = FileCollection.of(
+          [fs.file('dartle/some.txt'), fs.file('dartle.dart')]);
+      await expectFiles(files, files: const ['dartle.dart', 'dartle/some.txt']);
       await expectEmpty(files.directories);
     });
 
     // FileCollections containing directories require them to exist
     test('can be created for a single directory', () async {
       await withFileSystem(fs, () async {
-        final files = FileCollection.dir('dartle');
-        expectFiles(files, dirs: ['dartle']);
+        final files = FileCollection.dir('a');
+        await expectFiles(files, dirs: ['a']);
         await expectEmpty(files.files);
       });
     });
-    test('can be created for multiple files', () async {
+    test('can be created for multiple directories', () async {
       await withFileSystem(fs, () async {
-        final files = FileCollection.dirs(const ['a', 'b', 'c', 'd', 'e']);
-        expectFiles(files, dirs: const ['a', 'b', 'c', 'd', 'e']);
-        await expectEmpty(files.files);
+        final files = FileCollection.dirs(const ['a', 'b', 'c', 'd']);
+        await expectFiles(files,
+            files: const ['b/b.txt'], dirs: const ['a', 'b', 'c', 'd']);
+      });
+    });
+    test('can be created for multiple directories with filters', () async {
+      await withFileSystem(fs, () async {
+        final files = FileCollection.dirs(const ['dartle', 'b', 'c', 'A'],
+            fileFilter: (file) => file.path != 'b/b.txt',
+            dirFilter: (dir) => dir.path.contains('A/B'));
+        await expectFiles(files, files: [
+          'A/B/C/c.txt',
+          'A/B/D/d.txt',
+          'A/B/D/E/e.txt',
+          'dartle/some.txt',
+        ], dirs: const [
+          'A',
+          'b',
+          'c',
+          'dartle',
+        ]);
+      });
+    });
+    test('can be created for multiple entities with filters', () async {
+      await withFileSystem(fs, () async {
+        final files = FileCollection.of([
+          fs.directory('dartle'),
+          fs.directory('b'),
+          fs.directory('c'),
+          fs.directory('A/B'),
+          fs.file('A/B/D/E/e.txt'),
+        ],
+            fileFilter: (file) => file.path != 'b/b.txt',
+            dirFilter: (dir) => !dir.path.startsWith("A/B/D"));
+        await expectFiles(files,
+            files: ['A/B/D/E/e.txt', 'A/B/C/c.txt', 'dartle/some.txt'],
+            dirs: const ['A/B', 'b', 'c', 'dartle']);
       });
     });
   }, timeout: Timeout(Duration(milliseconds: 250)));
@@ -48,33 +94,33 @@ Future<void> expectEmpty(Stream stream) async {
   expect(await stream.toList(), isEmpty);
 }
 
-void expectFiles(FileCollection actual,
-    {List<String> files, List<String> dirs}) {
+Future expectFiles(FileCollection actual,
+    {List<String> files, List<String> dirs}) async {
   var index = 0;
   if (files != null) {
     final iter = files.iterator;
-    actual.files.listen(expectAsync1((file) {
+    await for (final file in actual.files) {
       if (iter.moveNext()) {
-        expect(file.path, equals(iter.current));
+        expect(file.path, equals(iter.current), reason: 'file at index $index');
       } else {
-        fail("Expected a file at index $index, "
-            "but the collection has no more files");
+        fail("Found a file at index $index, "
+            "but expected no more files: ${file.path}");
       }
       index++;
-    }, count: files.length, max: files.length));
+    }
   }
   if (dirs != null) {
     index = 0;
     final iter = dirs.iterator;
-    actual.directories.listen(expectAsync1((dir) {
+    await for (final dir in actual.directories) {
       if (iter.moveNext()) {
-        expect(dir.path, equals(iter.current));
+        expect(dir.path, equals(iter.current), reason: 'dir at index $index');
       } else {
-        fail("Expected a directory at index $index, "
-            "but the collection has no more files");
+        fail("Found a directory at index $index, "
+            "but expected no more files: ${dir.path}");
       }
       index++;
-    }, count: dirs.length, max: dirs.length));
+    }
   }
 }
 
