@@ -2,6 +2,7 @@ import 'package:meta/meta.dart';
 
 import '_log.dart';
 import '_options.dart';
+import 'error.dart';
 import 'helpers.dart';
 import 'task.dart';
 
@@ -23,19 +24,30 @@ Future<void> run(List<String> args,
   configure(args);
   logger.debug("Configured dartle in ${_elapsedTime(stopWatch)}");
   try {
-    final taskNames = parseOptionsAndGetTasks(args);
-    final executableTasks = _getExecutableTasks(tasks, defaultTasks, taskNames);
+    var taskNames = parseOptionsAndGetTasks(args);
+    if (taskNames.isEmpty && defaultTasks != null) {
+      taskNames = defaultTasks.map((t) => t.name).toList();
+    }
+    final executableTasks = await _getExecutableTasks(tasks, taskNames);
+    logger.info("Executing ${executableTasks.length} task(s) out of "
+        "${taskNames.length} selected task(s)");
     await _runTasks(executableTasks);
+  } on DartleException catch (e) {
+    failBuild(reason: e.message, exitCode: e.exitCode);
+  } on Exception catch (e) {
+    failBuild(reason: 'Unexpected error: $e');
   } finally {
     stopWatch.stop();
     logger.info("Build succeeded in ${_elapsedTime(stopWatch)}");
   }
 }
 
-List<Task> _getExecutableTasks(
-    List<Task> tasks, List<Task> defaultTasks, List<String> taskNames) {
+Future<List<Task>> _getExecutableTasks(
+    List<Task> tasks, List<String> taskNames) async {
   if (taskNames.isEmpty) {
-    return defaultTasks ?? tasks;
+    return failBuild(
+        reason: 'No tasks were explicitly selected and '
+            'no default tasks were provided') as List<Task>;
   } else {
     final taskMap = tasks.asMap().map((_, task) => MapEntry(task.name, task));
     final result = <Task>[];
@@ -45,7 +57,11 @@ List<Task> _getExecutableTasks(
         return failBuild(reason: "Unknown task or option: ${taskName}")
             as List<Task>;
       }
-      result.add(task);
+      if (await task.runCondition?.shouldRun() ?? true) {
+        result.add(task);
+      } else {
+        logger.debug("Skipping task: ${task.name} as it is up-to-date");
+      }
     }
     return result;
   }
@@ -58,25 +74,27 @@ Future<void> _runTasks(List<Task> tasks) async {
 }
 
 Future<void> _runTask(Task task) async {
-  if (await task.runCondition?.shouldRun() ?? true) {
-    logger.info("Running task: ${task.name}");
-    final stopwatch = Stopwatch()..start();
+  logger.info("Running task: ${task.name}");
+  final stopwatch = Stopwatch()..start();
+  try {
+    await task.action();
+    stopwatch.stop(); // do not include runCondition in the reported time
+    await _runTaskSuccessfulAfterRun(task);
+  } on Exception catch (e) {
+    stopwatch.stop();
     try {
-      await task.action();
-      stopwatch.stop(); // do not include runCondition in the reported time
-      await _runTaskSuccessfulAfterRun(task);
-    } on Exception catch (e) {
-      stopwatch.stop();
-      try {
-        await task.runCondition?.afterRun(false);
-      } finally {
-        failBuild(reason: "Task ${task.name} failed due to: $e");
-      }
+      await task.runCondition?.afterRun(false);
     } finally {
-      logger.debug("Task ${task.name} completed in ${_elapsedTime(stopwatch)}");
+      String reason;
+      if (e is DartleException) {
+        reason = e.message;
+      } else {
+        reason = e.toString();
+      }
+      failBuild(reason: "Task ${task.name} failed due to: $reason");
     }
-  } else {
-    logger.debug("Skipping task: ${task.name} as it is up-to-date");
+  } finally {
+    logger.debug("Task ${task.name} completed in ${_elapsedTime(stopwatch)}");
   }
 }
 
