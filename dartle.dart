@@ -8,7 +8,10 @@ final libDir =
 
 void main(List<String> args) => run(args, tasks: [
       Task(test),
-      Task(checkImports, description: 'Checks dart file imports are allowed'),
+      Task(checkImports,
+          description: 'Checks dart file imports are allowed',
+          runCondition:
+              RunOnChanges(inputs: libDir, outputs: FileCollection.empty())),
     ]);
 
 test() async {
@@ -22,7 +25,7 @@ checkImports() async {
     if (illegalImports.isNotEmpty) {
       throw DartleException(
           message: 'File ${file.path} contains '
-              'an import to the dartle package: ${illegalImports}');
+              'self import to the dartle package: ${illegalImports}');
     }
   }
 }

@@ -122,6 +122,9 @@ class _SingleFileCollection implements FileCollection {
   bool get isEmpty => false;
 
   bool get isNotEmpty => true;
+
+  @override
+  String toString() => 'FileCollection{file=${file.path}}';
 }
 
 class _FileCollection implements FileCollection {
@@ -137,6 +140,10 @@ class _FileCollection implements FileCollection {
   bool get isEmpty => allFiles.isEmpty;
 
   bool get isNotEmpty => allFiles.isNotEmpty;
+
+  @override
+  String toString() =>
+      'FileCollection{files=${allFiles.map((f) => f.path).join(', ')}}';
 }
 
 class _DirectoryCollection implements FileCollection {
@@ -166,6 +173,10 @@ class _DirectoryCollection implements FileCollection {
   Future<bool> get isEmpty => files.isEmpty;
 
   Future<bool> get isNotEmpty async => !await isEmpty;
+
+  @override
+  String toString() => 'FileCollection{directories=${dirs.map((d) => d.path)}, '
+      'files=${_extraFiles.map((f) => f.path)}}';
 
   Stream<File> _visit(Directory dir) async* {
     final entities = _sort(await dir.list(recursive: false).toList());

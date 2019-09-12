@@ -108,9 +108,10 @@ class DartleCache {
         changed = false;
       }
     } else {
+      logger.debug("Hash does not exist for file: ${file.path}");
       changed = true;
     }
-    if (cache) {
+    if (changed && cache) {
       await _cacheFile(file, hashFile);
     }
     return changed;
@@ -133,6 +134,7 @@ class DartleCache {
         changed = true;
       }
     } else {
+      logger.debug("Hash does not exist for directory: ${dir.path}");
       changed = true;
     }
     if (changed && cache) {

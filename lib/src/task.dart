@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:meta/meta.dart';
 
+import '_log.dart';
 import 'cache.dart';
 import 'error.dart';
 import 'file_collection.dart';
@@ -82,15 +83,26 @@ class RunOnChanges with RunCondition {
       : this.cache = cache ?? DartleCache.instance;
 
   @override
-  FutureOr<bool> shouldRun() async =>
-      await cache.hasChanged(inputs, cache: true) ||
-      // don't cache outputs, they will be cached after the task executes
-      await cache.hasChanged(outputs, cache: false);
+  FutureOr<bool> shouldRun() async {
+    final inputsChanged = await cache.hasChanged(inputs, cache: true);
+
+    // don't cache outputs, they will be cached after the task executes
+    final outputsChanged = await cache.hasChanged(outputs, cache: false);
+
+    if (inputsChanged) {
+      logger.debug('Changes detected on task inputs: ${inputs}');
+    }
+    if (outputsChanged) {
+      logger.debug('Changes detected on task outputs: ${outputs}');
+    }
+    return inputsChanged || outputsChanged;
+  }
 
   @override
   FutureOr<void> afterRun(bool wasSuccessful) async {
     if (wasSuccessful) {
       if (await outputs.isNotEmpty) {
+        logger.debug('Verifying task produced expected outputs');
         if (verifyOutputsExist) await _verifyOutputs();
         await cache(outputs);
       }
