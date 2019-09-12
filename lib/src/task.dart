@@ -62,9 +62,14 @@ mixin RunCondition {
 
 /// A [RunCondition] which reports that a task should run whenever its inputs
 /// or outputs have changed since the last build.
+///
+/// If an empty [FileCollection] is given as both inputs and outputs,
+/// because an empty collection will never change, [shouldRun] will never
+/// return true, hence using this class in this way is likely a mistake.
 class RunOnChanges with RunCondition {
   final FileCollection inputs;
   final FileCollection outputs;
+  final DartleCache cache;
 
   /// whether to verify that all declared outputs exist after the task has run.
   final bool verifyOutputsExist;
@@ -72,22 +77,21 @@ class RunOnChanges with RunCondition {
   RunOnChanges(
       {@required this.inputs,
       @required this.outputs,
-      this.verifyOutputsExist = true});
+      this.verifyOutputsExist = true,
+      DartleCache cache})
+      : this.cache = cache ?? DartleCache.instance;
 
   @override
   FutureOr<bool> shouldRun() async =>
-      await DartleCache.instance.hasChanged(inputs, cache: true) ||
+      await cache.hasChanged(inputs, cache: true) ||
       // don't cache outputs, they will be cached after the task executes
-      await DartleCache.instance.hasChanged(outputs, cache: false);
+      await cache.hasChanged(outputs, cache: false);
 
   @override
   FutureOr<void> afterRun(bool wasSuccessful) async {
     if (wasSuccessful) {
-      if (verifyOutputsExist) {
-        await _verifyOutputs();
-      }
       if (await outputs.isNotEmpty) {
-        final cache = DartleCache.instance;
+        if (verifyOutputsExist) await _verifyOutputs();
         await cache(outputs);
       }
     }

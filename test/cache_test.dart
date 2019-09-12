@@ -28,6 +28,11 @@ void main([List<String> args = const []]) {
           .writeAsString('main(){print("hello world");}');
     });
 
+    test('reports empty FileCollection as not having changed', () async {
+      expect(await cache.hasChanged(FileCollection.empty(), cache: false),
+          isFalse);
+    });
+
     test('caches files and detects changes', () async {
       final interactions = <String, Object>{};
       await withFileSystem(fs, () async {

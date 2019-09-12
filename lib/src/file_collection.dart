@@ -16,6 +16,12 @@ bool _noDirFilter(Directory f) => true;
 /// A collection of [File] and [Directory] which can be used to declare a set
 /// of inputs or outputs for a [Task].
 abstract class FileCollection {
+  static final FileCollection _empty_collection =
+      FileCollection.files(const []);
+
+  /// Get the empty [FileCollection].
+  factory FileCollection.empty() => _empty_collection;
+
   /// Create a [FileCollection] consisting of a single file.
   factory FileCollection.file(String file) => _SingleFileCollection(File(file));
 
