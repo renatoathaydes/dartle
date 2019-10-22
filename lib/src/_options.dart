@@ -8,8 +8,9 @@ import 'helpers.dart';
 
 class _Options {
   final log.Level logLevel;
+  final bool forceTasks;
 
-  const _Options({this.logLevel = log.Level.INFO});
+  const _Options({this.logLevel = log.Level.INFO, this.forceTasks = false});
 }
 
 _Options _options = const _Options();
@@ -20,6 +21,8 @@ class _ParsedArguments {
 
   const _ParsedArguments(this.options, this.taskNames);
 }
+
+bool get forceTasksOption => _options.forceTasks;
 
 // allows calling [parseOptionsAndGetTasks] more than once without actually
 // parsing all arguments again.
@@ -54,10 +57,16 @@ List<String> parseOptionsAndGetTasks(List<String> args) {
       allowed: levelByName.keys,
     )
     ..addFlag(
+      'force-tasks',
+      abbr: 'f',
+      negatable: false,
+      help: 'Force all selected tasks to run',
+    )
+    ..addFlag(
       'help',
       abbr: 'h',
       negatable: false,
-      help: 'show this usage help message',
+      help: 'show this help message',
     );
   ArgResults parseResult;
   try {
@@ -79,6 +88,7 @@ List<String> parseOptionsAndGetTasks(List<String> args) {
 
   _options = _Options(
     logLevel: _parseLogLevel(parseResult['log-level'].toString()),
+    forceTasks: parseResult.wasParsed('force-tasks'),
   );
 
   setLogLevel(_options.logLevel);

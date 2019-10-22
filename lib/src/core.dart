@@ -59,6 +59,10 @@ Future<List<Task>> _getExecutableTasks(
       }
       if (await task.runCondition?.shouldRun() ?? true) {
         result.add(task);
+      } else if (forceTasksOption) {
+        logger.debug("Will force execution of task: ${task.name} even though "
+            "it is up-to-date");
+        result.add(task);
       } else {
         logger.debug("Skipping task: ${task.name} as it is up-to-date");
       }
