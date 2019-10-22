@@ -2,6 +2,7 @@ import 'package:meta/meta.dart';
 
 import '_log.dart';
 import '_options.dart';
+import '_utils.dart';
 import 'error.dart';
 import 'helpers.dart';
 import 'task.dart';
@@ -43,18 +44,18 @@ Future<void> run(List<String> args,
 }
 
 Future<List<Task>> _getExecutableTasks(
-    List<Task> tasks, List<String> taskNames) async {
-  if (taskNames.isEmpty) {
+    List<Task> tasks, List<String> requestedTasks) async {
+  if (requestedTasks.isEmpty) {
     return failBuild(
         reason: 'No tasks were explicitly selected and '
             'no default tasks were provided') as List<Task>;
   } else {
     final taskMap = tasks.asMap().map((_, task) => MapEntry(task.name, task));
     final result = <Task>[];
-    for (final taskName in taskNames) {
-      final task = taskMap[taskName];
+    for (final taskNameSpec in requestedTasks) {
+      final task = _findTaskByName(taskMap, taskNameSpec);
       if (task == null) {
-        return failBuild(reason: "Unknown task or option: ${taskName}")
+        return failBuild(reason: "Unknown task or option: ${taskNameSpec}")
             as List<Task>;
       }
       if (await task.runCondition?.shouldRun() ?? true) {
@@ -69,6 +70,13 @@ Future<List<Task>> _getExecutableTasks(
     }
     return result;
   }
+}
+
+Task _findTaskByName(Map<String, Task> taskMap, String nameSpec) {
+  final name =
+      findMatchingByWords(nameSpec, taskMap.keys.toList(growable: false));
+  if (name == null) return null;
+  return taskMap[name];
 }
 
 Future<void> _runTasks(List<Task> tasks) async {
