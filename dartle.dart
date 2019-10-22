@@ -6,13 +6,19 @@ import 'package:path/path.dart' show extension;
 final libDir =
     FileCollection.dir('lib', fileFilter: (f) => extension(f.path) == '.dart');
 
-void main(List<String> args) => run(args, tasks: [
-      Task(test),
-      Task(checkImports,
-          description: 'Checks dart file imports are allowed',
-          runCondition:
-              RunOnChanges(inputs: libDir, outputs: FileCollection.empty())),
-    ]);
+final testTask = Task(test,
+    description: 'Runs all tests',
+    runCondition: RunOnChanges(
+        inputs: FileCollection.dirs(['lib', 'bin', 'test', 'example']),
+        outputs: FileCollection.empty()));
+
+final checkImportsTask = Task(checkImports,
+    description: 'Checks dart file imports are allowed',
+    runCondition:
+        RunOnChanges(inputs: libDir, outputs: FileCollection.empty()));
+
+void main(List<String> args) =>
+    run(args, tasks: [testTask, checkImportsTask], defaultTasks: [testTask]);
 
 test() async {
   await exec(Process.start('pub', ['run', 'test', '-p', 'vm']));
