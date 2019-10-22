@@ -69,15 +69,23 @@ class DartleCache {
   /// Check if any member of a [FileCollection] has been modified since the
   /// last time a Dartle build was run, caching the hashes of the files if
   /// [cache] is true.
+  ///
+  /// Returns false if the [FileCollection] is empty.
   Future<bool> hasChanged(FileCollection fileCollection,
       {@required bool cache}) async {
+    if (await fileCollection.isEmpty) return false;
+    var anyChanges = false;
     await for (final file in fileCollection.files) {
-      if (await _hasChanged(file, cache: cache)) return true;
+      anyChanges |= await _hasChanged(file, cache: cache);
+      // only return early if cache == false
+      if (!cache && anyChanges) return true;
     }
     await for (final dir in fileCollection.directories) {
-      if (await _hasDirDirectChildrenChanged(dir, cache: cache)) return true;
+      anyChanges |= await _hasDirDirectChildrenChanged(dir, cache: cache);
+      // only return early if cache == false
+      if (!cache && anyChanges) return true;
     }
-    return false;
+    return anyChanges;
   }
 
   Future<bool> _hasChanged(File file, {@required bool cache}) async {

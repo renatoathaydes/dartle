@@ -133,7 +133,7 @@ void main([List<String> args = const []]) {
       expect(fs.directory('.dartle_tool/hashes').existsSync(), isTrue);
 
       // there should be one hash for each directory and file cached in the test
-      expect(fs.directory('.dartle_tool/hashes').listSync().length, equals(2));
+      expect(fs.directory('.dartle_tool/hashes').listSync().length, equals(3));
 
       // verify interactions
       expect(
@@ -143,6 +143,37 @@ void main([List<String> args = const []]) {
             'hasChangedAfterAddingFiles': true,
             'hasChangedAfterDeletingFile': true,
             'hasChangedAfterCreatingOtherDirAndFile': false,
+          }));
+    });
+
+    test('does not report changes if nothing changes between checks', () async {
+      final interactions = <String, Object>{};
+
+      await withFileSystem(fs, () async {
+        final dir = Directory('example');
+        await dir.create();
+        await File('example/1').writeAsString('one');
+        await File('example/2').writeAsString('two');
+        await File('example/3').writeAsString('three');
+
+        final dirCollection = FileCollection.dir(dir.path);
+        interactions['first check'] =
+            await cache.hasChanged(dirCollection, cache: true);
+        interactions['second check'] =
+            await cache.hasChanged(dirCollection, cache: true);
+        interactions['third check'] =
+            await cache.hasChanged(dirCollection, cache: true);
+        interactions['fourth check'] =
+            await cache.hasChanged(dirCollection, cache: true);
+      });
+
+      expect(
+          interactions,
+          equals({
+            'first check': true,
+            'second check': false,
+            'third check': false,
+            'fourth check': false,
           }));
     });
   });
