@@ -49,21 +49,17 @@ class DartleCache {
   }
 
   Future<void> _cacheFile(File file, [File hashFile]) async {
-    if (hashFile == null) {
-      final locationHash = _hash(file.absolute.path);
-      hashFile = File(path.join(_hashesDir, locationHash));
-    }
+    final hf = hashFile ??
+        File(path.join(_hashesDir, _hash(file.absolute.path)));
     logger.debug("Caching file ${file.path}");
-    await hashFile.writeAsString(await _hashContents(file));
+    await hf.writeAsString(await _hashContents(file));
   }
 
   Future<void> _cacheDir(Directory dir, [File hashFile]) async {
-    if (hashFile == null) {
-      final locationHash = _hash(dir.absolute.path);
-      hashFile = File(path.join(_hashesDir, locationHash));
-    }
+    final hf = hashFile ??
+        File(path.join(_hashesDir, _hash(dir.absolute.path)));
     logger.debug("Caching directory: ${dir.path}");
-    await hashFile.writeAsString(await _hashDirectChildren(dir));
+    await hf.writeAsString(await _hashDirectChildren(dir));
   }
 
   /// Check if any member of a [FileCollection] has been modified since the

@@ -95,9 +95,9 @@ Future<void> expectEmpty(Stream stream) async {
 }
 
 Future expectFiles(FileCollection actual,
-    {List<String> files, List<String> dirs}) async {
+    {List<String> files = const [], List<String> dirs= const []}) async {
   var index = 0;
-  if (files != null) {
+  if (files.isNotEmpty) {
     final iter = files.iterator;
     await for (final file in actual.files) {
       if (iter.moveNext()) {
@@ -109,7 +109,7 @@ Future expectFiles(FileCollection actual,
       index++;
     }
   }
-  if (dirs != null) {
+  if (dirs.isNotEmpty) {
     index = 0;
     final iter = dirs.iterator;
     await for (final dir in actual.directories) {

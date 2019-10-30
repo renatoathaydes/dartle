@@ -20,13 +20,13 @@ void configure(List<String> args) {
 /// This method may not return if some error is found, as dartle will
 /// call [exit(code)] with the appropriate error code.
 Future<void> run(List<String> args,
-    {@required List<Task> tasks, List<Task> defaultTasks}) async {
+    {@required List<Task> tasks, List<Task> defaultTasks = const []}) async {
   final stopWatch = Stopwatch()..start();
   configure(args);
   logger.debug("Configured dartle in ${_elapsedTime(stopWatch)}");
   try {
     var taskNames = parseOptionsAndGetTasks(args);
-    if (taskNames.isEmpty && defaultTasks != null) {
+    if (taskNames.isEmpty && defaultTasks.isNotEmpty) {
       taskNames = defaultTasks.map((t) => t.name).toList();
     }
     final executableTasks = await _getExecutableTasks(tasks, taskNames);

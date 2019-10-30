@@ -1,7 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
-
+import 'package:meta/meta.dart';
 import '_log.dart';
 import 'file_collection.dart';
 import 'std_stream_consumer.dart';
@@ -10,7 +10,7 @@ import 'task.dart';
 /// Fail the build for the given [reason].
 ///
 /// This function never returns.
-failBuild({String reason, int exitCode = 1}) {
+failBuild({@required String reason, int exitCode = 1}) {
   logger.error(reason);
   exit(exitCode);
 }
@@ -37,20 +37,19 @@ ignoreExceptions(FutureOr Function() action) async {
 /// to the callback.
 ///
 /// By default, [onDone] fails the build if the exit code is not 0.
-Future<T> exec<T>(
-  Future<Process> process, {
+Future<T> exec<T>(Future<Process> process, {
   StdStreamConsumer stdoutConsumer,
   StdStreamConsumer stderrConsumer,
   FutureOr<T> Function(int exitCode) onDone,
 }) async {
   final proc = await process;
   logger.debug("Started process: ${proc.pid}");
-  stdoutConsumer ??=
+  final stdoutCons = stdoutConsumer ??
       StdStreamConsumer(printToStdout: logger.isLevelEnabled(LogLevel.debug));
-  stderrConsumer ??= StdStreamConsumer(keepLines: true);
-  onDone ??= (code) async {
+  final stderrCons = stderrConsumer ?? StdStreamConsumer(keepLines: true);
+  final onDoneAction = onDone ?? (code) async {
     if (code != 0) {
-      final errOut = stderrConsumer.lines;
+      final errOut = stderrCons.lines;
       errOut.forEach(logger.warn);
       failBuild(
           reason: 'Process exited with code $code: ${proc.pid}',
@@ -62,17 +61,17 @@ Future<T> exec<T>(
   proc.stdout
       .transform(utf8.decoder)
       .transform(const LineSplitter())
-      .listen(stdoutConsumer);
+      .listen(stdoutCons);
   proc.stderr
       .transform(utf8.decoder)
       .transform(const LineSplitter())
-      .listen(stderrConsumer);
+      .listen(stderrCons);
 
   final code = await proc.exitCode;
 
   logger.debug("Process ${proc.pid} exited with code: $code");
 
-  return onDone(code);
+  return onDoneAction(code);
 }
 
 /// Deletes the outputs of all [tasks].

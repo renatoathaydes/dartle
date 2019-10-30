@@ -26,9 +26,9 @@ List<String> splitWords(String text) {
 String findMatchingByWords(String searchText, List<String> options) {
   if (searchText == null || searchText.isEmpty) return null;
   String result =
-      options.firstWhere((opt) => opt == searchText, orElse: () => null);
+      options.firstWhere((opt) => opt == searchText, orElse: () => '');
   // if there's an exact match, return it
-  if (result != null) return result;
+  if (result.isNotEmpty) return result;
 
   // no exact match found, try to find match by words after splitting the text
   final searchTerms = splitWords(searchText);

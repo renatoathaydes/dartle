@@ -18,10 +18,10 @@ class Task {
   final RunCondition runCondition;
 
   Task(this.action, {this.description = '', String name, this.runCondition})
-      : this.name = _resolveName(action, name);
+      : this.name = _resolveName(action, name ?? '');
 
   static String _resolveName(Function() action, String name) {
-    if (name == null || name.isEmpty) {
+    if (name.isEmpty) {
       final funName = "$action";
       final firstQuote = funName.indexOf("'");
       if (firstQuote > 0) {
