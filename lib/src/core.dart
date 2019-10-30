@@ -58,7 +58,7 @@ Future<List<Task>> _getExecutableTasks(
         return failBuild(reason: "Unknown task or option: ${taskNameSpec}")
             as List<Task>;
       }
-      if (await task.runCondition?.shouldRun() ?? true) {
+      if (await task.runCondition.shouldRun()) {
         result.add(task);
       } else if (forceTasksOption) {
         logger.debug("Will force execution of task: ${task.name} even though "
@@ -95,7 +95,7 @@ Future<void> _runTask(Task task) async {
   } on Exception catch (e) {
     stopwatch.stop();
     try {
-      await task.runCondition?.afterRun(false);
+      await task.runCondition.afterRun(false);
     } finally {
       String reason;
       if (e is DartleException) {
@@ -112,7 +112,7 @@ Future<void> _runTask(Task task) async {
 
 Future _runTaskSuccessfulAfterRun(Task task) async {
   try {
-    await task.runCondition?.afterRun(true);
+    await task.runCondition.afterRun(true);
   } on Exception catch (e) {
     failBuild(reason: "Task ${task.name} failed due to: $e");
   }

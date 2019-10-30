@@ -17,8 +17,12 @@ class Task {
   final Function() action;
   final RunCondition runCondition;
 
-  Task(this.action, {this.description = '', String name, this.runCondition})
-      : this.name = _resolveName(action, name ?? '');
+  Task(
+    this.action, {
+    this.description = '',
+    String name = '',
+    this.runCondition = const AlwaysRun(),
+  }) : this.name = _resolveName(action, name ?? '');
 
   static String _resolveName(Function() action, String name) {
     if (name.isEmpty) {
@@ -59,6 +63,20 @@ mixin RunCondition {
   /// Callback that runs after the task associated with this [RunCondition]
   /// has run, whether successfully or not.
   FutureOr<void> afterRun(bool wasSuccessful);
+}
+
+/// A [RunCondition] which is always fullfilled.
+///
+/// This ensures a [Task] runs unconditionally.
+@sealed
+class AlwaysRun with RunCondition {
+  const AlwaysRun();
+
+  @override
+  void afterRun(bool wasSuccessful) {}
+
+  @override
+  bool shouldRun() => true;
 }
 
 /// A [RunCondition] which reports that a task should run whenever its inputs
