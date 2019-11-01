@@ -47,10 +47,11 @@ Future<T> exec<T>(Future<Process> process, {
   final stdoutCons = stdoutConsumer ??
       StdStreamConsumer(printToStdout: logger.isLevelEnabled(LogLevel.debug));
   final stderrCons = stderrConsumer ?? StdStreamConsumer(keepLines: true);
-  final onDoneAction = onDone ?? (code) async {
+  final onDoneAction = (int code) async {
     if (code != 0) {
       final errOut = stderrCons.lines;
       errOut.forEach(logger.warn);
+      await onDone(code);
       failBuild(
           reason: 'Process exited with code $code: ${proc.pid}',
           exitCode: code);

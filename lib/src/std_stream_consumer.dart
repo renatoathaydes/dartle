@@ -27,7 +27,7 @@ class StdStreamConsumer {
     final doPrint = filter(line);
     if (doPrint) {
       _linesAccumulator.add(line);
-      if (printToStdout) print(line);
+      if (printToStdout) stdout.writeln(line);
       if (printToStderr) stderr.writeln(line);
     }
   }

@@ -1,6 +1,8 @@
 import 'dart:async';
 import 'dart:io';
 
+import '_utils.dart';
+
 /// Function that filters files, returning true to keep a file,
 /// false to exclude it.
 typedef FileFilter = FutureOr<bool> Function(File);
@@ -106,6 +108,9 @@ abstract class FileCollection {
   /// Notice that if this collection only contains empty directories, then it
   /// is considered empty.
   FutureOr<bool> get isNotEmpty;
+
+  /// Check if the given [FileSystemEntity] is included in this collection.
+  FutureOr<bool> includes(FileSystemEntity entity);
 }
 
 class _SingleFileCollection implements FileCollection {
@@ -125,6 +130,9 @@ class _SingleFileCollection implements FileCollection {
 
   @override
   String toString() => 'FileCollection{file=${file.path}}';
+
+  @override
+  bool includes(FileSystemEntity entity) => filesEqual(file, entity);
 }
 
 class _FileCollection implements FileCollection {
@@ -144,6 +152,10 @@ class _FileCollection implements FileCollection {
   @override
   String toString() =>
       'FileCollection{files=${allFiles.map((f) => f.path).join(', ')}}';
+
+  @override
+  bool includes(FileSystemEntity entity) =>
+      allFiles.any((f) => filesEqual(f, entity));
 }
 
 class _DirectoryCollection implements FileCollection {
@@ -186,6 +198,20 @@ class _DirectoryCollection implements FileCollection {
     for (final entity in entities.whereType<Directory>()) {
       if (await dirFilter(entity)) yield* _visit(entity);
     }
+  }
+
+  @override
+  Future<bool> includes(FileSystemEntity entity) async {
+    if (entity is Directory) {
+      for (final dir in dirs) {
+        if (filesEqual(dir, entity)) return true;
+      }
+    } else {
+      await for (final file in files) {
+        if (filesEqual(file, entity)) return true;
+      }
+    }
+    return false;
   }
 }
 

@@ -7,13 +7,29 @@ import 'package:meta/meta.dart';
 import 'package:path/path.dart' as path;
 
 import '_log.dart';
-import 'error.dart';
 import 'file_collection.dart';
 import 'helpers.dart';
 
 const _dartleDir = '.dartle_tool';
 const _hashesDir = '$_dartleDir/hashes';
 const _snapshotsDir = '$_dartleDir/snapshots';
+
+File getSnapshotLocation(File dartFile) {
+  final locationHash = _locationHash(dartFile);
+  return File(path.join(_snapshotsDir, locationHash));
+}
+
+File _getCacheLocation(FileSystemEntity entity) {
+  final locationHash = _locationHash(entity);
+  return File(path.join(_hashesDir, locationHash));
+}
+
+Future<FileCollection> _mapToCacheLocations(FileCollection collection) async {
+  return FileCollection.of([
+    ...(await collection.directories.toList()).map(_getCacheLocation),
+    ...(await collection.files.toList()).map(_getCacheLocation),
+  ]);
+}
 
 /// The cache used by dartle to figure out when files change between checks,
 /// typically between two builds.
@@ -38,6 +54,28 @@ class DartleCache {
     Directory(_snapshotsDir).createSync();
   }
 
+  /// Clean the Dartle cache.
+  ///
+  /// Exclusions are given as the original files that may be already cached,
+  /// not the actual cache files (whose paths are a implementation detail of
+  /// this cache).
+  Future<void> clean({FileCollection exclusions}) async {
+    final cacheExclusions = await _mapToCacheLocations(exclusions);
+    logger.warn("Ex: ${exclusions}");
+    logger.warn("Mapped to cache: ${cacheExclusions}");
+    logger.debug('Cleaning Dartle cache');
+    await deleteAll(
+        FileCollection.of([Directory(_hashesDir), Directory(_snapshotsDir)],
+            fileFilter: (file) async {
+              final doExclude = await cacheExclusions.includes(file);
+              if (doExclude) logger.debug("Keeping excluded file: ${file}");
+              return !doExclude;
+            },
+            dirFilter: (dir) async => !await cacheExclusions.includes(dir)));
+    init();
+    logger.debug("Dartle cache has been cleaned.");
+  }
+
   /// Cache all files and directories in the given collection.
   Future<void> call(FileCollection collection) async {
     await for (final file in collection.files) {
@@ -49,16 +87,14 @@ class DartleCache {
   }
 
   Future<void> _cacheFile(File file, [File hashFile]) async {
-    final hf = hashFile ??
-        File(path.join(_hashesDir, _hash(file.absolute.path)));
-    logger.debug("Caching file ${file.path}");
+    final hf = hashFile ?? _getCacheLocation(file);
+    logger.debug("Caching file ${file.path} at ${hf.path}");
     await hf.writeAsString(await _hashContents(file));
   }
 
   Future<void> _cacheDir(Directory dir, [File hashFile]) async {
-    final hf = hashFile ??
-        File(path.join(_hashesDir, _hash(dir.absolute.path)));
-    logger.debug("Caching directory: ${dir.path}");
+    final hf = hashFile ?? _getCacheLocation(dir);
+    logger.debug("Caching directory: ${dir.path} at ${hf.path}");
     await hf.writeAsString(await _hashDirectChildren(dir));
   }
 
@@ -85,8 +121,7 @@ class DartleCache {
   }
 
   Future<bool> _hasChanged(File file, {@required bool cache}) async {
-    final locationHash = _hash(file.absolute.path);
-    final hashFile = File(path.join(_hashesDir, locationHash));
+    final hashFile = _getCacheLocation(file);
     var hashExists = await hashFile.exists();
     if (!await file.exists()) {
       if (hashExists && cache) await hashFile.delete();
@@ -123,8 +158,7 @@ class DartleCache {
 
   Future<bool> _hasDirDirectChildrenChanged(Directory dir,
       {@required bool cache}) async {
-    final locationHash = _hash(dir.absolute.path);
-    final hashFile = File(path.join(_hashesDir, locationHash));
+    final hashFile = _getCacheLocation(dir);
     bool changed;
     if (await hashFile.exists()) {
       logger.debug("Checking hash of directory: ${dir.path}");
@@ -146,45 +180,11 @@ class DartleCache {
     }
     return changed;
   }
-
-  Future<File> loadDartSnapshot(File file) async {
-    final locationHash = _hash(file.absolute.path);
-    final hashFile = File(path.join(_hashesDir, locationHash));
-    final snapshotFile = File(path.join(_snapshotsDir, locationHash));
-    if (await hashFile.exists()) {
-      if ((await file.lastModified())
-          .isAfter((await hashFile.lastModified()))) {
-        logger.debug("Detected possibly stale cache for file ${file.path}, "
-            "checking file hash");
-        final hash = await _hashContents(file);
-        final previousHash = await hashFile.readAsString();
-        if (hash == previousHash) {
-          logger.debug("File hash is still the same, using cached snpashot");
-        } else {
-          logger.debug("File hash changed, updating cache");
-          await hashFile.writeAsString(hash);
-          await _snapshot(file, snapshotFile);
-        }
-      } else {
-        // cache is fresh, use it if it exists
-        if (!await snapshotFile.exists()) {
-          logger.debug("Cache is up-to-date but snapshot file does not "
-              "exist for file ${file.path}");
-          await _snapshot(file, snapshotFile);
-        } else {
-          logger.debug("Using cache for ${file.path}");
-        }
-      }
-    } else {
-      logger.debug("Caching file ${file.path}");
-      await _snapshot(file, snapshotFile);
-      await hashFile.writeAsString(await _hashContents(file));
-    }
-    return snapshotFile;
-  }
 }
 
 String _hash(String path) => sha1.convert(utf8.encode(path)).toString();
+
+String _locationHash(FileSystemEntity fe) => _hash(fe.absolute.path);
 
 Future<String> _hashContents(File file) async =>
     sha1.convert(await file.readAsBytes()).toString();
@@ -192,19 +192,4 @@ Future<String> _hashContents(File file) async =>
 Future<String> _hashDirectChildren(Directory dir) async {
   final children = dir.list(recursive: false).map((c) => c.path);
   return await _hash(await children.join(';'));
-}
-
-Future<void> _snapshot(File file, File snapshotFile) async {
-  logger.debug("Snapshotting file ${file.path} as ${snapshotFile.path}");
-  await exec(
-      Process.start('dart', [
-        '--snapshot=${snapshotFile.absolute.path}',
-        file.absolute.path
-      ]), onDone: (code) async {
-    if (code != 0) {
-      logger.error("Could not snapshot file ${file.path}");
-      await ignoreExceptions(snapshotFile.delete);
-      throw DartleException(exitCode: code);
-    }
-  });
 }

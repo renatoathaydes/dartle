@@ -1,3 +1,5 @@
+import 'dart:io';
+
 final _capitalLetterPattern = RegExp(r"[A-Z]");
 
 String decapitalize(String text) {
@@ -52,3 +54,17 @@ String findMatchingByWords(String searchText, List<String> options) {
   }
   return result;
 }
+
+String elapsedTime(Stopwatch stopwatch) {
+  final millis = stopwatch.elapsedMilliseconds;
+  if (millis > 1000) {
+    final secs = (millis * 1e-3).toStringAsPrecision(4);
+    return "${secs} seconds";
+  } else {
+    return "${millis} ms";
+  }
+}
+
+bool filesEqual(FileSystemEntity e1, FileSystemEntity e2) =>
+    e1.runtimeType.toString() == e2.runtimeType.toString() &&
+    e1.path == e2.path;

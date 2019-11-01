@@ -62,7 +62,7 @@ mixin RunCondition {
 
   /// Callback that runs after the task associated with this [RunCondition]
   /// has run, whether successfully or not.
-  FutureOr<void> afterRun(bool wasSuccessful);
+  FutureOr<void> afterRun({@required bool wasSuccessful});
 }
 
 /// A [RunCondition] which is always fullfilled.
@@ -73,7 +73,7 @@ class AlwaysRun with RunCondition {
   const AlwaysRun();
 
   @override
-  void afterRun(bool wasSuccessful) {}
+  void afterRun({@required bool wasSuccessful}) {}
 
   @override
   bool shouldRun() => true;
@@ -117,7 +117,7 @@ class RunOnChanges with RunCondition {
   }
 
   @override
-  FutureOr<void> afterRun(bool wasSuccessful) async {
+  FutureOr<void> afterRun({@required bool wasSuccessful}) async {
     if (wasSuccessful) {
       if (await outputs.isNotEmpty) {
         logger.debug('Verifying task produced expected outputs');
