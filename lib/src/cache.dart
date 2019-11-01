@@ -61,8 +61,6 @@ class DartleCache {
   /// this cache).
   Future<void> clean({FileCollection exclusions}) async {
     final cacheExclusions = await _mapToCacheLocations(exclusions);
-    logger.warn("Ex: ${exclusions}");
-    logger.warn("Mapped to cache: ${cacheExclusions}");
     logger.debug('Cleaning Dartle cache');
     await deleteAll(
         FileCollection.of([Directory(_hashesDir), Directory(_snapshotsDir)],
@@ -161,11 +159,9 @@ class DartleCache {
     final hashFile = _getCacheLocation(dir);
     bool changed;
     if (await hashFile.exists()) {
-      logger.debug("Checking hash of directory: ${dir.path}");
       final hash = await _hashDirectChildren(dir);
       final previousHash = await hashFile.readAsString();
       if (hash == previousHash) {
-        logger.debug("Directory hash is still the same: ${dir.path}");
         changed = false;
       } else {
         logger.debug("Directoy hash has changed: ${dir.path}");

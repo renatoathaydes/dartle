@@ -2,11 +2,11 @@ import 'package:meta/meta.dart';
 
 import '_log.dart';
 import '_options.dart';
-import 'task_run.dart';
 import '_utils.dart';
 import 'error.dart';
 import 'helpers.dart';
 import 'task.dart';
+import 'task_run.dart';
 
 /// Initializes the dartle library's configuration without executing any
 /// tasks.
@@ -56,17 +56,17 @@ Future<List<Task>> _getExecutableTasks(
     for (final taskNameSpec in requestedTasks) {
       final task = _findTaskByName(taskMap, taskNameSpec);
       if (task == null) {
-        return failBuild(reason: "Unknown task or option: ${taskNameSpec}")
+        return failBuild(reason: "Unknown task or option: '${taskNameSpec}'")
             as List<Task>;
       }
       if (await task.runCondition.shouldRun()) {
         result.add(task);
       } else if (forceTasksOption) {
-        logger.debug("Will force execution of task: ${task.name} even though "
+        logger.debug("Will force execution of task '${task.name}' even though "
             "it is up-to-date");
         result.add(task);
       } else {
-        logger.debug("Skipping task: ${task.name} as it is up-to-date");
+        logger.debug("Skipping task '${task.name}' as it is up-to-date");
       }
     }
     return result;

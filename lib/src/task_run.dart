@@ -19,7 +19,7 @@ Future<void> runTasks(List<Task> tasks) async {
 /// Any errors running the task cause the [failBuild] function to be called
 /// with the appropriate error, exiting the build.
 Future<void> runTask(Task task) async {
-  logger.info("Running task: ${task.name}");
+  logger.info("Running task '${task.name}'");
   final stopwatch = Stopwatch()..start();
   try {
     await task.action();
@@ -35,10 +35,10 @@ Future<void> runTask(Task task) async {
         reason = e.message;
       }
       if (reason.isEmpty) reason = e.toString();
-      failBuild(reason: "Task ${task.name} failed due to: $reason");
+      failBuild(reason: "Task '${task.name}' failed due to: $reason");
     }
   } finally {
-    logger.debug("Task ${task.name} completed in ${elapsedTime(stopwatch)}");
+    logger.debug("Task '${task.name}' completed in ${elapsedTime(stopwatch)}");
   }
 }
 
@@ -46,6 +46,6 @@ Future _runTaskSuccessfulAfterRun(Task task) async {
   try {
     await task.runCondition.afterRun(wasSuccessful: true);
   } on Exception catch (e) {
-    failBuild(reason: "Task ${task.name} failed due to: $e");
+    failBuild(reason: "Task '${task.name}' failed due to: $e");
   }
 }

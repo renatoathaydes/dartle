@@ -1,7 +1,9 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
+
 import 'package:meta/meta.dart';
+
 import '_log.dart';
 import 'file_collection.dart';
 import 'std_stream_consumer.dart';
@@ -37,13 +39,14 @@ ignoreExceptions(FutureOr Function() action) async {
 /// to the callback.
 ///
 /// By default, [onDone] fails the build if the exit code is not 0.
-Future<T> exec<T>(Future<Process> process, {
+Future<T> exec<T>(
+  Future<Process> process, {
   StdStreamConsumer stdoutConsumer,
   StdStreamConsumer stderrConsumer,
   FutureOr<T> Function(int exitCode) onDone,
 }) async {
   final proc = await process;
-  logger.debug("Started process: ${proc.pid}");
+  logger.debug("Started process ${proc.pid}");
   final stdoutCons = stdoutConsumer ??
       StdStreamConsumer(printToStdout: logger.isLevelEnabled(LogLevel.debug));
   final stderrCons = stderrConsumer ?? StdStreamConsumer(keepLines: true);
@@ -51,9 +54,9 @@ Future<T> exec<T>(Future<Process> process, {
     if (code != 0) {
       final errOut = stderrCons.lines;
       errOut.forEach(logger.warn);
-      await onDone(code);
+      if (onDone != null) await onDone(code);
       failBuild(
-          reason: 'Process exited with code $code: ${proc.pid}',
+          reason: "Process ${proc.pid} exited with code $code",
           exitCode: code);
     }
     return null;
@@ -70,7 +73,7 @@ Future<T> exec<T>(Future<Process> process, {
 
   final code = await proc.exitCode;
 
-  logger.debug("Process ${proc.pid} exited with code: $code");
+  logger.debug("Process ${proc.pid} exited with code $code");
 
   return onDoneAction(code);
 }
