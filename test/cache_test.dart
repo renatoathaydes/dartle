@@ -130,8 +130,25 @@ void main([List<String> args = const []]) {
         await cache(dirCollection);
         await Future.delayed(const Duration(milliseconds: 1));
 
+        await Directory("${dir.path}/sub-dir").create();
+
+        interactions['hasChangedAfterCreatingSubDir'] =
+            await cache.hasChanged(dirCollection);
+
+        await cache(dirCollection);
+        await Future.delayed(const Duration(milliseconds: 1));
+
+        await Directory("${dir.path}/sub-dir").delete();
+        await File("${dir.path}/sub-dir").writeAsString('not dir now');
+
+        interactions['hasChangedAfterSubDirTurnedIntoFile'] =
+            await cache.hasChanged(dirCollection);
+
+        await cache(dirCollection);
+        await Future.delayed(const Duration(milliseconds: 1));
+
         await Directory("another-dir").create();
-        await File("another-dir/some-file").writeAsString("let's go");
+        await File("another-dir/something").writeAsString("let's go");
 
         interactions['hasChangedAfterCreatingOtherDirAndFile'] =
             await cache.hasChanged(dirCollection);
@@ -142,7 +159,7 @@ void main([List<String> args = const []]) {
       expect(fs.directory('.dartle_tool/hashes').existsSync(), isTrue);
 
       // there should be one hash for each directory and file cached in the test
-      expect(fs.directory('.dartle_tool/hashes').listSync().length, equals(3));
+      expect(fs.directory('.dartle_tool/hashes').listSync().length, equals(4));
 
       // verify interactions
       expect(
@@ -151,6 +168,8 @@ void main([List<String> args = const []]) {
             'hasChangedAfterCaching': false,
             'hasChangedAfterAddingFiles': true,
             'hasChangedAfterDeletingFile': true,
+            'hasChangedAfterCreatingSubDir': true,
+            'hasChangedAfterSubDirTurnedIntoFile': true,
             'hasChangedAfterCreatingOtherDirAndFile': false,
           }));
     });

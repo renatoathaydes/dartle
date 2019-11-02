@@ -203,6 +203,7 @@ Future<String> _hashContents(File file) async =>
     sha1.convert(await file.readAsBytes()).toString();
 
 Future<String> _hashDirectChildren(Directory dir) async {
-  final children = dir.list(recursive: false).map((c) => c.path);
-  return await _hash(await children.join(';'));
+  final children = await dir.list(recursive: false).map((c) => c.path).toList();
+  children.sort();
+  return await _hash(children.join(';'));
 }
