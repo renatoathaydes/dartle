@@ -95,7 +95,7 @@ Future<void> expectEmpty(Stream stream) async {
 }
 
 Future expectFiles(FileCollection actual,
-    {List<String> files = const [], List<String> dirs= const []}) async {
+    {List<String> files = const [], List<String> dirs = const []}) async {
   var index = 0;
   if (files.isNotEmpty) {
     final iter = files.iterator;

@@ -18,18 +18,15 @@ bool _noDirFilter(Directory f) => true;
 /// A collection of [File] and [Directory] which can be used to declare a set
 /// of inputs or outputs for a [Task].
 abstract class FileCollection {
-  static final FileCollection _empty_collection =
-      FileCollection.files(const []);
-
   /// Get the empty [FileCollection].
-  factory FileCollection.empty() => _empty_collection;
+  static const FileCollection empty = _FileCollection([]);
 
   /// Create a [FileCollection] consisting of a single file.
   factory FileCollection.file(String file) => _SingleFileCollection(File(file));
 
   /// Create a [FileCollection] consisting of multiple files.
   factory FileCollection.files(Iterable<String> files) =>
-      _FileCollection(files.map((f) => File(f)));
+      _FileCollection(_sort(files.map((f) => File(f))));
 
   /// Create a [FileCollection] consisting of a directory, possibly filtering
   /// sub-directories and specific files.
@@ -80,7 +77,7 @@ abstract class FileCollection {
     final dirs = fsEntities.whereType<Directory>();
     final files = fsEntities.whereType<File>();
     if (dirs.isEmpty) {
-      return _FileCollection(files);
+      return _FileCollection(_sort(files));
     } else {
       return _DirectoryCollection(dirs, files, fileFilter, dirFilter);
     }
@@ -116,7 +113,7 @@ abstract class FileCollection {
 class _SingleFileCollection implements FileCollection {
   final File file;
 
-  _SingleFileCollection(this.file);
+  const _SingleFileCollection(this.file);
 
   @override
   Stream<File> get files => Stream.fromIterable([file]);
@@ -136,9 +133,9 @@ class _SingleFileCollection implements FileCollection {
 }
 
 class _FileCollection implements FileCollection {
-  List<File> allFiles;
+  final List<File> allFiles;
 
-  _FileCollection(Iterable<File> files) : this.allFiles = _sort(files);
+  const _FileCollection(List<File> files) : this.allFiles = files;
 
   Stream<File> get files => Stream.fromIterable(allFiles);
 

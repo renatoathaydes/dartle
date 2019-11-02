@@ -9,13 +9,11 @@ final libDir =
 final testTask = Task(test,
     description: 'Runs all tests',
     runCondition: RunOnChanges(
-        inputs: FileCollection.dirs(['lib', 'bin', 'test', 'example']),
-        outputs: FileCollection.empty()));
+        inputs: FileCollection.dirs(['lib', 'bin', 'test', 'example'])));
 
 final checkImportsTask = Task(checkImports,
     description: 'Checks dart file imports are allowed',
-    runCondition:
-        RunOnChanges(inputs: libDir, outputs: FileCollection.empty()));
+    runCondition: RunOnChanges(inputs: libDir));
 
 void main(List<String> args) =>
     run(args, tasks: [testTask, checkImportsTask], defaultTasks: [testTask]);

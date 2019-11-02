@@ -94,9 +94,13 @@ class RunOnChanges with RunCondition {
   /// whether to verify that all declared outputs exist after the task has run.
   final bool verifyOutputsExist;
 
+  /// Creates an instance of [RunOnChanges].
+  ///
+  /// At least one of [inputs] and [outputs] must be non-empty. For cases where
+  /// a task has no inputs or outputs, use [AlwaysRun] instead.
   RunOnChanges(
-      {@required this.inputs,
-      @required this.outputs,
+      {this.inputs = FileCollection.empty,
+      this.outputs = FileCollection.empty,
       this.verifyOutputsExist = true,
       DartleCache cache})
       : this.cache = cache ?? DartleCache.instance;

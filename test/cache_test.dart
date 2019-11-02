@@ -29,7 +29,7 @@ void main([List<String> args = const []]) {
     });
 
     test('reports empty FileCollection as not having changed', () async {
-      expect(await cache.hasChanged(FileCollection.empty()), isFalse);
+      expect(await cache.hasChanged(FileCollection.empty), isFalse);
     });
 
     test('caches files and detects changes', () async {

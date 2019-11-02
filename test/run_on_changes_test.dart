@@ -6,8 +6,8 @@ import 'package:test/test.dart';
 void main() {
   group('RunOnChanges', () {
     test('never runs if inputs/outputs are empty', () async {
-      final ins = FileCollection.empty();
-      final outs = FileCollection.empty();
+      final ins = FileCollection.empty;
+      final outs = FileCollection.empty;
       final runOnChanges = RunOnChanges(inputs: ins, outputs: outs);
       expect(await runOnChanges.shouldRun(), isFalse);
     });
@@ -15,7 +15,7 @@ void main() {
     test('runs if any inputs change', () async {
       final cache = _TestCache();
       final ins = FileCollection.file('a');
-      final outs = FileCollection.empty();
+      final outs = FileCollection.empty;
       when(cache.hasChanged(ins)).thenAnswer((_) => Future.value(true));
       when(cache.hasChanged(outs)).thenAnswer((_) => Future.value(false));
 
@@ -27,7 +27,7 @@ void main() {
 
     test('runs if any outpus change', () async {
       final cache = _TestCache();
-      final ins = FileCollection.empty();
+      final ins = FileCollection.empty;
       final outs = FileCollection.files(['a', 'b', 'c']);
       when(cache.hasChanged(ins)).thenAnswer((_) => Future.value(false));
       when(cache.hasChanged(outs)).thenAnswer((_) => Future.value(true));
