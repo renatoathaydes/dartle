@@ -22,18 +22,18 @@ void main() {
       ]);
     });
     test('can be created for a single file', () async {
-      final files = FileCollection.file('dartle.dart');
+      final files = file('dartle.dart');
       await expectFiles(files, files: ['dartle.dart']);
       await expectEmpty(files.directories);
     });
     test('can be created for multiple files', () async {
-      final files = FileCollection.files(const ['a', 'b', 'c', 'd', 'e']);
-      await expectFiles(files, files: const ['a', 'b', 'c', 'd', 'e']);
-      await expectEmpty(files.directories);
+      final allFiles = files(const ['a', 'b', 'c', 'd', 'e']);
+      await expectFiles(allFiles, files: const ['a', 'b', 'c', 'd', 'e']);
+      await expectEmpty(allFiles.directories);
     });
     test('can be created for multiple file entities', () async {
-      final files = FileCollection.of(
-          [fs.file('dartle/some.txt'), fs.file('dartle.dart')]);
+      final files =
+          FileCollection([fs.file('dartle/some.txt'), fs.file('dartle.dart')]);
       await expectFiles(files, files: const ['dartle.dart', 'dartle/some.txt']);
       await expectEmpty(files.directories);
     });
@@ -41,21 +41,21 @@ void main() {
     // FileCollections containing directories require them to exist
     test('can be created for a single directory', () async {
       await withFileSystem(fs, () async {
-        final files = FileCollection.dir('a');
+        final files = dir('a');
         await expectFiles(files, dirs: ['a']);
         await expectEmpty(files.files);
       });
     });
     test('can be created for multiple directories', () async {
       await withFileSystem(fs, () async {
-        final files = FileCollection.dirs(const ['a', 'b', 'c', 'd']);
+        final files = dirs(const ['a', 'b', 'c', 'd']);
         await expectFiles(files,
             files: const ['b/b.txt'], dirs: const ['a', 'b', 'c', 'd']);
       });
     });
     test('can be created for multiple directories with filters', () async {
       await withFileSystem(fs, () async {
-        final files = FileCollection.dirs(const ['dartle', 'b', 'c', 'A'],
+        final files = dirs(const ['dartle', 'b', 'c', 'A'],
             fileFilter: (file) => file.path != 'b/b.txt',
             dirFilter: (dir) => dir.path.contains('A/B'));
         await expectFiles(files, files: [
@@ -73,7 +73,7 @@ void main() {
     });
     test('can be created for multiple entities with filters', () async {
       await withFileSystem(fs, () async {
-        final files = FileCollection.of([
+        final files = FileCollection([
           fs.directory('dartle'),
           fs.directory('b'),
           fs.directory('c'),

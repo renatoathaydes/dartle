@@ -13,8 +13,8 @@ void main(List<String> args) async {
     final snapshotFile = await getSnapshotLocation(buildFile);
 
     final runSnapshotCondition = RunOnChanges(
-      inputs: FileCollection.files(buildSetupFiles),
-      outputs: FileCollection.file(snapshotFile.path),
+      inputs: files(buildSetupFiles),
+      outputs: file(snapshotFile.path),
     );
 
     final runSnapshotTask = Task(() => createDartSnapshot(buildFile),

@@ -3,13 +3,12 @@ import 'dart:io';
 import 'package:dartle/dartle.dart';
 import 'package:path/path.dart' show extension;
 
-final libDir =
-    FileCollection.dir('lib', fileFilter: (f) => extension(f.path) == '.dart');
+final libDir = dir('lib', fileFilter: (f) => extension(f.path) == '.dart');
 
 final testTask = Task(test,
     description: 'Runs all tests',
-    runCondition: RunOnChanges(
-        inputs: FileCollection.dirs(['lib', 'bin', 'test', 'example'])));
+    runCondition:
+        RunOnChanges(inputs: dirs(const ['lib', 'bin', 'test', 'example'])));
 
 final checkImportsTask = Task(checkImports,
     description: 'Checks dart file imports are allowed',
@@ -19,7 +18,7 @@ void main(List<String> args) =>
     run(args, tasks: [testTask, checkImportsTask], defaultTasks: [testTask]);
 
 test() async {
-  await exec(Process.start('pub', ['run', 'test', '-p', 'vm']));
+  await exec(Process.start('pub', const ['run', 'test', '-p', 'vm']));
 }
 
 checkImports() async {

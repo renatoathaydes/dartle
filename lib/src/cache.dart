@@ -24,7 +24,7 @@ File _getCacheLocation(FileSystemEntity entity) {
 }
 
 Future<FileCollection> _mapToCacheLocations(FileCollection collection) async {
-  return FileCollection.of([
+  return FileCollection([
     ...(await collection.directories.toList()).map(_getCacheLocation),
     ...(await collection.files.toList()).map(_getCacheLocation),
   ]);
@@ -62,7 +62,7 @@ class DartleCache {
     final cacheExclusions = await _mapToCacheLocations(exclusions);
     logger.debug('Cleaning Dartle cache');
     await deleteAll(
-        FileCollection.of([Directory(_hashesDir), Directory(_snapshotsDir)],
+        FileCollection([Directory(_hashesDir), Directory(_snapshotsDir)],
             fileFilter: (file) async {
               final doExclude = await cacheExclusions.includes(file);
               if (doExclude) logger.debug("Keeping excluded file: ${file}");

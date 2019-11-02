@@ -15,50 +15,50 @@ bool _noFileFilter(File f) => true;
 
 bool _noDirFilter(Directory f) => true;
 
+/// Create a [FileCollection] consisting of a single file.
+FileCollection file(String path) => _SingleFileCollection(File(path));
+
+/// Create a [FileCollection] consisting of multiple files.
+FileCollection files(Iterable<String> paths) =>
+    _FileCollection(_sort(paths.map((f) => File(f))));
+
+/// Create a [FileCollection] consisting of a directory, possibly filtering
+/// sub-directories and specific files.
+///
+/// The provided [DirectoryFilter] can only be used to filter sub-directories
+/// of the given directory.
+///
+/// The contents of directories are included recursively. To not include any
+/// sub-directories, simply provide a [DirectoryFilter] that always returns
+/// false for all sub-directories.
+FileCollection dir(String directory,
+        {FileFilter fileFilter = _noFileFilter,
+        DirectoryFilter dirFilter = _noDirFilter}) =>
+    _DirectoryCollection(
+        [Directory(directory)], const [], fileFilter, dirFilter);
+
+/// Create a [FileCollection] consisting of multiple directories, possibly
+/// filtering sub-directories and specific files.
+///
+/// The provided [DirectoryFilter] can only be used to filter sub-directories
+/// of the given directories.
+///
+/// The contents of directories are included recursively. To not include any
+/// sub-directories, simply provide a [DirectoryFilter] that always returns
+/// false for all sub-directories.
+///
+/// The provided directories should not interleave.
+FileCollection dirs(Iterable<String> directories,
+        {FileFilter fileFilter = _noFileFilter,
+        DirectoryFilter dirFilter = _noDirFilter}) =>
+    _DirectoryCollection(
+        directories.map((d) => Directory(d)), const [], fileFilter, dirFilter);
+
 /// A collection of [File] and [Directory] which can be used to declare a set
 /// of inputs or outputs for a [Task].
 abstract class FileCollection {
   /// Get the empty [FileCollection].
   static const FileCollection empty = _FileCollection([]);
-
-  /// Create a [FileCollection] consisting of a single file.
-  factory FileCollection.file(String file) => _SingleFileCollection(File(file));
-
-  /// Create a [FileCollection] consisting of multiple files.
-  factory FileCollection.files(Iterable<String> files) =>
-      _FileCollection(_sort(files.map((f) => File(f))));
-
-  /// Create a [FileCollection] consisting of a directory, possibly filtering
-  /// sub-directories and specific files.
-  ///
-  /// The provided [DirectoryFilter] can only be used to filter sub-directories
-  /// of the given directory.
-  ///
-  /// The contents of directories are included recursively. To not include any
-  /// sub-directories, simply provide a [DirectoryFilter] that always returns
-  /// false for all sub-directories.
-  factory FileCollection.dir(String directory,
-          {FileFilter fileFilter = _noFileFilter,
-          DirectoryFilter dirFilter = _noDirFilter}) =>
-      _DirectoryCollection(
-          [Directory(directory)], const [], fileFilter, dirFilter);
-
-  /// Create a [FileCollection] consisting of multiple directories, possibly
-  /// filtering sub-directories and specific files.
-  ///
-  /// The provided [DirectoryFilter] can only be used to filter sub-directories
-  /// of the given directories.
-  ///
-  /// The contents of directories are included recursively. To not include any
-  /// sub-directories, simply provide a [DirectoryFilter] that always returns
-  /// false for all sub-directories.
-  ///
-  /// The provided directories should not interleave.
-  factory FileCollection.dirs(Iterable<String> directories,
-          {FileFilter fileFilter = _noFileFilter,
-          DirectoryFilter dirFilter = _noDirFilter}) =>
-      _DirectoryCollection(directories.map((d) => Directory(d)), const [],
-          fileFilter, dirFilter);
 
   /// Create a [FileCollection] consisting of multiple files and directories,
   /// possibly filtering sub-directories and specific files.
@@ -71,7 +71,7 @@ abstract class FileCollection {
   /// false for all sub-directories.
   ///
   /// The provided directories should not interleave.
-  factory FileCollection.of(Iterable<FileSystemEntity> fsEntities,
+  factory FileCollection(Iterable<FileSystemEntity> fsEntities,
       {FileFilter fileFilter = _noFileFilter,
       DirectoryFilter dirFilter = _noDirFilter}) {
     final dirs = fsEntities.whereType<Directory>();
