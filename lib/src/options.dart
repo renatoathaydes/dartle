@@ -73,7 +73,7 @@ Options parseOptions(List<String> args) {
   } on FormatException catch (e) {
     throw DartleException(
         message: '${e.message}\nUsage:\n${_parser.usage}',
-        exitCode: 4) as List<String>;
+        exitCode: 4);
   }
 
   if (parseResult.wasParsed('help')) {
