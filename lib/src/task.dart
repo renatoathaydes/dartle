@@ -6,6 +6,7 @@ import '_log.dart';
 import 'cache.dart';
 import 'error.dart';
 import 'file_collection.dart';
+import 'task_run.dart';
 
 final _functionNamePatttern = RegExp('[a-zA-Z_0-9]+');
 
@@ -53,16 +54,16 @@ class Task {
 
 /// A run condition for a [Task].
 ///
-/// A [Task] will not run if its [RunCondition] does not allow it.
+/// A [Task] should not run if its [RunCondition] does not allow it.
 mixin RunCondition {
   /// Check if this task should run.
   ///
   /// Returns true if it should, false otherwise.
   FutureOr<bool> shouldRun();
 
-  /// Callback that runs after the task associated with this [RunCondition]
+  /// Action to run after a task associated with this [RunCondition]
   /// has run, whether successfully or not.
-  FutureOr<void> afterRun({@required bool wasSuccessful});
+  FutureOr<void> postRun(TaskResult result);
 }
 
 /// A [RunCondition] which is always fullfilled.
@@ -73,7 +74,7 @@ class AlwaysRun with RunCondition {
   const AlwaysRun();
 
   @override
-  void afterRun({@required bool wasSuccessful}) {}
+  FutureOr<void> postRun(TaskResult result) {}
 
   @override
   bool shouldRun() => true;
@@ -102,10 +103,8 @@ class RunOnChanges with RunCondition {
 
   @override
   FutureOr<bool> shouldRun() async {
-    final inputsChanged = await cache.hasChanged(inputs, cache: true);
-
-    // don't cache outputs, they will be cached after the task executes
-    final outputsChanged = await cache.hasChanged(outputs, cache: false);
+    final inputsChanged = await cache.hasChanged(inputs);
+    final outputsChanged = await cache.hasChanged(outputs);
 
     if (inputsChanged) {
       logger.debug('Changes detected on task inputs: ${inputs}');
@@ -117,13 +116,36 @@ class RunOnChanges with RunCondition {
   }
 
   @override
-  FutureOr<void> afterRun({@required bool wasSuccessful}) async {
-    if (wasSuccessful) {
-      if (await outputs.isNotEmpty) {
+  Future<void> postRun(TaskResult result) async {
+    var success = result.isSuccess;
+    DartleException error;
+
+    if (success) {
+      if (await outputs.isNotEmpty && verifyOutputsExist) {
         logger.debug('Verifying task produced expected outputs');
-        if (verifyOutputsExist) await _verifyOutputs();
-        await cache(outputs);
+        try {
+          await _verifyOutputs();
+        } on DartleException catch (e) {
+          success = false;
+          error = e;
+        }
       }
+    }
+
+    if (success) {
+      await cache(inputs);
+      await cache(outputs);
+    } else {
+      if (await outputs.isEmpty) {
+        // the task failed without any outputs, so for it to run again next
+        // time we need to remove its inputs
+        await cache.remove(inputs);
+      } else {
+        // just forget the outputs of the failed task as they
+        // may not be correct anymore
+        await cache.remove(outputs);
+      }
+      if (error != null) throw error;
     }
   }
 

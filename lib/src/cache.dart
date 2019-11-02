@@ -3,7 +3,6 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:crypto/crypto.dart';
-import 'package:meta/meta.dart';
 import 'package:path/path.dart' as path;
 
 import '_log.dart';
@@ -128,32 +127,26 @@ class DartleCache {
   }
 
   /// Check if any member of a [FileCollection] has been modified since the
-  /// last time a Dartle build was run, caching the hashes of the files if
-  /// [cache] is true.
+  /// last time a Dartle build was run.
   ///
   /// Returns false if the [FileCollection] is empty.
-  Future<bool> hasChanged(FileCollection fileCollection,
-      {@required bool cache}) async {
+  Future<bool> hasChanged(FileCollection fileCollection) async {
     if (await fileCollection.isEmpty) return false;
-    var anyChanges = false;
     await for (final file in fileCollection.files) {
-      anyChanges |= await _hasChanged(file, cache: cache);
-      // only return early if cache == false
-      if (!cache && anyChanges) return true;
+      final anyChanges = await _hasChanged(file);
+      if (anyChanges) return true;
     }
     await for (final dir in fileCollection.directories) {
-      anyChanges |= await _hasDirDirectChildrenChanged(dir, cache: cache);
-      // only return early if cache == false
-      if (!cache && anyChanges) return true;
+      final anyChanges = await _hasDirDirectChildrenChanged(dir);
+      if (anyChanges) return true;
     }
-    return anyChanges;
+    return false;
   }
 
-  Future<bool> _hasChanged(File file, {@required bool cache}) async {
+  Future<bool> _hasChanged(File file) async {
     final hashFile = _getCacheLocation(file);
     var hashExists = await hashFile.exists();
     if (!await file.exists()) {
-      if (hashExists && cache) await hashFile.delete();
       return hashExists;
     }
     bool changed;
@@ -179,14 +172,10 @@ class DartleCache {
       logger.debug("Hash does not exist for file: ${file.path}");
       changed = true;
     }
-    if (changed && cache) {
-      await _cacheFile(file, hashFile);
-    }
     return changed;
   }
 
-  Future<bool> _hasDirDirectChildrenChanged(Directory dir,
-      {@required bool cache}) async {
+  Future<bool> _hasDirDirectChildrenChanged(Directory dir) async {
     final hashFile = _getCacheLocation(dir);
     bool changed;
     if (await hashFile.exists()) {
@@ -201,9 +190,6 @@ class DartleCache {
     } else {
       logger.debug("Hash does not exist for directory: ${dir.path}");
       changed = true;
-    }
-    if (changed && cache) {
-      await _cacheDir(dir, hashFile);
     }
     return changed;
   }

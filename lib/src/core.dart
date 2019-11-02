@@ -33,7 +33,7 @@ Future<void> run(List<String> args,
     final executableTasks = await _getExecutableTasks(tasks, taskNames);
     logger.info("Executing ${executableTasks.length} task(s) out of "
         "${taskNames.length} selected task(s)");
-    await runTasks(executableTasks);
+    await _runAll(executableTasks);
   } on DartleException catch (e) {
     failBuild(reason: e.message, exitCode: e.exitCode);
   } on Exception catch (e) {
@@ -41,6 +41,21 @@ Future<void> run(List<String> args,
   } finally {
     stopWatch.stop();
     logger.info("Build succeeded in ${elapsedTime(stopWatch)}");
+  }
+}
+
+Future<void> _runAll(List<Task> executableTasks) async {
+  final results = await runTasks(executableTasks);
+  final failures = results.where((r) => r.isFailure).toList(growable: false);
+  final postRunFailures = await runTasksPostRun(results);
+
+  final allErrors = <Exception>[];
+
+  allErrors.addAll(failures.map((f) => f.error));
+  allErrors.addAll(postRunFailures);
+
+  if (allErrors.isNotEmpty) {
+    _throwAggregateErrors(allErrors);
   }
 }
 
@@ -78,4 +93,28 @@ Task _findTaskByName(Map<String, Task> taskMap, String nameSpec) {
       findMatchingByWords(nameSpec, taskMap.keys.toList(growable: false));
   if (name == null) return null;
   return taskMap[name];
+}
+
+void _throwAggregateErrors(List<Exception> errors) {
+  if (errors.isEmpty) return;
+  if (errors.length == 1) throw errors[0];
+
+  int exitCode = 1;
+  for (final dartleException in errors.whereType<DartleException>()) {
+    exitCode = dartleException.exitCode;
+    break;
+  }
+  final messageBuilder = StringBuffer('Several errors have occurred:\n');
+  for (final error in errors) {
+    String errorMessage;
+    if (error is DartleException) {
+      errorMessage = error.message;
+    } else {
+      errorMessage = error.toString();
+    }
+    messageBuilder
+      ..write('  * ')
+      ..writeln(errorMessage);
+  }
+  throw DartleException(message: messageBuilder.toString(), exitCode: exitCode);
 }

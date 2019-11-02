@@ -5,6 +5,7 @@ import 'dart:io';
 import 'package:meta/meta.dart';
 
 import '_log.dart';
+import 'error.dart';
 import 'file_collection.dart';
 import 'std_stream_consumer.dart';
 import 'task.dart';
@@ -55,8 +56,8 @@ Future<T> exec<T>(
       final errOut = stderrCons.lines;
       errOut.forEach(logger.warn);
       if (onDone != null) await onDone(code);
-      failBuild(
-          reason: "Process ${proc.pid} exited with code $code",
+      throw DartleException(
+          message: "Process ${proc.pid} exited with code $code",
           exitCode: code);
     }
     return null;

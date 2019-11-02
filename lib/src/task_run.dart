@@ -1,51 +1,88 @@
 import '_log.dart';
 import '_utils.dart';
-import 'error.dart';
-import 'helpers.dart';
 import 'task.dart';
 
+/// Result of executing a [Task].
+class TaskResult {
+  final Task task;
+  final Exception error;
+
+  TaskResult(this.task, [this.error]);
+
+  bool get isSuccess => error == null;
+
+  bool get isFailure => !isSuccess;
+}
+
 /// Calls [runTask] with each given task, in turn.
-Future<void> runTasks(List<Task> tasks) async {
+///
+/// Returns the result of each executed task. If a task fails, execution
+/// stops and only the results thus far accumulated are returned.
+///
+/// This method does not throw any Exception, failures are returned
+/// as [TaskResult] instances with errors.
+Future<List<TaskResult>> runTasks(List<Task> tasks) async {
+  final results = <TaskResult>[];
   for (final task in tasks) {
-    await runTask(task);
+    var result = await runTask(task);
+    results.add(result);
+    if (result.isFailure) {
+      logger.debug("Aborting task execution due to failure");
+      break;
+    }
   }
+  return results;
 }
 
 /// Run a task unconditionally.
 ///
-/// The task's [Task.runCondition] is is not checked before running the task,
-/// but its [RunCondition.afterRun] method is called with the correct result.
-///
-/// Any errors running the task cause the [failBuild] function to be called
-/// with the appropriate error, exiting the build.
-Future<void> runTask(Task task) async {
+/// The task's [Task.runCondition] is not checked or used by this method.
+Future<TaskResult> runTask(Task task) async {
   logger.info("Running task '${task.name}'");
   final stopwatch = Stopwatch()..start();
+  TaskResult result;
   try {
     await task.action();
-    stopwatch.stop(); // do not include runCondition in the reported time
-    await _runTaskSuccessfulAfterRun(task);
+    stopwatch.stop();
+    result = TaskResult(task);
   } on Exception catch (e) {
     stopwatch.stop();
-    try {
-      await task.runCondition.afterRun(wasSuccessful: false);
-    } finally {
-      String reason = '';
-      if (e is DartleException) {
-        reason = e.message;
-      }
-      if (reason.isEmpty) reason = e.toString();
-      failBuild(reason: "Task '${task.name}' failed due to: $reason");
-    }
+    result = TaskResult(task, e);
   } finally {
-    logger.debug("Task '${task.name}' completed in ${elapsedTime(stopwatch)}");
+    logger.debug("Task '${task.name}' completed "
+        "${result.isSuccess ? 'successfully' : 'with errors'}"
+        " in ${elapsedTime(stopwatch)}");
   }
+  return result;
 }
 
-Future _runTaskSuccessfulAfterRun(Task task) async {
+Future<List<Exception>> runTasksPostRun(List<TaskResult> results) async {
+  final errors = <Exception>[];
+  for (final result in results) {
+    try {
+      await runTaskPostRun(result);
+    } on Exception catch (e) {
+      errors.add(e);
+    }
+  }
+  return errors;
+}
+
+Future<void> runTaskPostRun(TaskResult taskResult) async {
+  final task = taskResult.task;
+  bool isError = false;
+  logger.debug("Running post-run action for task '${task.name}'");
+  final stopwatch = Stopwatch()..start();
   try {
-    await task.runCondition.afterRun(wasSuccessful: true);
-  } on Exception catch (e) {
-    failBuild(reason: "Task '${task.name}' failed due to: $e");
+    await task.runCondition.postRun(taskResult);
+    stopwatch.stop();
+  } on Exception {
+    stopwatch.stop();
+    isError = true;
+    rethrow;
+  } finally {
+    logger.debug("Post-run action of task '${task.name}' completed "
+        "${!isError ? 'successfully' : 'with errors'}"
+        " in ${elapsedTime(stopwatch)}");
   }
 }

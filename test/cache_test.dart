@@ -29,8 +29,7 @@ void main([List<String> args = const []]) {
     });
 
     test('reports empty FileCollection as not having changed', () async {
-      expect(await cache.hasChanged(FileCollection.empty(), cache: false),
-          isFalse);
+      expect(await cache.hasChanged(FileCollection.empty()), isFalse);
     });
 
     test('caches files and detects changes', () async {
@@ -43,19 +42,20 @@ void main([List<String> args = const []]) {
         await Future.delayed(const Duration(milliseconds: 1));
 
         interactions['hasChangedAfterCaching'] =
-            await cache.hasChanged(dartleFileCollection, cache: false);
+            await cache.hasChanged(dartleFileCollection);
 
         final someContent = 'different contents';
 
         await dartleFile.writeAsString(someContent);
         interactions['hasChangedAfterActualChange'] =
-            await cache.hasChanged(dartleFileCollection, cache: true);
+            await cache.hasChanged(dartleFileCollection);
 
+        await cache(dartleFileCollection);
         await Future.delayed(const Duration(milliseconds: 1));
         await dartleFile.writeAsString(someContent);
         await Future.delayed(const Duration(milliseconds: 1));
         interactions['hasChangedAfterRedundantChange'] =
-            await cache.hasChanged(dartleFileCollection, cache: false);
+            await cache.hasChanged(dartleFileCollection);
       });
 
       // check that the expected cache files have been created
@@ -78,7 +78,7 @@ void main([List<String> args = const []]) {
       final isChanged = await withFileSystem(fs, () async {
         final nonExistingFile = File('whatever');
         final fileCollection = FileCollection.of([nonExistingFile]);
-        return await cache.hasChanged(fileCollection, cache: false);
+        return await cache.hasChanged(fileCollection);
       });
       expect(isChanged, isFalse);
     });
@@ -92,7 +92,7 @@ void main([List<String> args = const []]) {
         await cache(fileCollection);
         await file.delete();
         await Future.delayed(const Duration(milliseconds: 1));
-        return await cache.hasChanged(fileCollection, cache: false);
+        return await cache.hasChanged(fileCollection);
       });
       expect(isChanged, isTrue);
     });
@@ -108,24 +108,33 @@ void main([List<String> args = const []]) {
         await Future.delayed(const Duration(milliseconds: 1));
 
         interactions['hasChangedAfterCaching'] =
-            await cache.hasChanged(dirCollection, cache: false);
+            await cache.hasChanged(dirCollection);
+
+        await cache(dirCollection);
+        await Future.delayed(const Duration(milliseconds: 1));
 
         await File("${dir.path}/new-file.txt").writeAsString('hey');
         await File("${dir.path}/other-file.txt").writeAsString('ho');
 
         interactions['hasChangedAfterAddingFiles'] =
-            await cache.hasChanged(dirCollection, cache: true);
+            await cache.hasChanged(dirCollection);
+
+        await cache(dirCollection);
+        await Future.delayed(const Duration(milliseconds: 1));
 
         await File("${dir.path}/other-file.txt").delete();
 
         interactions['hasChangedAfterDeletingFile'] =
-            await cache.hasChanged(dirCollection, cache: true);
+            await cache.hasChanged(dirCollection);
+
+        await cache(dirCollection);
+        await Future.delayed(const Duration(milliseconds: 1));
 
         await Directory("another-dir").create();
         await File("another-dir/some-file").writeAsString("let's go");
 
         interactions['hasChangedAfterCreatingOtherDirAndFile'] =
-            await cache.hasChanged(dirCollection, cache: false);
+            await cache.hasChanged(dirCollection);
       });
 
       // check that the expected cache files have been created
@@ -157,14 +166,19 @@ void main([List<String> args = const []]) {
         await File('example/3').writeAsString('three');
 
         final dirCollection = FileCollection.dir(dir.path);
-        interactions['first check'] =
-            await cache.hasChanged(dirCollection, cache: true);
-        interactions['second check'] =
-            await cache.hasChanged(dirCollection, cache: true);
-        interactions['third check'] =
-            await cache.hasChanged(dirCollection, cache: true);
-        interactions['fourth check'] =
-            await cache.hasChanged(dirCollection, cache: true);
+
+        interactions['first check'] = await cache.hasChanged(dirCollection);
+
+        await cache(dirCollection);
+        await Future.delayed(const Duration(milliseconds: 1));
+
+        interactions['second check'] = await cache.hasChanged(dirCollection);
+
+        await cache(dirCollection);
+        await Future.delayed(const Duration(milliseconds: 1));
+
+        interactions['third check'] = await cache.hasChanged(dirCollection);
+        interactions['fourth check'] = await cache.hasChanged(dirCollection);
       });
 
       expect(

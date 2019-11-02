@@ -16,10 +16,8 @@ void main() {
       final cache = _TestCache();
       final ins = FileCollection.file('a');
       final outs = FileCollection.empty();
-      when(cache.hasChanged(ins, cache: true))
-          .thenAnswer((_) => Future.value(true));
-      when(cache.hasChanged(outs, cache: false))
-          .thenAnswer((_) => Future.value(false));
+      when(cache.hasChanged(ins)).thenAnswer((_) => Future.value(true));
+      when(cache.hasChanged(outs)).thenAnswer((_) => Future.value(false));
 
       final runOnChanges =
           RunOnChanges(inputs: ins, outputs: outs, cache: cache);
@@ -31,10 +29,8 @@ void main() {
       final cache = _TestCache();
       final ins = FileCollection.empty();
       final outs = FileCollection.files(['a', 'b', 'c']);
-      when(cache.hasChanged(ins, cache: true))
-          .thenAnswer((_) => Future.value(false));
-      when(cache.hasChanged(outs, cache: false))
-          .thenAnswer((_) => Future.value(true));
+      when(cache.hasChanged(ins)).thenAnswer((_) => Future.value(false));
+      when(cache.hasChanged(outs)).thenAnswer((_) => Future.value(true));
 
       final runOnChanges =
           RunOnChanges(inputs: ins, outputs: outs, cache: cache);
@@ -46,10 +42,8 @@ void main() {
       final cache = _TestCache();
       final ins = FileCollection.file('z');
       final outs = FileCollection.files(['a', 'b', 'c']);
-      when(cache.hasChanged(ins, cache: true))
-          .thenAnswer((_) => Future.value(true));
-      when(cache.hasChanged(outs, cache: false))
-          .thenAnswer((_) => Future.value(true));
+      when(cache.hasChanged(ins)).thenAnswer((_) => Future.value(true));
+      when(cache.hasChanged(outs)).thenAnswer((_) => Future.value(true));
 
       final runOnChanges =
           RunOnChanges(inputs: ins, outputs: outs, cache: cache);
@@ -61,35 +55,13 @@ void main() {
       final cache = _TestCache();
       final ins = FileCollection.file('z');
       final outs = FileCollection.files(['a', 'b', 'c']);
-      when(cache.hasChanged(ins, cache: true))
-          .thenAnswer((_) => Future.value(false));
-      when(cache.hasChanged(outs, cache: false))
-          .thenAnswer((_) => Future.value(false));
+      when(cache.hasChanged(ins)).thenAnswer((_) => Future.value(false));
+      when(cache.hasChanged(outs)).thenAnswer((_) => Future.value(false));
 
       final runOnChanges =
           RunOnChanges(inputs: ins, outputs: outs, cache: cache);
 
       expect(await runOnChanges.shouldRun(), isFalse);
-    });
-
-    test('checking if inputs/outputs changed causes inputs to be cached, '
-        'but not outputs', () async {
-      final cache = _TestCache();
-      final ins = FileCollection.file('z');
-      final outs = FileCollection.files(['a', 'b', 'c']);
-      when(cache.hasChanged(ins, cache: true))
-          .thenAnswer((_) => Future.value(false));
-      when(cache.hasChanged(outs, cache: false))
-          .thenAnswer((_) => Future.value(false));
-
-      final runOnChanges =
-          RunOnChanges(inputs: ins, outputs: outs, cache: cache);
-
-      expect(await runOnChanges.shouldRun(), isFalse);
-
-      verify(cache.hasChanged(ins, cache: true));
-      verify(cache.hasChanged(outs, cache: false));
-      verifyNoMoreInteractions(cache);
     });
   });
 }
