@@ -9,6 +9,7 @@
 /// used in build files.
 library dartle;
 
+export 'src/_log.dart' show activateLogging;
 export 'src/core.dart';
 export 'src/error.dart';
 export 'src/file_collection.dart';

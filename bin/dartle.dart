@@ -2,7 +2,9 @@ import 'dart:io';
 
 import 'package:dartle/dartle.dart';
 import 'package:dartle/dartle_cache.dart';
-import 'package:dartle/src/_log.dart';
+import 'package:logging/logging.dart';
+
+final logger = Logger('dartle-starter');
 
 void main(List<String> args) async {
   final options = parseOptions(args);
@@ -31,9 +33,8 @@ void main(List<String> args) async {
 
     TaskResult snapshotTaskResult;
     if (await runSnapshotCondition.shouldRun()) {
-      print(
-          "dartle: Taking snapshot of dartle.dart file as it is not up-to-date.\n"
-          "dartle: Next time, the build will run faster.");
+      logger.info("Taking snapshot of dartle.dart file as it is not up-to-date."
+          " next time, the build will run faster.");
 
       snapshotTaskResult = await runTask(runSnapshotTask);
     }
@@ -45,7 +46,7 @@ void main(List<String> args) async {
     } else {
       try {
         if (snapshotTaskResult.isSuccess) {
-          print("dartle: Snapshot successfully taken, starting build.");
+          logger.info("Snapshot successfully taken, starting build.");
           exitCode = await runDartSnapshot(snapshotFile, args: args);
         }
       } finally {
@@ -59,7 +60,7 @@ void main(List<String> args) async {
     }
     exit(exitCode);
   } else {
-    print('Error: dartle.dart file does not exist.');
+    logger.severe('dartle.dart file does not exist.');
     exit(4);
   }
 }
