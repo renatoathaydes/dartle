@@ -11,8 +11,7 @@ import 'test_utils.dart';
 
 void main([List<String> args = const []]) {
   if (args.contains('log')) {
-    activateLogging();
-    setLogLevel(Level.FINE);
+    activateLogging(Level.FINE);
   }
 
   final cache = DartleCache.instance;

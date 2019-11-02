@@ -1,14 +1,19 @@
 import 'dart:io';
-import 'dart:isolate';
 
 import 'package:dartle/dartle.dart';
 import 'package:dartle/dartle_cache.dart';
+import 'package:dartle/src/_log.dart';
 
 void main(List<String> args) async {
+  final options = parseOptions(args);
+  if (options.showHelp) {
+    return print(dartleUsage);
+  }
+
+  activateLogging(options.logLevel);
+
   final buildFile = File('dartle.dart').absolute;
   if (await buildFile.exists()) {
-    configure(args);
-
     final buildSetupFiles = [buildFile.path, 'pubspec.yaml', 'pubspec.lock'];
     final snapshotFile = await getSnapshotLocation(buildFile);
 
@@ -24,28 +29,37 @@ void main(List<String> args) async {
             'Internal task that snapshots the Dartle project\'s build file '
             'for better performance');
 
+    TaskResult snapshotTaskResult;
     if (await runSnapshotCondition.shouldRun()) {
-      // the build logic may change completely, so we must clean the cache
-      await DartleCache.instance.clean(exclusions: runSnapshotCondition.inputs);
+      print(
+          "dartle: Taking snapshot of dartle.dart file as it is not up-to-date.\n"
+          "dartle: Next time, the build will run faster.");
 
-      await runTask(runSnapshotTask);
+      snapshotTaskResult = await runTask(runSnapshotTask);
     }
 
-    await _runSnapshot(snapshotFile, args);
+    int exitCode = 0;
+
+    if (snapshotTaskResult == null) {
+      exitCode = await runDartSnapshot(snapshotFile, args: args);
+    } else {
+      try {
+        if (snapshotTaskResult.isSuccess) {
+          print("dartle: Snapshot successfully taken, starting build.");
+          exitCode = await runDartSnapshot(snapshotFile, args: args);
+        }
+      } finally {
+        await runTaskPostRun(snapshotTaskResult);
+        if (snapshotTaskResult.isFailure) {
+          failBuild(
+              reason: 'Dart snapshot failed. Please check that your '
+                  'dartle.dart file compiles (see errors above)');
+        }
+      }
+    }
+    exit(exitCode);
   } else {
     print('Error: dartle.dart file does not exist.');
     exit(4);
-  }
-}
-
-Future<void> _runSnapshot(File snapshotFile, List<String> args) async {
-  final exitPort = ReceivePort();
-
-  try {
-    await Isolate.spawnUri(snapshotFile.absolute.uri, args, null,
-        debugName: 'dartle-runner', onExit: exitPort.sendPort);
-    await exitPort.first;
-  } on DartleException catch (e) {
-    exit(e.exitCode);
   }
 }

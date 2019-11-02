@@ -81,16 +81,22 @@ void _error(String message) {
 
 bool _loggingActivated = false;
 
-void activateLogging() {
+/// Activate logging.
+///
+/// This method can only be called once. Subsequent calls are ignored.
+///
+/// If this call was accepted (i.e. first call), this method returns true,
+/// otherwise it returns false.
+bool activateLogging(log.Level level) {
   if (!_loggingActivated) {
     _loggingActivated = true;
-    setLogLevel(log.Level.WARNING);
+    log.Logger.root.level = level;
     log.Logger.root.onRecord.listen((log.LogRecord rec) {
       final log = _logByLevel[rec.level] ?? _info;
       log('${rec.time} - ${rec.loggerName}[${Isolate.current.debugName}] - '
           '${_nameByLevel[rec.level] ?? rec.level} - ${rec.message}');
     });
+    return true;
   }
+  return false;
 }
-
-void setLogLevel(log.Level level) => log.Logger.root.level = level;

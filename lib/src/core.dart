@@ -1,19 +1,12 @@
 import 'package:meta/meta.dart';
 
 import '_log.dart';
-import '_options.dart';
 import '_utils.dart';
 import 'error.dart';
 import 'helpers.dart';
+import 'options.dart';
 import 'task.dart';
 import 'task_run.dart';
-
-/// Initializes the dartle library's configuration without executing any
-/// tasks.
-void configure(List<String> args) {
-  activateLogging();
-  parseOptionsAndGetTasks(args);
-}
 
 /// Initializes the dartle library and runs the tasks selected by the user
 /// (or in the provided [args]).
@@ -23,18 +16,31 @@ void configure(List<String> args) {
 Future<void> run(List<String> args,
     {@required List<Task> tasks, List<Task> defaultTasks = const []}) async {
   final stopWatch = Stopwatch()..start();
-  configure(args);
-  logger.debug("Configured dartle in ${elapsedTime(stopWatch)}");
+
+  // TODO if the dartle file changes,
+  //// the build logic may change completely, so we must clean the cache
+  //      await DartleCache.instance.clean(exclusions: runSnapshotCondition.inputs);
+
+  final options = parseOptions(args);
+  if (options.showHelp) {
+    print(dartleUsage);
+    return;
+  }
+
+  activateLogging(options.logLevel);
+
   try {
-    var taskNames = parseOptionsAndGetTasks(args);
+    var taskNames = options.requestedTasks;
     if (taskNames.isEmpty && defaultTasks.isNotEmpty) {
       taskNames = defaultTasks.map((t) => t.name).toList();
     }
-    final executableTasks = await _getExecutableTasks(tasks, taskNames);
+    final executableTasks =
+        await _getExecutableTasks(tasks, taskNames, options.forceTasks);
     logger.info("Executing ${executableTasks.length} task(s) out of "
         "${taskNames.length} selected task(s)");
     await _runAll(executableTasks);
   } on DartleException catch (e) {
+    logger.warn("Build failed in ${elapsedTime(stopWatch)}");
     failBuild(reason: e.message, exitCode: e.exitCode);
   } on Exception catch (e) {
     failBuild(reason: 'Unexpected error: $e');
@@ -60,7 +66,7 @@ Future<void> _runAll(List<Task> executableTasks) async {
 }
 
 Future<List<Task>> _getExecutableTasks(
-    List<Task> tasks, List<String> requestedTasks) async {
+    List<Task> tasks, List<String> requestedTasks, bool forceTasks) async {
   if (requestedTasks.isEmpty) {
     return failBuild(
         reason: 'No tasks were explicitly selected and '
@@ -74,11 +80,10 @@ Future<List<Task>> _getExecutableTasks(
         return failBuild(reason: "Unknown task or option: '${taskNameSpec}'")
             as List<Task>;
       }
-      if (await task.runCondition.shouldRun()) {
+      if (forceTasks) {
+        logger.debug("Will force execution of task '${task.name}'");
         result.add(task);
-      } else if (forceTasksOption) {
-        logger.debug("Will force execution of task '${task.name}' even though "
-            "it is up-to-date");
+      } else if (await task.runCondition.shouldRun()) {
         result.add(task);
       } else {
         logger.debug("Skipping task '${task.name}' as it is up-to-date");

@@ -19,7 +19,7 @@ failBuild({@required String reason, int exitCode = 1}) {
 }
 
 /// Run the given action ignoring any Exceptions thrown by it.
-ignoreExceptions(FutureOr Function() action) async {
+FutureOr ignoreExceptions(FutureOr Function() action) async {
   try {
     await action();
   } on Exception {
@@ -39,28 +39,30 @@ ignoreExceptions(FutureOr Function() action) async {
 /// [onDone] is called when the process has exited, with the exit code given
 /// to the callback.
 ///
-/// By default, [onDone] fails the build if the exit code is not 0.
+/// By default, [onDone] throws a [DartleException] if the exit code is not 0.
 Future<T> exec<T>(
   Future<Process> process, {
   StdStreamConsumer stdoutConsumer,
   StdStreamConsumer stderrConsumer,
-  FutureOr<T> Function(int exitCode) onDone,
+  T Function(int exitCode) onDone,
 }) async {
   final proc = await process;
   logger.debug("Started process ${proc.pid}");
   final stdoutCons = stdoutConsumer ??
       StdStreamConsumer(printToStdout: logger.isLevelEnabled(LogLevel.debug));
   final stderrCons = stderrConsumer ?? StdStreamConsumer(keepLines: true);
-  final onDoneAction = (int code) async {
+  final T Function(int) onDoneAction = (int code) {
     if (code != 0) {
       final errOut = stderrCons.lines;
       errOut.forEach(logger.warn);
-      if (onDone != null) await onDone(code);
+    }
+    if (onDone != null) return onDone(code);
+    if (code != 0) {
       throw DartleException(
           message: "Process ${proc.pid} exited with code $code",
           exitCode: code);
     }
-    return null;
+    return code as T;
   };
 
   proc.stdout
@@ -111,5 +113,19 @@ Future<void> deleteAll(FileCollection fileCollection) async {
         await ignoreExceptions(dir.delete);
       }
     }
+  }
+}
+
+/// Check if the system responds to the given command.
+Future<bool> isValidCommand(
+  String command, {
+  List<String> args = const [],
+  bool runInShell = false,
+}) async {
+  try {
+    await Process.run(command, args, runInShell: runInShell);
+    return true;
+  } on ProcessException {
+    return false;
   }
 }

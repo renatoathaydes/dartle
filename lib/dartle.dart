@@ -13,5 +13,7 @@ export 'src/core.dart';
 export 'src/error.dart';
 export 'src/file_collection.dart';
 export 'src/helpers.dart';
+export 'src/options.dart';
+export 'src/std_stream_consumer.dart';
 export 'src/task.dart';
 export 'src/task_run.dart';

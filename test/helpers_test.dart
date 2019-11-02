@@ -5,8 +5,7 @@ import 'package:test/test.dart';
 
 void main([List<String> args = const []]) {
   if (args.contains('log')) {
-    activateLogging();
-    setLogLevel(Level.FINE);
+    activateLogging(Level.FINE);
   }
 
   test('decapitalize', () {
