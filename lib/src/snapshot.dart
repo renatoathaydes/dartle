@@ -44,11 +44,12 @@ Future<int> runDartSnapshot(File dartSnapshot,
     Process.start(command, [dartSnapshot.absolute.path, ...args]),
     stdoutConsumer: StdStreamConsumer(printToStdout: true),
     stderrConsumer: StdStreamConsumer(printToStderr: true),
+    onDone: (code) => code,
   );
 }
 
 Future<void> _dart2aot(File dartFile, File destination) {
-  logger.debug("Using 'dart2aot' to snapshot Dart file: $dartFile");
+  logger.debug("Using 'dart2aot' to snapshot Dart file: ${dartFile.path}");
   return exec(Process.start('dart2aot', [dartFile.path, destination.path]),
       onDone: (code) => _onSnapshotDone(code, dartFile, destination));
 }
@@ -65,6 +66,6 @@ void _onSnapshotDone(int code, File dartFile, File destination) {
     ignoreExceptions(destination.deleteSync);
     throw DartleException(
         message: 'Error creating Dart snapshot for '
-            '${dartFile}. Process exit code: ${code}');
+            '${dartFile.path}. Process exit code: ${code}');
   }
 }

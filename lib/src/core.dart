@@ -2,6 +2,7 @@ import 'package:meta/meta.dart';
 
 import '_log.dart';
 import '_utils.dart';
+import 'cache.dart';
 import 'error.dart';
 import 'helpers.dart';
 import 'options.dart';
@@ -17,17 +18,16 @@ Future<void> run(List<String> args,
     {@required List<Task> tasks, List<Task> defaultTasks = const []}) async {
   final stopWatch = Stopwatch()..start();
 
-  // TODO if the dartle file changes,
-  //// the build logic may change completely, so we must clean the cache
-  //      await DartleCache.instance.clean(exclusions: runSnapshotCondition.inputs);
-
   final options = parseOptions(args);
   if (options.showHelp) {
-    print(dartleUsage);
-    return;
+    return print(dartleUsage);
   }
 
   activateLogging(options.logLevel);
+
+  if (options.resetCache) {
+    await DartleCache.instance.clean();
+  }
 
   try {
     var taskNames = options.requestedTasks;

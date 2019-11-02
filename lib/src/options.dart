@@ -8,12 +8,14 @@ class Options {
   final log.Level logLevel;
   final bool forceTasks;
   final bool showHelp;
+  final bool resetCache;
   final List<String> requestedTasks;
 
   const Options(
       {this.logLevel = log.Level.INFO,
       this.showHelp = false,
       this.forceTasks = false,
+      this.resetCache = false,
       this.requestedTasks = const []});
 }
 
@@ -30,6 +32,12 @@ final _parser = ArgParser()
     abbr: 'f',
     negatable: false,
     help: 'Force all selected tasks to run',
+  )
+  ..addFlag(
+    'reset-cache',
+    abbr: 'z',
+    negatable: false,
+    help: 'Reset the Dartle cache',
   )
   ..addFlag(
     'help',
@@ -76,6 +84,7 @@ Options parseOptions(List<String> args) {
     logLevel: _parseLogLevel(parseResult['log-level'].toString()),
     forceTasks: parseResult.wasParsed('force-tasks'),
     requestedTasks: parseResult.rest,
+    resetCache: parseResult.wasParsed('reset-cache'),
   );
 }
 

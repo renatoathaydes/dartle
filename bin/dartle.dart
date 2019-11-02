@@ -33,6 +33,9 @@ void main(List<String> args) async {
 
     TaskResult snapshotTaskResult;
     if (await runSnapshotCondition.shouldRun()) {
+      // the build logic may change completely, so we must clean the cache
+      await DartleCache.instance.clean(exclusions: runSnapshotCondition.inputs);
+
       logger.info("Taking snapshot of dartle.dart file as it is not up-to-date."
           " next time, the build will run faster.");
 
@@ -50,7 +53,12 @@ void main(List<String> args) async {
           exitCode = await runDartSnapshot(snapshotFile, args: args);
         }
       } finally {
-        await runTaskPostRun(snapshotTaskResult);
+        try {
+          await runTaskPostRun(snapshotTaskResult);
+        } on Exception {
+          logger.warning(
+              "Failed to cache Dartle snapshot for faster subsequent runs.");
+        }
         if (snapshotTaskResult.isFailure) {
           failBuild(
               reason: 'Dart snapshot failed. Please check that your '
