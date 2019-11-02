@@ -60,6 +60,7 @@ class DartleCache {
   /// not the actual cache files (whose paths are a implementation detail of
   /// this cache).
   Future<void> clean({FileCollection exclusions}) async {
+    exclusions ??= FileCollection.empty();
     final cacheExclusions = await _mapToCacheLocations(exclusions);
     logger.debug('Cleaning Dartle cache');
     await deleteAll(
@@ -74,6 +75,16 @@ class DartleCache {
     logger.debug("Dartle cache has been cleaned.");
   }
 
+  /// Remove from this cache all files and directories in the given collection.
+  Future<void> remove(FileCollection collection) async {
+    await for (final file in collection.files) {
+      await _removeFile(file);
+    }
+    await for (final dir in collection.directories) {
+      await _removeDir(dir);
+    }
+  }
+
   /// Cache all files and directories in the given collection.
   Future<void> call(FileCollection collection) async {
     await for (final file in collection.files) {
@@ -83,6 +94,10 @@ class DartleCache {
       if (await dir.exists()) await _cacheDir(dir);
     }
   }
+
+  /// Check if the given file system entity is present in the cache.
+  bool contains(FileSystemEntity entity) =>
+      _getCacheLocation(entity).existsSync();
 
   Future<void> _cacheFile(File file, [File hashFile]) async {
     final hf = hashFile ?? _getCacheLocation(file);
@@ -94,6 +109,22 @@ class DartleCache {
     final hf = hashFile ?? _getCacheLocation(dir);
     logger.debug("Caching directory: ${dir.path} at ${hf.path}");
     await hf.writeAsString(await _hashDirectChildren(dir));
+  }
+
+  Future<void> _removeFile(File file) async {
+    final hf = _getCacheLocation(file);
+    if (await hf.exists()) {
+      logger.debug("Deleting file from cache: ${file.path} at ${hf.path}");
+      await hf.delete();
+    }
+  }
+
+  Future<void> _removeDir(Directory dir) async {
+    final hf = _getCacheLocation(dir);
+    if (await hf.exists()) {
+      logger.debug("Deleting directory from cache: ${dir.path} at ${hf.path}");
+      await hf.delete();
+    }
   }
 
   /// Check if any member of a [FileCollection] has been modified since the

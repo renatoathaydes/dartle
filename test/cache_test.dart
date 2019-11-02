@@ -176,5 +176,115 @@ void main([List<String> args = const []]) {
             'fourth check': false,
           }));
     });
+
+    test('can cache, then delete cached file', () async {
+      final interactions = <String, bool>{};
+      await withFileSystem(fs, () async {
+        final dartleFile = File('dartle.dart');
+        final dartleFileCollection = FileCollection.of([dartleFile]);
+
+        await cache(dartleFileCollection);
+        await Future.delayed(const Duration(milliseconds: 1));
+        interactions['cached before'] = cache.contains(dartleFile);
+
+        await cache.remove(dartleFileCollection);
+        await Future.delayed(const Duration(milliseconds: 1));
+        interactions['cached after'] = cache.contains(dartleFile);
+      });
+
+      expect(
+          interactions,
+          equals({
+            'cached before': true,
+            'cached after': false,
+          }));
+    });
+
+    test('can cache files and dirs, then clean cache completely', () async {
+      final interactions = <String, bool>{};
+      await withFileSystem(fs, () async {
+        final fooFile = await File('foo.txt').writeAsString('hello');
+        final myDir = await Directory('my-dir').create();
+        final myDirFooFile =
+            await File('my-dir/foo.json').writeAsString('"bar"');
+
+        await cache(FileCollection.of([fooFile, myDir]));
+        await Future.delayed(const Duration(milliseconds: 1));
+
+        interactions['fooFile is cached'] = cache.contains(fooFile);
+        interactions['myDir is cached'] = cache.contains(myDir);
+        interactions['myDirFooFile is cached'] = cache.contains(myDirFooFile);
+
+        await cache.clean();
+        await Future.delayed(const Duration(milliseconds: 1));
+
+        interactions['fooFile is cached (after)'] = cache.contains(fooFile);
+        interactions['myDir is cached (after)'] = cache.contains(myDir);
+        interactions['myDirFooFile is cached (after)'] =
+            cache.contains(myDirFooFile);
+
+        // make sure the cache works after being clean
+        await cache(FileCollection.file('dartle.dart'));
+        await Future.delayed(const Duration(milliseconds: 1));
+        interactions['dartleFile is cached (after)'] =
+            cache.contains(File('dartle.dart'));
+      });
+
+      expect(
+          interactions,
+          equals({
+            'fooFile is cached': true,
+            'myDir is cached': true,
+            'myDirFooFile is cached': true,
+            'fooFile is cached (after)': false,
+            'myDir is cached (after)': false,
+            'myDirFooFile is cached (after)': false,
+            'dartleFile is cached (after)': true,
+          }));
+    });
+
+    test('can cache files and dirs, then clean cache with exclusions',
+        () async {
+      final interactions = <String, bool>{};
+      await withFileSystem(fs, () async {
+        final fooFile = await File('foo.txt').writeAsString('hello');
+        final myDir = await Directory('my-dir').create();
+        final myDirFooFile =
+            await File('my-dir/foo.json').writeAsString('"bar"');
+
+        await cache(FileCollection.of([fooFile, myDir]));
+        await Future.delayed(const Duration(milliseconds: 1));
+
+        interactions['fooFile is cached'] = cache.contains(fooFile);
+        interactions['myDir is cached'] = cache.contains(myDir);
+        interactions['myDirFooFile is cached'] = cache.contains(myDirFooFile);
+
+        await cache.clean(exclusions: FileCollection.of([myDir]));
+        await Future.delayed(const Duration(milliseconds: 1));
+
+        interactions['fooFile is cached (after)'] = cache.contains(fooFile);
+        interactions['myDir is cached (after)'] = cache.contains(myDir);
+        interactions['myDirFooFile is cached (after)'] =
+            cache.contains(myDirFooFile);
+
+        // make sure the cache works after being clean
+        await cache(FileCollection.file('dartle.dart'));
+        await Future.delayed(const Duration(milliseconds: 1));
+        interactions['dartleFile is cached (after)'] =
+            cache.contains(File('dartle.dart'));
+      });
+
+      expect(
+          interactions,
+          equals({
+            'fooFile is cached': true,
+            'myDir is cached': true,
+            'myDirFooFile is cached': true,
+            'fooFile is cached (after)': false,
+            'myDir is cached (after)': true,
+            'myDirFooFile is cached (after)': true,
+            'dartleFile is cached (after)': true,
+          }));
+    });
   });
 }
