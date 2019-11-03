@@ -1,4 +1,7 @@
+import 'dart:convert';
 import 'dart:io';
+
+import 'package:crypto/crypto.dart';
 
 final _capitalLetterPattern = RegExp(r"[A-Z]");
 
@@ -54,6 +57,8 @@ String findMatchingByWords(String searchText, List<String> options) {
   }
   return result;
 }
+
+String hash(String text) => sha1.convert(utf8.encode(text)).toString();
 
 String elapsedTime(Stopwatch stopwatch) {
   final millis = stopwatch.elapsedMilliseconds;

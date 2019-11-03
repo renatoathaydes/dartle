@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:path/path.dart' as path;
 
 import '_log.dart';
+import '_utils.dart';
 import 'error.dart';
 import 'helpers.dart';
 import 'std_stream_consumer.dart';
@@ -13,8 +14,7 @@ const _snapshotsDir = '$dartleDir/snapshots';
 bool _dart2aotAvailable;
 
 File getSnapshotLocation(File dartFile) {
-  return File(
-      path.join(_snapshotsDir, "${path.basename(dartFile.path)}.snapshot"));
+  return File(path.join(_snapshotsDir, hash(dartFile.absolute.path)));
 }
 
 FutureOr<bool> _isDart2aotAvailable() {

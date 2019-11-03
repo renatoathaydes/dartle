@@ -1,11 +1,11 @@
 import 'dart:async';
-import 'dart:convert';
 import 'dart:io';
 
 import 'package:crypto/crypto.dart';
 import 'package:path/path.dart' as path;
 
 import '_log.dart';
+import '_utils.dart';
 import 'file_collection.dart';
 import 'helpers.dart';
 
@@ -185,9 +185,7 @@ class DartleCache {
   }
 }
 
-String _hash(String path) => sha1.convert(utf8.encode(path)).toString();
-
-String _locationHash(FileSystemEntity fe) => _hash(fe.absolute.path);
+String _locationHash(FileSystemEntity fe) => hash(fe.absolute.path);
 
 Future<String> _hashContents(File file) async =>
     sha1.convert(await file.readAsBytes()).toString();
@@ -195,5 +193,5 @@ Future<String> _hashContents(File file) async =>
 Future<String> _hashDirectChildren(Directory dir) async {
   final children = await dir.list(recursive: false).map((c) => c.path).toList();
   children.sort();
-  return await _hash(children.join(';'));
+  return await hash(children.join(';'));
 }
