@@ -34,7 +34,11 @@ void main(List<String> args) async {
     TaskResult snapshotTaskResult;
     if (await runSnapshotCondition.shouldRun()) {
       // the build logic may change completely, so we must clean the cache
-      await DartleCache.instance.clean(exclusions: runSnapshotCondition.inputs);
+      // (unless the resetCache option is on, as then, it will be cleaned later)
+      if (!options.resetCache) {
+        await DartleCache.instance
+            .clean(exclusions: runSnapshotCondition.inputs);
+      }
 
       logger.info("Taking snapshot of dartle.dart file as it is not up-to-date."
           " next time, the build will run faster.");

@@ -1,13 +1,21 @@
 import 'dart:async';
 import 'dart:io';
 
+import 'package:path/path.dart' as path;
+
 import '_log.dart';
-import 'cache.dart';
 import 'error.dart';
 import 'helpers.dart';
 import 'std_stream_consumer.dart';
 
+const _snapshotsDir = '$dartleDir/snapshots';
+
 bool _dart2aotAvailable;
+
+File getSnapshotLocation(File dartFile) {
+  return File(
+      path.join(_snapshotsDir, "${path.basename(dartFile.path)}.snapshot"));
+}
 
 FutureOr<bool> _isDart2aotAvailable() {
   if (_dart2aotAvailable != null) return _dart2aotAvailable;
@@ -18,6 +26,7 @@ FutureOr<bool> _isDart2aotAvailable() {
 }
 
 Future<File> createDartSnapshot(File dartFile) async {
+  await Directory(_snapshotsDir).create(recursive: true);
   var snapshotLocation = getSnapshotLocation(dartFile);
   if (await _isDart2aotAvailable()) {
     await _dart2aot(dartFile, snapshotLocation);

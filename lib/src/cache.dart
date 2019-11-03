@@ -9,14 +9,7 @@ import '_log.dart';
 import 'file_collection.dart';
 import 'helpers.dart';
 
-const _dartleDir = '.dartle_tool';
-const _hashesDir = '$_dartleDir/hashes';
-const _snapshotsDir = '$_dartleDir/snapshots';
-
-File getSnapshotLocation(File dartFile) {
-  final locationHash = _locationHash(dartFile);
-  return File(path.join(_snapshotsDir, locationHash));
-}
+const _hashesDir = '$dartleDir/hashes';
 
 File _getCacheLocation(FileSystemEntity entity) {
   final locationHash = _locationHash(entity);
@@ -48,9 +41,8 @@ class DartleCache {
   /// This method does not normally need to be called explicitly as the
   /// constructor will call it.
   void init() {
-    Directory(_dartleDir).createSync(recursive: true);
+    Directory(dartleDir).createSync(recursive: true);
     Directory(_hashesDir).createSync();
-    Directory(_snapshotsDir).createSync();
   }
 
   /// Clean the Dartle cache.
@@ -61,14 +53,13 @@ class DartleCache {
   Future<void> clean({FileCollection exclusions = FileCollection.empty}) async {
     final cacheExclusions = await _mapToCacheLocations(exclusions);
     logger.debug('Cleaning Dartle cache');
-    await deleteAll(
-        FileCollection([Directory(_hashesDir), Directory(_snapshotsDir)],
-            fileFilter: (file) async {
-              final doExclude = await cacheExclusions.includes(file);
-              if (doExclude) logger.debug("Keeping excluded file: ${file}");
-              return !doExclude;
-            },
-            dirFilter: (dir) async => !await cacheExclusions.includes(dir)));
+    await deleteAll(FileCollection([Directory(_hashesDir)],
+        fileFilter: (file) async {
+          final doExclude = await cacheExclusions.includes(file);
+          if (doExclude) logger.debug("Keeping excluded file: ${file}");
+          return !doExclude;
+        },
+        dirFilter: (dir) async => !await cacheExclusions.includes(dir)));
     init();
     logger.debug("Dartle cache has been cleaned.");
   }

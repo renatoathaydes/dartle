@@ -10,6 +10,9 @@ import 'file_collection.dart';
 import 'std_stream_consumer.dart';
 import 'task.dart';
 
+/// Location of the dartle directory within a project.
+const dartleDir = '.dartle_tool';
+
 /// Fail the build for the given [reason].
 ///
 /// This function never returns.
