@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:meta/meta.dart';
 
 import '_log.dart';
@@ -35,10 +37,14 @@ Future<void> run(List<String> args,
       taskNames = defaultTasks.map((t) => t.name).toList();
     }
     final executableTasks =
-        await _getExecutableTasks(tasks, taskNames, options.forceTasks);
-    logger.info("Executing ${executableTasks.length} task(s) out of "
-        "${taskNames.length} selected task(s)");
-    await _runAll(executableTasks);
+        await _getExecutableTasks(tasks, taskNames, options);
+    if (options.showTasks) {
+      _showAll(executableTasks, tasks, defaultTasks);
+    } else {
+      logger.info("Executing ${executableTasks.length} task(s) out of "
+          "${taskNames.length} selected task(s)");
+      await _runAll(executableTasks, options);
+    }
   } on DartleException catch (e) {
     logger.warn("Build failed in ${elapsedTime(stopWatch)}");
     failBuild(reason: e.message, exitCode: e.exitCode);
@@ -50,12 +56,12 @@ Future<void> run(List<String> args,
   }
 }
 
-Future<void> _runAll(List<Task> executableTasks) async {
+Future<void> _runAll(List<Task> executableTasks, Options options) async {
+  final allErrors = <Exception>[];
+
   final results = await runTasks(executableTasks);
   final failures = results.where((r) => r.isFailure).toList(growable: false);
   final postRunFailures = await runTasksPostRun(results);
-
-  final allErrors = <Exception>[];
 
   allErrors.addAll(failures.map((f) => f.error));
   allErrors.addAll(postRunFailures);
@@ -65,28 +71,57 @@ Future<void> _runAll(List<Task> executableTasks) async {
   }
 }
 
+void _showAll(
+    List<Task> executableTasks, List<Task> tasks, List<Task> defaultTasks) {
+  final defaultSet = defaultTasks.map((t) => t.name).toSet();
+  tasks.sort((a, b) => a.name.compareTo(b.name));
+  print("Tasks declared in this build:\n");
+  for (final task in tasks) {
+    final desc = task.description.isEmpty ? '' : '\n      ${task.description}';
+    final isDefault = defaultSet.contains(task.name) ? ' [default]' : '';
+    print("  * ${task.name}${isDefault}${desc}");
+  }
+  print('');
+  if (executableTasks.isEmpty) {
+    print('No tasks would have executed with the options provided');
+  } else {
+    print('The following tasks would have executed, in this order:');
+    executableTasks.forEach((t) => print('  * ${t.name}'));
+  }
+  print('');
+}
+
 Future<List<Task>> _getExecutableTasks(
-    List<Task> tasks, List<String> requestedTasks, bool forceTasks) async {
+    List<Task> tasks, List<String> requestedTasks, Options options) async {
   if (requestedTasks.isEmpty) {
-    return failBuild(
-        reason: 'No tasks were explicitly selected and '
-            'no default tasks were provided') as List<Task>;
+    if (!options.showTasks) {
+      logger.warn("No tasks were requested and no default tasks exist.");
+    }
+    return const [];
   } else {
     final taskMap = tasks.asMap().map((_, task) => MapEntry(task.name, task));
     final result = <Task>[];
     for (final taskNameSpec in requestedTasks) {
       final task = _findTaskByName(taskMap, taskNameSpec);
       if (task == null) {
-        return failBuild(reason: "Unknown task or option: '${taskNameSpec}'")
+        if (options.showTasks) {
+          logger.warn("Task '$taskNameSpec' does not exist.");
+          continue;
+        }
+        return failBuild(reason: "Unknown task: '${taskNameSpec}'")
             as List<Task>;
       }
-      if (forceTasks) {
+      if (options.forceTasks) {
         logger.debug("Will force execution of task '${task.name}'");
         result.add(task);
       } else if (await task.runCondition.shouldRun()) {
         result.add(task);
       } else {
-        logger.debug("Skipping task '${task.name}' as it is up-to-date");
+        if (options.showTasks) {
+          logger.info("Task '${task.name}' is up-to-date");
+        } else {
+          logger.debug("Skipping task '${task.name}' as it is up-to-date");
+        }
       }
     }
     return result;

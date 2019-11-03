@@ -8,12 +8,14 @@ class Options {
   final log.Level logLevel;
   final bool forceTasks;
   final bool showHelp;
+  final bool showTasks;
   final bool resetCache;
   final List<String> requestedTasks;
 
   const Options(
       {this.logLevel = log.Level.INFO,
       this.showHelp = false,
+      this.showTasks = false,
       this.forceTasks = false,
       this.resetCache = false,
       this.requestedTasks = const []});
@@ -32,6 +34,12 @@ final _parser = ArgParser()
     abbr: 'f',
     negatable: false,
     help: 'Force all selected tasks to run',
+  )
+  ..addFlag(
+    'show-tasks',
+    abbr: 's',
+    negatable: false,
+    help: 'Show all tasks in this build. Does not run any tasks when enabled.',
   )
   ..addFlag(
     'reset-cache',
@@ -72,8 +80,7 @@ Options parseOptions(List<String> args) {
     parseResult = _parser.parse(args);
   } on FormatException catch (e) {
     throw DartleException(
-        message: '${e.message}\nUsage:\n${_parser.usage}',
-        exitCode: 4);
+        message: '${e.message}\nUsage:\n${_parser.usage}', exitCode: 4);
   }
 
   if (parseResult.wasParsed('help')) {
@@ -83,6 +90,7 @@ Options parseOptions(List<String> args) {
   return Options(
     logLevel: _parseLogLevel(parseResult['log-level'].toString()),
     forceTasks: parseResult.wasParsed('force-tasks'),
+    showTasks: parseResult.wasParsed('show-tasks'),
     requestedTasks: parseResult.rest,
     resetCache: parseResult.wasParsed('reset-cache'),
   );
