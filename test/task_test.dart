@@ -95,5 +95,14 @@ void main() {
       expect(
           tasksInOrder.map((t) => t.name), orderedEquals(['b', 'c', 'a', 'd']));
     });
+
+    test('maintains provided order if no dependency between tasks', () async {
+      var tasksInOrder = await getInOrderOfExecution([_cw, _bw, _aw]);
+      expect(tasksInOrder.map((t) => t.name), orderedEquals(['c', 'b', 'a']));
+
+      tasksInOrder = await getInOrderOfExecution([_aw, _cw, _bw, _dw]);
+      expect(
+          tasksInOrder.map((t) => t.name), orderedEquals(['c', 'b', 'a', 'd']));
+    });
   });
 }
