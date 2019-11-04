@@ -7,6 +7,7 @@ import 'package:meta/meta.dart';
 import '_log.dart';
 import 'error.dart';
 import 'file_collection.dart';
+import 'run_condition.dart';
 import 'std_stream_consumer.dart';
 import 'task.dart';
 

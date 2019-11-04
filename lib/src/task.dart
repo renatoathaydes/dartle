@@ -1,12 +1,5 @@
-import 'dart:async';
-
-import 'package:meta/meta.dart';
-
-import '_log.dart';
-import 'cache.dart';
 import 'error.dart';
-import 'file_collection.dart';
-import 'task_run.dart';
+import 'run_condition.dart';
 
 final _functionNamePatttern = RegExp('[a-zA-Z_0-9]+');
 
@@ -54,119 +47,77 @@ class Task {
   String toString() => 'Task{name: $name}';
 }
 
-/// A run condition for a [Task].
+/// A [Task] including its transitive dependencies.
 ///
-/// A [Task] should not run if its [RunCondition] does not allow it.
-mixin RunCondition {
-  /// Check if this task should run.
-  ///
-  /// Returns true if it should, false otherwise.
-  FutureOr<bool> shouldRun();
+/// Instances of this type can be sorted in the order that they would execute,
+/// according to their dependencies.
+class TaskWithDeps implements Task, Comparable<TaskWithDeps> {
+  final Task _task;
+  final List<TaskWithDeps> dependencies;
 
-  /// Action to run after a task associated with this [RunCondition]
-  /// has run, whether successfully or not.
-  FutureOr<void> postRun(TaskResult result);
+  TaskWithDeps(this._task, [this.dependencies = const []]);
+
+  String get name => _task.name;
+
+  get action => _task.action;
+
+  Set<String> get dependsOn => dependencies.map((t) => t.name).toSet();
+
+  String get description => _task.description;
+
+  RunCondition get runCondition => _task.runCondition;
+
+  @override
+  String toString() {
+    return 'TaskWithDeps{task: $_task, dependencies: $dependsOn}';
+  }
+
+  @override
+  int compareTo(TaskWithDeps other) {
+    const thisBeforeOther = -1;
+    const thisAfterOther = 1;
+    if (this.dependsOn.contains(other.name)) return thisAfterOther;
+    if (other.dependsOn.contains(this.name)) return thisBeforeOther;
+    return 0;
+  }
 }
 
-/// A [RunCondition] which is always fullfilled.
+/// Create a [Map] from the name of a task to the corresponding [TaskWithDeps].
 ///
-/// This ensures a [Task] runs unconditionally.
-@sealed
-class AlwaysRun with RunCondition {
-  const AlwaysRun();
-
-  @override
-  FutureOr<void> postRun(TaskResult result) {}
-
-  @override
-  bool shouldRun() => true;
+/// The transitive dependencies of a task are resolved, so that each returned
+/// [TaskWithDeps] knows every dependency it has, not only their directly
+/// declared dependencies.
+Map<String, TaskWithDeps> createTaskMap(Iterable<Task> tasks) {
+  final tasksByName = tasks
+      .toList(growable: false)
+      .asMap()
+      .map((_, task) => MapEntry(task.name, task));
+  final result = <String, TaskWithDeps>{};
+  tasksByName.forEach((name, task) {
+    result[name] = _withTransitiveDependencies(name, tasksByName);
+  });
+  return result;
 }
 
-/// A [RunCondition] which reports that a task should run whenever its inputs
-/// or outputs have changed since the last build.
-///
-/// If an empty [FileCollection] is given as both inputs and outputs,
-/// because an empty collection will never change, [shouldRun] will never
-/// return true, hence using this class in this way is likely a mistake.
-class RunOnChanges with RunCondition {
-  final FileCollection inputs;
-  final FileCollection outputs;
-  final DartleCache cache;
-
-  /// whether to verify that all declared outputs exist after the task has run.
-  final bool verifyOutputsExist;
-
-  /// Creates an instance of [RunOnChanges].
-  ///
-  /// At least one of [inputs] and [outputs] must be non-empty. For cases where
-  /// a task has no inputs or outputs, use [AlwaysRun] instead.
-  RunOnChanges(
-      {this.inputs = FileCollection.empty,
-      this.outputs = FileCollection.empty,
-      this.verifyOutputsExist = true,
-      DartleCache cache})
-      : this.cache = cache ?? DartleCache.instance;
-
-  @override
-  FutureOr<bool> shouldRun() async {
-    final inputsChanged = await cache.hasChanged(inputs);
-    final outputsChanged = await cache.hasChanged(outputs);
-
-    if (inputsChanged) {
-      logger.debug('Changes detected on task inputs: ${inputs}');
+TaskWithDeps _withTransitiveDependencies(
+    String taskName, Map<String, Task> tasksByName,
+    [List<String> visited = const []]) {
+  final task = tasksByName[taskName];
+  if (task == null) {
+    // this must never happen, when 'visited' is empty the
+    // given taskName should be certain to exist
+    if (visited.isEmpty) {
+      throw "Task '$taskName' does not exist";
     }
-    if (outputsChanged) {
-      logger.debug('Changes detected on task outputs: ${outputs}');
-    }
-    return inputsChanged || outputsChanged;
+    throw DartleException(
+        message: "Task '${visited.last}' depends on '${taskName}', "
+            "which does not exist.");
   }
-
-  @override
-  Future<void> postRun(TaskResult result) async {
-    var success = result.isSuccess;
-    DartleException error;
-
-    if (success) {
-      if (await outputs.isNotEmpty && verifyOutputsExist) {
-        logger.debug('Verifying task produced expected outputs');
-        try {
-          await _verifyOutputs();
-        } on DartleException catch (e) {
-          success = false;
-          error = e;
-        }
-      }
-    }
-
-    if (success) {
-      await cache(inputs);
-      await cache(outputs);
-    } else {
-      if (await outputs.isEmpty) {
-        // the task failed without any outputs, so for it to run again next
-        // time we need to remove its inputs
-        await cache.remove(inputs);
-      } else {
-        // just forget the outputs of the failed task as they
-        // may not be correct anymore
-        await cache.remove(outputs);
-      }
-      if (error != null) throw error;
-    }
-  }
-
-  Future<void> _verifyOutputs() async {
-    final missingOutputs = <String>[];
-    await for (final file in outputs.files) {
-      if (!await file.exists()) missingOutputs.add(file.path);
-    }
-    await for (final dir in outputs.directories) {
-      if (!await dir.exists()) missingOutputs.add(dir.path);
-    }
-    if (missingOutputs.isNotEmpty) {
-      throw DartleException(
-          message: 'task did not produce the following expected outputs:\n' +
-              missingOutputs.map((f) => '  * $f').join('\n'));
-    }
-  }
+  visited = [...visited, taskName];
+  return TaskWithDeps(
+      task,
+      task.dependsOn
+          .map(
+              (name) => _withTransitiveDependencies(name, tasksByName, visited))
+          .toList());
 }

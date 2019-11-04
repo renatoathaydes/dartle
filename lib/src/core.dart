@@ -3,12 +3,12 @@ import 'dart:async';
 import 'package:meta/meta.dart';
 
 import '_log.dart';
-import '_task.dart';
 import '_utils.dart';
 import 'cache.dart';
 import 'error.dart';
 import 'helpers.dart';
 import 'options.dart';
+import 'run_condition.dart';
 import 'task.dart';
 import 'task_run.dart';
 
@@ -56,46 +56,6 @@ Future<void> run(List<String> args,
     stopWatch.stop();
     logger.info("Build succeeded in ${elapsedTime(stopWatch)}");
   }
-}
-
-/// Create a [Map] from the name of a task to the corresponding [TaskWithDeps].
-///
-/// The transitive dependencies of a task are resolved, so that each returned
-/// [TaskWithDeps] knows every dependency it has, not only their directly
-/// declared dependencies.
-Map<String, TaskWithDeps> createTaskMap(Iterable<Task> tasks) {
-  final tasksByName = tasks
-      .toList(growable: false)
-      .asMap()
-      .map((_, task) => MapEntry(task.name, task));
-  final result = <String, TaskWithDeps>{};
-  tasksByName.forEach((name, task) {
-    result[name] = _withTransitiveDependencies(name, tasksByName);
-  });
-  return result;
-}
-
-TaskWithDeps _withTransitiveDependencies(
-    String taskName, Map<String, Task> tasksByName,
-    [List<String> visited = const []]) {
-  final task = tasksByName[taskName];
-  if (task == null) {
-    // this must never happen, when 'visited' is empty the
-    // given taskName should be certain to exist
-    if (visited.isEmpty) {
-      throw "Task '$taskName' does not exist";
-    }
-    throw DartleException(
-        message: "Task '${visited.last}' depends on '${taskName}', "
-            "which does not exist.");
-  }
-  visited = [...visited, taskName];
-  return TaskWithDeps(
-      task,
-      task.dependsOn
-          .map(
-              (name) => _withTransitiveDependencies(name, tasksByName, visited))
-          .toList());
 }
 
 Future<void> _runAll(List<Task> executableTasks, Options options) async {
