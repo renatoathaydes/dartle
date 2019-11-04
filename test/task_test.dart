@@ -38,14 +38,14 @@ void main() {
 
   group('Tasks', () {
     test('can run in order of their dependencies', () async {
-      var tasksInOrder = await expandToOrderOfExecution([_aw]);
+      var tasksInOrder = await getInOrderOfExecution([_aw]);
       expect(tasksInOrder.map((t) => t.name), orderedEquals(['b', 'c', 'a']));
 
-      tasksInOrder = await expandToOrderOfExecution([_aw, _bw, _cw, _dw]);
+      tasksInOrder = await getInOrderOfExecution([_aw, _bw, _cw, _dw]);
       expect(
           tasksInOrder.map((t) => t.name), orderedEquals(['b', 'c', 'a', 'd']));
 
-      tasksInOrder = await expandToOrderOfExecution([_dw]);
+      tasksInOrder = await getInOrderOfExecution([_dw]);
       expect(
           tasksInOrder.map((t) => t.name), orderedEquals(['b', 'c', 'a', 'd']));
     });

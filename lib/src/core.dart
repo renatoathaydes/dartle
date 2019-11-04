@@ -58,6 +58,11 @@ Future<void> run(List<String> args,
   }
 }
 
+/// Create a [Map] from the name of a task to the corresponding [TaskWithDeps].
+///
+/// The transitive dependencies of a task are resolved, so that each returned
+/// [TaskWithDeps] knows every dependency it has, not only their directly
+/// declared dependencies.
 Map<String, TaskWithDeps> createTaskMap(Iterable<Task> tasks) {
   final tasksByName = tasks
       .toList(growable: false)
@@ -161,10 +166,17 @@ Future<List<Task>> _getExecutableTasks(Map<String, TaskWithDeps> taskMap,
       }
     }
   }
-  return await expandToOrderOfExecution(mustRun);
+  return await getInOrderOfExecution(mustRun);
 }
 
-Future<List<Task>> expandToOrderOfExecution(List<TaskWithDeps> tasks) async {
+/// Get the tasks in the order that they should be executed, taking into account
+/// their dependencies.
+///
+/// All the tasks provided directly in the [tasks] list will be returned, as
+/// their [RunCondition] are not checked. However, their dependencies'
+/// [RunCondition] will be checked, and only those that should run will be
+/// included in the returned list.
+Future<List<Task>> getInOrderOfExecution(List<TaskWithDeps> tasks) async {
   // first of all, re-order tasks so that dependencies are in order
   tasks.sort();
 
