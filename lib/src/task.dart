@@ -1,3 +1,5 @@
+import 'package:collection/collection.dart';
+
 import 'error.dart';
 import 'run_condition.dart';
 
@@ -45,6 +47,17 @@ class Task {
 
   @override
   String toString() => 'Task{name: $name}';
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is Task &&
+          runtimeType == other.runtimeType &&
+          name == other.name &&
+          const SetEquality().equals(dependsOn, other.dependsOn);
+
+  @override
+  int get hashCode => name.hashCode ^ dependsOn.hashCode;
 }
 
 /// A [Task] including its transitive dependencies.
@@ -53,15 +66,21 @@ class Task {
 /// according to their dependencies.
 class TaskWithDeps implements Task, Comparable<TaskWithDeps> {
   final Task _task;
-  final List<TaskWithDeps> dependencies;
 
-  TaskWithDeps(this._task, [this.dependencies = const []]);
+  /// Dependencies of this task, already sorted in the order the tasks would
+  /// execute.
+  final List<TaskWithDeps> dependencies;
+  final Set<String> _allDeps;
+
+  TaskWithDeps(this._task, [this.dependencies = const []])
+      : _allDeps = dependencies.map((t) => t.name).toSet();
 
   String get name => _task.name;
 
   get action => _task.action;
 
-  Set<String> get dependsOn => dependencies.map((t) => t.name).toSet();
+  /// All transitive dependencies of this task.
+  Set<String> get dependsOn => _allDeps;
 
   String get description => _task.description;
 
@@ -80,6 +99,17 @@ class TaskWithDeps implements Task, Comparable<TaskWithDeps> {
     if (other.dependsOn.contains(this.name)) return thisBeforeOther;
     return 0;
   }
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is TaskWithDeps &&
+          runtimeType == other.runtimeType &&
+          _task == other._task &&
+          const ListEquality().equals(dependencies, other.dependencies);
+
+  @override
+  int get hashCode => _task.hashCode ^ dependencies.hashCode;
 }
 
 /// Create a [Map] from the name of a task to the corresponding [TaskWithDeps].
@@ -93,31 +123,53 @@ Map<String, TaskWithDeps> createTaskMap(Iterable<Task> tasks) {
       .asMap()
       .map((_, task) => MapEntry(task.name, task));
   final result = <String, TaskWithDeps>{};
-  tasksByName.forEach((name, task) {
-    result[name] = _withTransitiveDependencies(name, tasksByName);
+  tasksByName.forEach((name, _) {
+    _collectTransitiveDependencies(name, tasksByName, result, [], '');
   });
   return result;
 }
 
-TaskWithDeps _withTransitiveDependencies(
-    String taskName, Map<String, Task> tasksByName,
-    [List<String> visited = const []]) {
+void _collectTransitiveDependencies(
+    String taskName,
+    Map<String, Task> tasksByName,
+    Map<String, TaskWithDeps> result,
+    List<String> visited,
+    String ind) {
+  if (result.containsKey(taskName)) return;
+
   final task = tasksByName[taskName];
   if (task == null) {
-    // this must never happen, when 'visited' is empty the
-    // given taskName should be certain to exist
-    if (visited.isEmpty) {
-      throw "Task '$taskName' does not exist";
-    }
+    visited.add(taskName);
     throw DartleException(
-        message: "Task '${visited.last}' depends on '${taskName}', "
-            "which does not exist.");
+        message: "Task with name '$taskName' does not exist "
+            "(dependency path: [${visited.join(' -> ')}])");
   }
-  visited = [...visited, taskName];
-  return TaskWithDeps(
-      task,
-      task.dependsOn
-          .map(
-              (name) => _withTransitiveDependencies(name, tasksByName, visited))
-          .toList());
+  if (visited.contains(taskName)) {
+    visited.add(taskName);
+    throw DartleException(
+        message: "Task dependency cycle detected: [${visited.join(' -> ')}]");
+  }
+  visited.add(taskName);
+
+  final dependencies = <TaskWithDeps>[];
+  for (final dep in task.dependsOn) {
+    _collectTransitiveDependencies(
+        dep, tasksByName, result, visited, ind + '  ');
+    final depTask = result[dep];
+    if (depTask == null) {
+      // should never happen!!
+      throw DartleException(
+          message: 'Cannot resolve dependencies of task $dep');
+    }
+    _taskWithTransitiveDeps(depTask, dependencies);
+  }
+  dependencies.sort();
+  result[taskName] = TaskWithDeps(task, dependencies);
+}
+
+void _taskWithTransitiveDeps(TaskWithDeps task, List<TaskWithDeps> result) {
+  for (final dep in task.dependencies) {
+    _taskWithTransitiveDeps(dep, result);
+  }
+  result.add(task);
 }

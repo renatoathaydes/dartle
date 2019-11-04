@@ -14,6 +14,7 @@ dependencies:
   logging: ^0.11.3+2
   crypto: ^2.1.2
   path: ^1.6.4
+  collection: ^1.14.12
 
 dev_dependencies:
   pedantic: ^1.7.0

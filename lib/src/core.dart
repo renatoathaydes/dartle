@@ -154,7 +154,6 @@ Future<List<Task>> getInOrderOfExecution(List<TaskWithDeps> tasks) async {
   // de-duplicate tasks, adding their dependencies first
   for (final taskWithDeps in tasks) {
     final deps = taskWithDeps.dependencies.toList(growable: false);
-    deps.sort();
     for (final dep in deps) {
       await addTaskOnce(dep);
     }
