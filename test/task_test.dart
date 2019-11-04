@@ -10,10 +10,10 @@ final _c = Task(noop, name: 'c');
 final _d = Task(noop, name: 'd', dependsOn: {'a'});
 
 // TaskWithDeps includes transitive dependencies
-final _aw = TaskWithDeps(_a, {_bw, _cw});
+final _aw = TaskWithDeps(_a, [_bw, _cw]);
 final _bw = TaskWithDeps(_b);
 final _cw = TaskWithDeps(_c);
-final _dw = TaskWithDeps(_d, {_aw, _bw, _cw});
+final _dw = TaskWithDeps(_d, [_aw, _bw, _cw]);
 
 void main() {
   group('TaskWithDeps', () {
@@ -38,8 +38,16 @@ void main() {
 
   group('Tasks', () {
     test('can run in order of their dependencies', () async {
-      final tasksInOrder = expandToOrderOfExecution([_aw]);
+      var tasksInOrder = await expandToOrderOfExecution([_aw]);
       expect(tasksInOrder.map((t) => t.name), orderedEquals(['b', 'c', 'a']));
+
+      tasksInOrder = await expandToOrderOfExecution([_aw, _bw, _cw, _dw]);
+      expect(
+          tasksInOrder.map((t) => t.name), orderedEquals(['b', 'c', 'a', 'd']));
+
+      tasksInOrder = await expandToOrderOfExecution([_dw]);
+      expect(
+          tasksInOrder.map((t) => t.name), orderedEquals(['b', 'c', 'a', 'd']));
     });
   });
 }

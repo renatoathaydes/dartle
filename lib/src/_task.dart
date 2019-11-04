@@ -2,9 +2,9 @@ import 'task.dart';
 
 class TaskWithDeps implements Task, Comparable<TaskWithDeps> {
   final Task _task;
-  final Set<TaskWithDeps> dependencies;
+  final List<TaskWithDeps> dependencies;
 
-  TaskWithDeps(this._task, [this.dependencies = const {}]);
+  TaskWithDeps(this._task, [this.dependencies = const []]);
 
   String get name => _task.name;
 

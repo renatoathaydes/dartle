@@ -90,7 +90,7 @@ TaskWithDeps _withTransitiveDependencies(
       task.dependsOn
           .map(
               (name) => _withTransitiveDependencies(name, tasksByName, visited))
-          .toSet());
+          .toList());
 }
 
 Future<void> _runAll(List<Task> executableTasks, Options options) async {
@@ -161,23 +161,32 @@ Future<List<Task>> _getExecutableTasks(Map<String, TaskWithDeps> taskMap,
       }
     }
   }
-  return expandToOrderOfExecution(mustRun);
+  return await expandToOrderOfExecution(mustRun);
 }
 
-List<Task> expandToOrderOfExecution(List<TaskWithDeps> tasks) {
+Future<List<Task>> expandToOrderOfExecution(List<TaskWithDeps> tasks) async {
   // first of all, re-order tasks so that dependencies are in order
   tasks.sort();
+
   final result = <Task>[];
   final seenTasks = <String>{};
-  for (final taskWithDeps in tasks) {
-    for (final dep in taskWithDeps.dependencies) {
-      if (seenTasks.add(dep.name)) {
-        result.add(dep);
+
+  final addTaskOnce = (Task task) async {
+    if (seenTasks.add(task.name)) {
+      if (await task.runCondition.shouldRun()) {
+        result.add(task);
       }
     }
-    if (seenTasks.add(taskWithDeps.name)) {
-      result.add(taskWithDeps);
+  };
+
+  // de-duplicate tasks, adding their dependencies first
+  for (final taskWithDeps in tasks) {
+    final deps = taskWithDeps.dependencies.toList(growable: false);
+    deps.sort();
+    for (final dep in deps) {
+      await addTaskOnce(dep);
     }
+    await addTaskOnce(taskWithDeps);
   }
   return result;
 }
