@@ -16,7 +16,7 @@ final allTasks = [
 ];
 
 main(List<String> args) async =>
-    run(args, tasks: allTasks, defaultTasks: [allTasks[0]]);
+    run(args, tasks: allTasks.toSet(), defaultTasks: {allTasks[0]});
 
 hello() {
   print("Hello!");

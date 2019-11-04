@@ -17,11 +17,13 @@ class Task {
   final String description;
   final Function() action;
   final RunCondition runCondition;
+  final Set<String> dependsOn;
 
   Task(
     this.action, {
     this.description = '',
     String name = '',
+    this.dependsOn = const {},
     this.runCondition = const AlwaysRun(),
   }) : this.name = _resolveName(action, name ?? '');
 

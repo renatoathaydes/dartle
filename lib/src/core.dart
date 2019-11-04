@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:meta/meta.dart';
 
 import '_log.dart';
+import '_task.dart';
 import '_utils.dart';
 import 'cache.dart';
 import 'error.dart';
@@ -17,7 +18,7 @@ import 'task_run.dart';
 /// This method may not return if some error is found, as dartle will
 /// call [exit(code)] with the appropriate error code.
 Future<void> run(List<String> args,
-    {@required List<Task> tasks, List<Task> defaultTasks = const []}) async {
+    {@required Set<Task> tasks, Set<Task> defaultTasks = const {}}) async {
   final stopWatch = Stopwatch()..start();
 
   final options = parseOptions(args);
@@ -36,8 +37,9 @@ Future<void> run(List<String> args,
     if (taskNames.isEmpty && defaultTasks.isNotEmpty) {
       taskNames = defaultTasks.map((t) => t.name).toList();
     }
+    final taskMap = createTaskMap(tasks);
     final executableTasks =
-        await _getExecutableTasks(tasks, taskNames, options);
+        await _getExecutableTasks(taskMap, taskNames, options);
     if (options.showTasks) {
       _showAll(executableTasks, tasks, defaultTasks);
     } else {
@@ -56,6 +58,41 @@ Future<void> run(List<String> args,
   }
 }
 
+Map<String, TaskWithDeps> createTaskMap(Iterable<Task> tasks) {
+  final tasksByName = tasks
+      .toList(growable: false)
+      .asMap()
+      .map((_, task) => MapEntry(task.name, task));
+  final result = <String, TaskWithDeps>{};
+  tasksByName.forEach((name, task) {
+    result[name] = _withTransitiveDependencies(name, tasksByName);
+  });
+  return result;
+}
+
+TaskWithDeps _withTransitiveDependencies(
+    String taskName, Map<String, Task> tasksByName,
+    [List<String> visited = const []]) {
+  final task = tasksByName[taskName];
+  if (task == null) {
+    // this must never happen, when 'visited' is empty the
+    // given taskName should be certain to exist
+    if (visited.isEmpty) {
+      throw "Task '$taskName' does not exist";
+    }
+    throw DartleException(
+        message: "Task '${visited.last}' depends on '${taskName}', "
+            "which does not exist.");
+  }
+  visited = [...visited, taskName];
+  return TaskWithDeps(
+      task,
+      task.dependsOn
+          .map(
+              (name) => _withTransitiveDependencies(name, tasksByName, visited))
+          .toSet());
+}
+
 Future<void> _runAll(List<Task> executableTasks, Options options) async {
   final allErrors = <Exception>[];
 
@@ -72,9 +109,10 @@ Future<void> _runAll(List<Task> executableTasks, Options options) async {
 }
 
 void _showAll(
-    List<Task> executableTasks, List<Task> tasks, List<Task> defaultTasks) {
+    List<Task> executableTasks, Set<Task> tasks, Set<Task> defaultTasks) {
   final defaultSet = defaultTasks.map((t) => t.name).toSet();
-  tasks.sort((a, b) => a.name.compareTo(b.name));
+  // FIXME get execution order?!
+//  tasks.sort((a, b) => a.name.compareTo(b.name));
   print("Tasks declared in this build:\n");
   for (final task in tasks) {
     final desc = task.description.isEmpty ? '' : '\n      ${task.description}';
@@ -91,44 +129,61 @@ void _showAll(
   print('');
 }
 
-Future<List<Task>> _getExecutableTasks(
-    List<Task> tasks, List<String> requestedTasks, Options options) async {
+Future<List<Task>> _getExecutableTasks(Map<String, TaskWithDeps> taskMap,
+    List<String> requestedTasks, Options options) async {
   if (requestedTasks.isEmpty) {
     if (!options.showTasks) {
       logger.warn("No tasks were requested and no default tasks exist.");
     }
     return const [];
-  } else {
-    final taskMap = tasks.asMap().map((_, task) => MapEntry(task.name, task));
-    final result = <Task>[];
-    for (final taskNameSpec in requestedTasks) {
-      final task = _findTaskByName(taskMap, taskNameSpec);
-      if (task == null) {
-        if (options.showTasks) {
-          logger.warn("Task '$taskNameSpec' does not exist.");
-          continue;
-        }
-        return failBuild(reason: "Unknown task: '${taskNameSpec}'")
-            as List<Task>;
+  }
+
+  final mustRun = <TaskWithDeps>[];
+  for (final taskNameSpec in requestedTasks) {
+    final task = _findTaskByName(taskMap, taskNameSpec);
+    if (task == null) {
+      if (options.showTasks) {
+        logger.warn("Task '$taskNameSpec' does not exist.");
+        continue;
       }
-      if (options.forceTasks) {
-        logger.debug("Will force execution of task '${task.name}'");
-        result.add(task);
-      } else if (await task.runCondition.shouldRun()) {
-        result.add(task);
+      return failBuild(reason: "Unknown task: '${taskNameSpec}'") as List<Task>;
+    }
+    if (options.forceTasks) {
+      logger.debug("Will force execution of task '${task.name}'");
+      mustRun.add(task);
+    } else if (await task.runCondition.shouldRun()) {
+      mustRun.add(task);
+    } else {
+      if (options.showTasks) {
+        logger.info("Task '${task.name}' is up-to-date");
       } else {
-        if (options.showTasks) {
-          logger.info("Task '${task.name}' is up-to-date");
-        } else {
-          logger.debug("Skipping task '${task.name}' as it is up-to-date");
-        }
+        logger.debug("Skipping task '${task.name}' as it is up-to-date");
       }
     }
-    return result;
   }
+  return expandToOrderOfExecution(mustRun);
 }
 
-Task _findTaskByName(Map<String, Task> taskMap, String nameSpec) {
+List<Task> expandToOrderOfExecution(List<TaskWithDeps> tasks) {
+  // first of all, re-order tasks so that dependencies are in order
+  tasks.sort();
+  final result = <Task>[];
+  final seenTasks = <String>{};
+  for (final taskWithDeps in tasks) {
+    for (final dep in taskWithDeps.dependencies) {
+      if (seenTasks.add(dep.name)) {
+        result.add(dep);
+      }
+    }
+    if (seenTasks.add(taskWithDeps.name)) {
+      result.add(taskWithDeps);
+    }
+  }
+  return result;
+}
+
+TaskWithDeps _findTaskByName(
+    Map<String, TaskWithDeps> taskMap, String nameSpec) {
   final name =
       findMatchingByWords(nameSpec, taskMap.keys.toList(growable: false));
   if (name == null) return null;

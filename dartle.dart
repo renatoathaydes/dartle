@@ -15,7 +15,7 @@ final checkImportsTask = Task(checkImports,
     runCondition: RunOnChanges(inputs: libDir));
 
 void main(List<String> args) =>
-    run(args, tasks: [testTask, checkImportsTask], defaultTasks: [testTask]);
+    run(args, tasks: {testTask, checkImportsTask}, defaultTasks: {testTask});
 
 test() async {
   await exec(Process.start('pub', const ['run', 'test', '-p', 'vm']));
