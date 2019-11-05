@@ -13,10 +13,6 @@ const _snapshotsDir = '$dartleDir/snapshots';
 
 bool _dart2nativeAvailable;
 
-File getSnapshotLocation(File dartFile) {
-  return File(path.join(_snapshotsDir, hash(dartFile.absolute.path)));
-}
-
 FutureOr<bool> _isDart2nativeAvailable() {
   if (_dart2nativeAvailable != null) return _dart2nativeAvailable;
   return Future(() async {
@@ -25,6 +21,15 @@ FutureOr<bool> _isDart2nativeAvailable() {
   });
 }
 
+/// Get the location Dartle would store snapshots (or native binary, if
+/// dart2native is available on the system) taken with the [createDartSnapshot]
+/// method.
+File getSnapshotLocation(File dartFile) {
+  return File(path.join(_snapshotsDir, hash(dartFile.absolute.path)));
+}
+
+/// Take a snapshot of the given [dartFile], or compile it to a native binary
+/// if dart2native is available on the system.
 Future<File> createDartSnapshot(File dartFile) async {
   await Directory(_snapshotsDir).create(recursive: true);
   var snapshotLocation = getSnapshotLocation(dartFile);
@@ -36,8 +41,15 @@ Future<File> createDartSnapshot(File dartFile) async {
   return snapshotLocation;
 }
 
+/// Run a Dart snapshot or compiled binary created via the [createDartSnapshot]
+/// method.
 Future<int> runDartSnapshot(File dartSnapshot,
     {List<String> args = const []}) async {
+  if (!await dartSnapshot.exists()) {
+    throw DartleException(
+        message: 'Cannot run Dart snapshot as it does '
+            'not exist: ${dartSnapshot.path}');
+  }
   Future<Process> proc;
   if (await _isDart2nativeAvailable()) {
     proc = Process.start(dartSnapshot.path, args);
@@ -45,7 +57,7 @@ Future<int> runDartSnapshot(File dartSnapshot,
     proc = Process.start('dart', [dartSnapshot.absolute.path, ...args]);
   }
 
-  logger.debug("Running Dartle build: ${dartSnapshot.path}");
+  logger.debug("Running compiled Dartle build: ${dartSnapshot.path}");
 
   return await exec(
     proc,
