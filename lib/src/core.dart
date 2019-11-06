@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 
 import 'package:meta/meta.dart';
 
@@ -47,14 +48,18 @@ Future<void> run(List<String> args,
           "${taskNames.length} selected task(s)");
       await _runAll(executableTasks, options);
     }
-  } on DartleException catch (e) {
-    logger.warn("Build failed in ${elapsedTime(stopWatch)}");
-    failBuild(reason: e.message, exitCode: e.exitCode);
-  } on Exception catch (e) {
-    failBuild(reason: 'Unexpected error: $e');
-  } finally {
+
     stopWatch.stop();
     logger.info("Build succeeded in ${elapsedTime(stopWatch)}");
+    exit(0);
+  } on DartleException catch (e) {
+    logger.error(e.message);
+    logger.error("Build failed in ${elapsedTime(stopWatch)}");
+    exit(e.exitCode);
+  } on Exception catch (e) {
+    logger.error("Unexpected error: $e");
+    logger.error("Build failed in ${elapsedTime(stopWatch)}");
+    exit(22);
   }
 }
 

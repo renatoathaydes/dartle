@@ -42,9 +42,11 @@ void main(List<String> args) async {
   try {
     await _runBuild(snapshotFile, compileTaskResult, args);
   } on DartleException catch (e) {
-    failBuild(reason: e.message, exitCode: e.exitCode);
+    if (e.message.isNotEmpty) logger.severe(e.message);
+    exit(e.exitCode);
   } on Exception catch (e) {
-    failBuild(reason: 'Unexpected error: $e');
+    logger.severe('Unexpected error: $e');
+    exit(20);
   }
 }
 
@@ -74,7 +76,9 @@ Future<void> _runBuild(
       }
     }
   }
-  exit(exitCode);
+  if (exitCode != 0) {
+    failBuild(reason: '', exitCode: exitCode);
+  }
 }
 
 Future<Task> _createDartCompileTask() async {

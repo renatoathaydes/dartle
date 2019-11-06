@@ -21,13 +21,15 @@ void main() {
     test('logs expected output', () async {
       var proc =
           await TestProcess.start('dart', ['example/dartle.dart', 'hello']);
-      await expectLater(proc.stdout, emits(contains('Executing 1 task(s) out of 1 selected task(s)')));
+      await expectLater(proc.stdout,
+          emits(contains('Executing 1 task(s) out of 1 selected task(s)')));
       await expectLater(proc.stdout, emits(contains("Running task 'hello'")));
       await expectLater(proc.stdout, emits('Hello!'));
       await proc.shouldExit(0);
 
       proc = await TestProcess.start('dart', ['example/dartle.dart', 'bye']);
-      await expectLater(proc.stdout, emits(contains('Executing 1 task(s) out of 1 selected task(s)')));
+      await expectLater(proc.stdout,
+          emits(contains('Executing 1 task(s) out of 1 selected task(s)')));
       await expectLater(proc.stdout, emits(contains("Running task 'bye'")));
       await expectLater(proc.stdout, emits('Bye!'));
       await proc.shouldExit(0);

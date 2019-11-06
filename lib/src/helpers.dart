@@ -5,6 +5,7 @@ import 'dart:io';
 import 'package:meta/meta.dart';
 
 import '_log.dart';
+import 'error.dart';
 import 'file_collection.dart';
 import 'run_condition.dart';
 import 'std_stream_consumer.dart';
@@ -17,8 +18,7 @@ const dartleDir = '.dartle_tool';
 ///
 /// This function never returns.
 failBuild({@required String reason, int exitCode = 1}) {
-  logger.error(reason);
-  exit(exitCode);
+  throw DartleException(message: reason, exitCode: exitCode);
 }
 
 /// Run the given action ignoring any Exceptions thrown by it.
