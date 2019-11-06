@@ -5,7 +5,6 @@ import 'dart:io';
 import 'package:meta/meta.dart';
 
 import '_log.dart';
-import 'error.dart';
 import 'file_collection.dart';
 import 'run_condition.dart';
 import 'std_stream_consumer.dart';
@@ -31,58 +30,37 @@ FutureOr ignoreExceptions(FutureOr Function() action) async {
   }
 }
 
-/// Executes the given process.
+/// Executes the given process, returning its exit code.
 ///
-/// [stdoutConsumer] and [stderrConsumer] can be provided in order to consume
+/// [onStdoutLine] and [onStderrLine] can be provided in order to consume
 /// the process' stdout and stderr streams, respectively (the process's output
-/// is interpreted as utf8 emitted line by line). If not provided,
-/// the streams are consumed but thrown away unless there's an error, in which
-/// case the both streams are logged at debug level (except if [onDone] is
-/// overridden).
+/// is interpreted as utf8 emitted line by line).
 ///
-/// [onDone] is called when the process has exited, with the exit code given
-/// to the callback.
-///
-/// By default, [onDone] throws a [DartleException] if the exit code is not 0.
-Future<T> exec<T>(
-  Future<Process> process, {
-  StdStreamConsumer stdoutConsumer,
-  StdStreamConsumer stderrConsumer,
-  T Function(int exitCode) onDone,
-}) async {
+/// If not provided, the streams are consumed and printed to stdout or stderr,
+/// respectively.
+Future<int> exec(Future<Process> process,
+    {String name = '',
+    Function(String) onStdoutLine,
+    Function(String) onStderrLine}) async {
   final proc = await process;
-  logger.debug("Started process ${proc.pid}");
-  final stdoutCons = stdoutConsumer ??
-      StdStreamConsumer(printToStdout: logger.isLevelEnabled(LogLevel.debug));
-  final stderrCons = stderrConsumer ?? StdStreamConsumer(keepLines: true);
-  final T Function(int) onDoneAction = (int code) {
-    if (code != 0) {
-      final errOut = stderrCons.lines;
-      errOut.forEach(logger.warn);
-    }
-    if (onDone != null) return onDone(code);
-    if (code != 0) {
-      throw DartleException(
-          message: "Process ${proc.pid} exited with code $code",
-          exitCode: code);
-    }
-    return code as T;
-  };
+  final procDescription = "process${name.isEmpty ? '' : " '$name'"} "
+      "(PID=${proc.pid})";
+  logger.debug("Started ${procDescription}");
+  onStdoutLine ??= StdStreamConsumer(printToStdout: true);
+  onStderrLine ??= StdStreamConsumer(printToStderr: true);
 
   proc.stdout
       .transform(utf8.decoder)
       .transform(const LineSplitter())
-      .listen(stdoutCons);
+      .listen(onStdoutLine);
   proc.stderr
       .transform(utf8.decoder)
       .transform(const LineSplitter())
-      .listen(stderrCons);
+      .listen(onStderrLine);
 
   final code = await proc.exitCode;
-
-  logger.debug("Process ${proc.pid} exited with code $code");
-
-  return onDoneAction(code);
+  logger.debug("${procDescription} exited with code $code");
+  return code;
 }
 
 /// Deletes the outputs of all [tasks].

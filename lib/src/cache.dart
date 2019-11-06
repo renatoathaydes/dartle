@@ -137,6 +137,8 @@ class DartleCache {
     final hashFile = _getCacheLocation(file);
     var hashExists = await hashFile.exists();
     if (!await file.exists()) {
+      logger.debug("File ${file.path} does not exist "
+          "${hashExists ? 'but was cached' : 'and was not known before'}");
       return hashExists;
     }
     bool changed;

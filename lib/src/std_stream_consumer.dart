@@ -32,7 +32,7 @@ class StdStreamConsumer {
     }
   }
 
-  /// The lines received by this consumer.
+  /// The lines received by this consumer (empty if [keepLines] is false).
   List<String> get lines => _linesAccumulator.lines;
 }
 

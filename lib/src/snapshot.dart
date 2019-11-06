@@ -1,13 +1,13 @@
 import 'dart:async';
 import 'dart:io';
 
+import 'package:dartle/dartle.dart';
 import 'package:path/path.dart' as path;
 
 import '_log.dart';
 import '_utils.dart';
 import 'error.dart';
 import 'helpers.dart';
-import 'std_stream_consumer.dart';
 
 const _snapshotsDir = '$dartleDir/snapshots';
 
@@ -59,26 +59,23 @@ Future<int> runDartSnapshot(File dartSnapshot,
 
   logger.debug("Running compiled Dartle build: ${dartSnapshot.path}");
 
-  return await exec(
-    proc,
-    stdoutConsumer: StdStreamConsumer(printToStdout: true),
-    stderrConsumer: StdStreamConsumer(printToStderr: true),
-    onDone: (code) => code,
-  );
+  return await exec(proc, name: 'dartle build');
 }
 
-Future<void> _dart2native(File dartFile, File destination) {
+Future<void> _dart2native(File dartFile, File destination) async {
   logger.debug("Using 'dart2native' to compile Dart file: ${dartFile.path}");
-  return exec(
+  final code = await exec(
       Process.start('dart2native', [dartFile.path, '-o', destination.path]),
-      onDone: (code) => _onSnapshotDone(code, dartFile, destination));
+      name: 'dart2native');
+  await _onSnapshotDone(code, dartFile, destination);
 }
 
 Future<void> _snapshot(File dartFile, File destination) async {
   logger.debug("Using 'dart' to snapshot Dart file: ${dartFile.path}");
-  await exec(
+  final code = await exec(
       Process.start('dart', ['--snapshot=${destination.path}', dartFile.path]),
-      onDone: (code) => _onSnapshotDone(code, dartFile, destination));
+      name: 'dart snapshot');
+  await _onSnapshotDone(code, dartFile, destination);
 }
 
 void _onSnapshotDone(int code, File dartFile, File destination) {

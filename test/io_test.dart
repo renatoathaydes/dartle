@@ -129,6 +129,11 @@ class Entry {
   final List<int> _bytes;
   final bool _isFile;
 
+  Entry.file(String name)
+      : _name = name,
+        _isFile = true,
+        _bytes = const [];
+
   Entry.fileWithText(String name, String text)
       : _name = name,
         _isFile = true,
@@ -145,7 +150,7 @@ class Entry {
         _bytes = const [];
 }
 
-Future<FileSystem> createFileSystem(List<Entry> entries) async {
+Future<FileSystem> createFileSystem(Iterable<Entry> entries) async {
   final fs = MemoryFileSystem();
   for (var entry in entries) {
     if (entry._isFile) {
