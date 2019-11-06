@@ -64,15 +64,22 @@ class RunOnChanges with RunCondition {
   @override
   FutureOr<bool> shouldRun() async {
     final inputsChanged = await cache.hasChanged(inputs);
-    final outputsChanged = await cache.hasChanged(outputs);
-
     if (inputsChanged) {
       logger.debug('Changes detected on task inputs: ${inputs}');
+      return true;
     }
+    final outputsChanged = await cache.hasChanged(outputs);
     if (outputsChanged) {
       logger.debug('Changes detected on task outputs: ${outputs}');
+      return true;
     }
-    return inputsChanged || outputsChanged;
+    await for (final output in outputs.files) {
+      if (!await output.exists()) {
+        logger.debug("Task output does not exist: ${output.path}");
+        return true;
+      }
+    }
+    return false;
   }
 
   @override

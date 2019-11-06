@@ -3,6 +3,9 @@ import 'package:dartle/dartle_cache.dart';
 import 'package:mockito/mockito.dart';
 import 'package:test/test.dart';
 
+import 'io_test.dart';
+import 'test_utils.dart';
+
 void main() {
   group('RunOnChanges', () {
     test('never runs if inputs/outputs are empty', () async {
@@ -51,17 +54,43 @@ void main() {
       expect(await runOnChanges.shouldRun(), isTrue);
     });
 
-    test('does not run if no intpus nor outpus change', () async {
-      final cache = _TestCache();
-      final ins = file('z');
-      final outs = files(['a', 'b', 'c']);
-      when(cache.hasChanged(ins)).thenAnswer((_) => Future.value(false));
-      when(cache.hasChanged(outs)).thenAnswer((_) => Future.value(false));
+    test('does not run if no inputs or outpus change', () async {
+      // should not run as the outputs already exist and are not modified
+      final fs =
+          await createFileSystem(['a', 'b', 'c'].map((f) => Entry.file(f)));
 
-      final runOnChanges =
-          RunOnChanges(inputs: ins, outputs: outs, cache: cache);
+      var wouldRun = await withFileSystem(fs, () async {
+        final cache = _TestCache();
+        final ins = file('z');
+        final outs = files(['a', 'b', 'c']);
+        when(cache.hasChanged(ins)).thenAnswer((_) => Future.value(false));
+        when(cache.hasChanged(outs)).thenAnswer((_) => Future.value(false));
 
-      expect(await runOnChanges.shouldRun(), isFalse);
+        final runOnChanges =
+            RunOnChanges(inputs: ins, outputs: outs, cache: cache);
+
+        return await runOnChanges.shouldRun();
+      });
+      expect(wouldRun, isFalse);
+    });
+
+    test('runs if inputs and outpus did not change but output does not exist',
+        () async {
+      final fs = await createFileSystem([]);
+
+      var wouldRun = await withFileSystem(fs, () async {
+        final cache = _TestCache();
+        final ins = file('in');
+        final outs = files(['out']);
+        when(cache.hasChanged(ins)).thenAnswer((_) => Future.value(false));
+        when(cache.hasChanged(outs)).thenAnswer((_) => Future.value(false));
+
+        final runOnChanges =
+            RunOnChanges(inputs: ins, outputs: outs, cache: cache);
+
+        return await runOnChanges.shouldRun();
+      });
+      expect(wouldRun, isTrue);
     });
   });
 }
