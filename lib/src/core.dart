@@ -148,9 +148,9 @@ Future<List<Task>> getInOrderOfExecution(List<TaskWithDeps> tasks) async {
   final result = <Task>[];
   final seenTasks = <String>{};
 
-  final addTaskOnce = (Task task) async {
+  final addTaskOnce = (Task task, bool checkShouldRun) async {
     if (seenTasks.add(task.name)) {
-      if (await task.runCondition.shouldRun()) {
+      if (!checkShouldRun || await task.runCondition.shouldRun()) {
         result.add(task);
       }
     }
@@ -160,9 +160,9 @@ Future<List<Task>> getInOrderOfExecution(List<TaskWithDeps> tasks) async {
   for (final taskWithDeps in tasks) {
     final deps = taskWithDeps.dependencies.toList(growable: false);
     for (final dep in deps) {
-      await addTaskOnce(dep);
+      await addTaskOnce(dep, true);
     }
-    await addTaskOnce(taskWithDeps);
+    await addTaskOnce(taskWithDeps, false);
   }
   return result;
 }
