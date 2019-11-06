@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'dart:io';
 
-import 'package:dartle/dartle.dart';
 import 'package:path/path.dart' as path;
 
 import '_log.dart';
