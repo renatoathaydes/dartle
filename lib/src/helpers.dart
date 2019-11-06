@@ -63,6 +63,52 @@ Future<int> exec(Future<Process> process,
   return code;
 }
 
+/// Defines which stream(s) should be redirected to the calling process' streams
+/// from another running [Process] when using the [execProc] function.
+enum StreamRedirectMode { stdout, stderr, stdout_stderr, none }
+
+/// Executes the given process, returning its exit code.
+///
+/// This method is similar to [exec], but simpler to use for cases where
+/// the greater flexibility offered by [exec] is not required.
+///
+/// A [StreamRedirectMode] can be provided so to configure whether the process' output
+/// should be redirected to the calling process's streams in case of success or
+/// failure.
+///
+/// By default, both streams are redirected in case of failure, but none in case
+/// of success.
+Future<int> execProc(Future<Process> process,
+    {String name = '',
+    Set<int> successCodes = const {0},
+    StreamRedirectMode successMode = StreamRedirectMode.none,
+    StreamRedirectMode errorMode = StreamRedirectMode.stdout_stderr}) async {
+  final allDisabled = successMode == StreamRedirectMode.none &&
+      errorMode == StreamRedirectMode.none;
+  final stdoutConsumer = StdStreamConsumer(keepLines: !allDisabled);
+  final stderrConsumer = StdStreamConsumer(keepLines: !allDisabled);
+  final code = await exec(process,
+      name: name, onStdoutLine: stdoutConsumer, onStderrLine: stderrConsumer);
+  if (allDisabled) return code;
+  final redirect = (StreamRedirectMode mode) async {
+    switch (mode) {
+      case StreamRedirectMode.none:
+        break;
+      case StreamRedirectMode.stderr:
+        stderr.writeAll(await stderrConsumer.lines, '\n');
+        break;
+      case StreamRedirectMode.stdout:
+        stdout.writeAll(await stdoutConsumer.lines, '\n');
+        break;
+      case StreamRedirectMode.stdout_stderr:
+        stdout.writeAll(await stdoutConsumer.lines, '\n');
+        stderr.writeAll(await stderrConsumer.lines, '\n');
+    }
+  };
+  await redirect(successCodes.contains(code) ? successMode : errorMode);
+  return code;
+}
+
 /// Deletes the outputs of all [tasks].
 ///
 /// This method only works if the task's [RunCondition]s are instances of

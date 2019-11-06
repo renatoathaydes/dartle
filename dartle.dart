@@ -18,15 +18,10 @@ void main(List<String> args) =>
     run(args, tasks: {testTask, checkImportsTask}, defaultTasks: {testTask});
 
 test() async {
-  final stdoutConsumer = StdStreamConsumer(keepLines: true);
-  final code = await exec(
+  final code = await execProc(
       Process.start('pub', const ['run', 'test', '-p', 'vm']),
-      name: 'Dart Tests',
-      onStdoutLine: stdoutConsumer);
-  if (code != 0) {
-    stdoutConsumer.lines.forEach(print);
-    failBuild(reason: 'Tests failed');
-  }
+      name: 'Dart Tests');
+  if (code != 0) failBuild(reason: 'Tests failed');
 }
 
 checkImports() async {
