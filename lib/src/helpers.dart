@@ -95,14 +95,22 @@ Future<int> execProc(Future<Process> process,
       case StreamRedirectMode.none:
         break;
       case StreamRedirectMode.stderr:
-        stderr.writeAll(await stderrConsumer.lines, '\n');
+        stderr
+          ..writeAll(await stderrConsumer.lines, '\n')
+          ..writeln();
         break;
       case StreamRedirectMode.stdout:
-        stdout.writeAll(await stdoutConsumer.lines, '\n');
+        stdout
+          ..writeAll(await stdoutConsumer.lines, '\n')
+          ..writeln();
         break;
       case StreamRedirectMode.stdout_stderr:
-        stdout.writeAll(await stdoutConsumer.lines, '\n');
-        stderr.writeAll(await stderrConsumer.lines, '\n');
+        stdout
+          ..writeAll(await stdoutConsumer.lines, '\n')
+          ..writeln();
+        stderr
+          ..writeAll(await stderrConsumer.lines, '\n')
+          ..writeln();
     }
   };
   await redirect(successCodes.contains(code) ? successMode : errorMode);
