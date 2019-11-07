@@ -53,8 +53,8 @@ checkImports() async {
     final illegalImports = (await file.readAsLines()).where(
         (line) => line.contains(RegExp("^import\\s+['\"]package:dartle")));
     if (illegalImports.isNotEmpty) {
-      throw DartleException(
-          message: 'File ${file.path} contains '
+      failBuild(
+          reason: 'File ${file.path} contains '
               'self import to the dartle package: ${illegalImports}');
     }
   }
