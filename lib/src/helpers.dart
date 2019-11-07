@@ -38,6 +38,10 @@ FutureOr ignoreExceptions(FutureOr Function() action) async {
 ///
 /// If not provided, the streams are consumed and printed to stdout or stderr,
 /// respectively.
+///
+/// Instances of [StdStreamConsumer] can be used as [onStdoutLine] and
+/// [onStderrLine] functions in order to easily configure what to do with the
+/// process' output.
 Future<int> exec(Future<Process> process,
     {String name = '',
     Function(String) onStdoutLine,
@@ -70,11 +74,11 @@ enum StreamRedirectMode { stdout, stderr, stdout_stderr, none }
 /// Executes the given process, returning its exit code.
 ///
 /// This method is similar to [exec], but simpler to use for cases where
-/// the greater flexibility offered by [exec] is not required.
+/// it is desirable to redirect the process' streams.
 ///
-/// A [StreamRedirectMode] can be provided so to configure whether the process' output
-/// should be redirected to the calling process's streams in case of success or
-/// failure.
+/// A [StreamRedirectMode] can be provided so to configure whether the process'
+/// output should be redirected to the calling process's streams in case of
+/// success or failure.
 ///
 /// By default, both streams are redirected in case of failure, but none in case
 /// of success.
