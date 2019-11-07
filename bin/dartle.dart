@@ -55,12 +55,12 @@ Future<void> _runBuild(
   int exitCode = 0;
 
   if (compileTaskResult == null) {
-    exitCode = await runDartSnapshot(snapshotFile, args: args);
+    exitCode = await _runSnapshot(snapshotFile, args: args);
   } else {
     try {
       if (compileTaskResult.isSuccess) {
         logger.info("Dartle build file compiled successfully, starting build.");
-        exitCode = await runDartSnapshot(snapshotFile, args: args);
+        exitCode = await _runSnapshot(snapshotFile, args: args);
       }
     } finally {
       try {
@@ -79,6 +79,10 @@ Future<void> _runBuild(
   if (exitCode != 0) {
     failBuild(reason: '', exitCode: exitCode);
   }
+}
+
+Future<int> _runSnapshot(File dartSnapshot, {List<String> args = const []}) {
+  return exec(runDartSnapshot(dartSnapshot, args: args), name: 'dartle build');
 }
 
 Future<Task> _createDartCompileTask() async {

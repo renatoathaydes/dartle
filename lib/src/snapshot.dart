@@ -42,8 +42,8 @@ Future<File> createDartSnapshot(File dartFile) async {
 
 /// Run a Dart snapshot or compiled binary created via the [createDartSnapshot]
 /// method.
-Future<int> runDartSnapshot(File dartSnapshot,
-    {List<String> args = const []}) async {
+Future<Process> runDartSnapshot(File dartSnapshot,
+    {List<String> args = const [], String workingDirectory = ''}) async {
   if (!await dartSnapshot.exists()) {
     throw DartleException(
         message: 'Cannot run Dart snapshot as it does '
@@ -51,14 +51,16 @@ Future<int> runDartSnapshot(File dartSnapshot,
   }
   Future<Process> proc;
   if (await _isDart2nativeAvailable()) {
-    proc = Process.start(dartSnapshot.path, args);
+    proc = Process.start(dartSnapshot.path, args,
+        workingDirectory: workingDirectory);
   } else {
-    proc = Process.start('dart', [dartSnapshot.absolute.path, ...args]);
+    proc = Process.start('dart', [dartSnapshot.absolute.path, ...args],
+        workingDirectory: workingDirectory);
   }
 
   logger.debug("Running compiled Dartle build: ${dartSnapshot.path}");
 
-  return await exec(proc, name: 'dartle build');
+  return proc;
 }
 
 Future<void> _dart2native(File dartFile, File destination) async {
