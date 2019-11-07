@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:meta/meta.dart';
 
 import '_log.dart';
+import '_task_graph.dart';
 import '_utils.dart';
 import 'cache.dart';
 import 'error.dart';
@@ -41,8 +42,10 @@ Future<void> run(List<String> args,
     final taskMap = createTaskMap(tasks);
     final executableTasks =
         await _getExecutableTasks(taskMap, taskNames, options);
-    if (options.showTasks) {
-      _showAll(executableTasks, tasks, defaultTasks);
+    if (options.showInfoOnly) {
+      print("======== Showing build information only, no tasks will "
+          "be executed ========\n");
+      showTasksInfo(executableTasks, tasks, defaultTasks, options);
     } else {
       logger.info("Executing ${executableTasks.length} task(s) out of "
           "${taskNames.length} selected task(s)");
@@ -50,7 +53,9 @@ Future<void> run(List<String> args,
     }
 
     stopWatch.stop();
-    logger.info("Build succeeded in ${elapsedTime(stopWatch)}");
+    if (!options.showInfoOnly) {
+      logger.info("Build succeeded in ${elapsedTime(stopWatch)}");
+    }
     exit(0);
   } on DartleException catch (e) {
     logger.error(e.message);
@@ -78,31 +83,10 @@ Future<void> _runAll(List<Task> executableTasks, Options options) async {
   }
 }
 
-void _showAll(
-    List<Task> executableTasks, Set<Task> tasks, Set<Task> defaultTasks) {
-  final defaultSet = defaultTasks.map((t) => t.name).toSet();
-  // FIXME get execution order?!
-//  tasks.sort((a, b) => a.name.compareTo(b.name));
-  print("Tasks declared in this build:\n");
-  for (final task in tasks) {
-    final desc = task.description.isEmpty ? '' : '\n      ${task.description}';
-    final isDefault = defaultSet.contains(task.name) ? ' [default]' : '';
-    print("  * ${task.name}${isDefault}${desc}");
-  }
-  print('');
-  if (executableTasks.isEmpty) {
-    print('No tasks would have executed with the options provided');
-  } else {
-    print('The following tasks would have executed, in this order:');
-    executableTasks.forEach((t) => print('  * ${t.name}'));
-  }
-  print('');
-}
-
 Future<List<Task>> _getExecutableTasks(Map<String, TaskWithDeps> taskMap,
     List<String> requestedTasks, Options options) async {
   if (requestedTasks.isEmpty) {
-    if (!options.showTasks) {
+    if (!options.showInfoOnly) {
       logger.warn("No tasks were requested and no default tasks exist.");
     }
     return const [];
@@ -112,7 +96,7 @@ Future<List<Task>> _getExecutableTasks(Map<String, TaskWithDeps> taskMap,
   for (final taskNameSpec in requestedTasks) {
     final task = _findTaskByName(taskMap, taskNameSpec);
     if (task == null) {
-      if (options.showTasks) {
+      if (options.showInfoOnly) {
         logger.warn("Task '$taskNameSpec' does not exist.");
         continue;
       }

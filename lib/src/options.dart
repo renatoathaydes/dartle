@@ -9,6 +9,7 @@ class Options {
   final bool forceTasks;
   final bool showHelp;
   final bool showTasks;
+  final bool showTaskGraph;
   final bool resetCache;
   final List<String> requestedTasks;
 
@@ -16,9 +17,12 @@ class Options {
       {this.logLevel = log.Level.INFO,
       this.showHelp = false,
       this.showTasks = false,
+      this.showTaskGraph = false,
       this.forceTasks = false,
       this.resetCache = false,
       this.requestedTasks = const []});
+
+  bool get showInfoOnly => showTasks || showTaskGraph || showHelp;
 }
 
 final _parser = ArgParser()
@@ -40,6 +44,13 @@ final _parser = ArgParser()
     abbr: 's',
     negatable: false,
     help: 'Show all tasks in this build. Does not run any tasks when enabled.',
+  )
+  ..addFlag(
+    'show-task-graph',
+    abbr: 'g',
+    negatable: false,
+    help: 'Show the task graph for this build. '
+        'Does not run any tasks when enabled.',
   )
   ..addFlag(
     'reset-cache',
@@ -91,6 +102,7 @@ Options parseOptions(List<String> args) {
     logLevel: _parseLogLevel(parseResult['log-level'].toString()),
     forceTasks: parseResult.wasParsed('force-tasks'),
     showTasks: parseResult.wasParsed('show-tasks'),
+    showTaskGraph: parseResult.wasParsed('show-task-graph'),
     requestedTasks: parseResult.rest,
     resetCache: parseResult.wasParsed('reset-cache'),
   );
