@@ -43,7 +43,7 @@ Future<File> createDartSnapshot(File dartFile) async {
 /// Run a Dart snapshot or compiled binary created via the [createDartSnapshot]
 /// method.
 Future<Process> runDartSnapshot(File dartSnapshot,
-    {List<String> args = const [], String workingDirectory = ''}) async {
+    {List<String> args = const [], String workingDirectory}) async {
   if (!await dartSnapshot.exists()) {
     throw DartleException(
         message: 'Cannot run Dart snapshot as it does '
