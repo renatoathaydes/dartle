@@ -34,14 +34,14 @@ final _parser = ArgParser()
     'log-level',
     abbr: 'l',
     defaultsTo: 'info',
-    help: 'Set the log level',
+    help: 'Set the log level.',
     allowed: levelByName.keys,
   )
   ..addFlag(
     'force-tasks',
     abbr: 'f',
     negatable: false,
-    help: 'Force all selected tasks to run',
+    help: 'Force all selected tasks to run.',
   )
   ..addFlag(
     'show-tasks',
@@ -60,19 +60,19 @@ final _parser = ArgParser()
     'reset-cache',
     abbr: 'z',
     negatable: false,
-    help: 'Reset the Dartle cache',
+    help: 'Reset the Dartle cache.',
   )
   ..addFlag(
     'version',
     abbr: 'v',
     negatable: false,
-    help: 'Show the Dartle version',
+    help: 'Show the Dartle version.',
   )
   ..addFlag(
     'help',
     abbr: 'h',
     negatable: false,
-    help: 'Show this help message',
+    help: 'Show this help message.',
   );
 
 /// Dartle usage message.
