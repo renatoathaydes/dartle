@@ -20,25 +20,25 @@ final analyzeCodeTask = Task(analyzeCode,
     description: 'Analyzes Dart source code',
     runCondition: RunOnChanges(inputs: allDartFiles));
 
-final verifyTask = Task(() => null, // no action, just grouping other tasks
-    name: 'verify',
-    description: 'Verifies code style and linters',
-    dependsOn: {'checkImports', 'formatCode', 'analyzeCode'});
-
 final testTask = Task(test,
     description: 'Runs all tests',
-    dependsOn: {'verify'},
+    dependsOn: {'analyzeCode'},
     runCondition:
         RunOnChanges(inputs: dirs(const ['lib', 'bin', 'test', 'example'])));
+
+final verifyTask = Task(() => null, // no action, just grouping other tasks
+    name: 'verify',
+    description: 'Verifies code style and linters, runs tests',
+    dependsOn: {'checkImports', 'formatCode', 'analyzeCode', 'test'});
 
 void main(List<String> args) => run(args, tasks: {
       checkImportsTask,
       formatCodeTask,
       analyzeCodeTask,
+      testTask,
       verifyTask,
-      testTask
     }, defaultTasks: {
-      testTask
+      verifyTask
     });
 
 test() async {
