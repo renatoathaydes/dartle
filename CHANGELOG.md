@@ -1,3 +1,14 @@
+## 0.4.0
+
+- Implemented task dependencies.
+- New option to show all build tasks.
+- New option to show task graph.
+- Use dart2native to compile dartle build file where available.
+- Better error handling to avoid crashes.
+- Improved process execution functions.
+- Fixed RunOnChanges: must run task if its outputs do not exist.
+- Changed failBuild function to throw DartleException (not call exit).
+
 ## 0.3.0
 
 - Improved dartle caching.
