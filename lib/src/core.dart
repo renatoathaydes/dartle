@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:io';
 
+import 'package:dartle/src/dartle_version.g.dart';
 import 'package:meta/meta.dart';
 
 import '_log.dart';
@@ -27,8 +28,12 @@ Future<void> run(List<String> args,
   if (options.showHelp) {
     return print(dartleUsage);
   }
+  if (options.showVersion) {
+    return print("Dartle version ${dartleVersion}");
+  }
 
   activateLogging(options.logLevel);
+  logger.debug("Dartle version: ${dartleVersion}");
 
   if (options.resetCache) {
     await DartleCache.instance.clean();

@@ -11,6 +11,9 @@ void main(List<String> args) async {
   if (options.showHelp) {
     return print(dartleUsage);
   }
+  if (options.showVersion) {
+    return print("Dartle version ${dartleVersion}");
+  }
 
   activateLogging(options.logLevel);
 

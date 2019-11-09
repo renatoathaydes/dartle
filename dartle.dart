@@ -3,10 +3,18 @@ import 'dart:io';
 import 'package:dartle/dartle.dart';
 import 'package:path/path.dart' show extension;
 
+import 'dartle-src/metadata_generator.dart' show generateVersionDartFile;
+
 FileFilter dartFileFilter = (f) => extension(f.path) == '.dart';
 
 final libDirDartFiles = dir('lib', fileFilter: dartFileFilter);
 final allDartFiles = dir('.', fileFilter: dartFileFilter);
+
+final generateDartleVersionFileTask = Task(
+    () async =>
+        await generateVersionDartFile(File('lib/src/dartle_version.g.dart')),
+    name: 'generateDartSources',
+    description: 'Generates Dart source files');
 
 final checkImportsTask = Task(checkImports,
     description: 'Checks dart file imports are allowed',
@@ -18,6 +26,7 @@ final formatCodeTask = Task(formatCode,
 
 final analyzeCodeTask = Task(analyzeCode,
     description: 'Analyzes Dart source code',
+    dependsOn: {'generateDartSources'},
     runCondition: RunOnChanges(inputs: allDartFiles));
 
 final testTask = Task(test,
@@ -32,6 +41,7 @@ final verifyTask = Task(() => null, // no action, just grouping other tasks
     dependsOn: {'checkImports', 'formatCode', 'analyzeCode', 'test'});
 
 void main(List<String> args) => run(args, tasks: {
+      generateDartleVersionFileTask,
       checkImportsTask,
       formatCodeTask,
       analyzeCodeTask,

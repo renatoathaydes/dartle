@@ -1,4 +1,5 @@
 import 'package:args/args.dart';
+import 'package:dartle/dartle.dart';
 import 'package:logging/logging.dart' as log;
 
 import '_log.dart';
@@ -8,6 +9,7 @@ class Options {
   final log.Level logLevel;
   final bool forceTasks;
   final bool showHelp;
+  final bool showVersion;
   final bool showTasks;
   final bool showTaskGraph;
   final bool resetCache;
@@ -16,13 +18,15 @@ class Options {
   const Options(
       {this.logLevel = log.Level.INFO,
       this.showHelp = false,
+      this.showVersion = false,
       this.showTasks = false,
       this.showTaskGraph = false,
       this.forceTasks = false,
       this.resetCache = false,
       this.requestedTasks = const []});
 
-  bool get showInfoOnly => showTasks || showTaskGraph || showHelp;
+  bool get showInfoOnly =>
+      showTasks || showTaskGraph || showHelp || showVersion;
 }
 
 final _parser = ArgParser()
@@ -30,7 +34,7 @@ final _parser = ArgParser()
     'log-level',
     abbr: 'l',
     defaultsTo: 'info',
-    help: 'sets the log level',
+    help: 'Set the log level',
     allowed: levelByName.keys,
   )
   ..addFlag(
@@ -59,14 +63,22 @@ final _parser = ArgParser()
     help: 'Reset the Dartle cache',
   )
   ..addFlag(
+    'version',
+    abbr: 'v',
+    negatable: false,
+    help: 'Show the Dartle version',
+  )
+  ..addFlag(
     'help',
     abbr: 'h',
     negatable: false,
-    help: 'show this help message',
+    help: 'Show this help message',
   );
 
 /// Dartle usage message.
 String get dartleUsage => """
+Dartle ${dartleVersion}
+
 Usage: dartle [<options>] [<tasks>]
 
 Runs a Dartle build.
@@ -96,6 +108,9 @@ Options parseOptions(List<String> args) {
 
   if (parseResult.wasParsed('help')) {
     return const Options(showHelp: true);
+  }
+  if (parseResult.wasParsed('version')) {
+    return const Options(showVersion: true);
   }
 
   return Options(
