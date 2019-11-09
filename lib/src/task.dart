@@ -70,6 +70,7 @@ class TaskWithDeps implements Task, Comparable<TaskWithDeps> {
   /// Dependencies of this task, already sorted in the order the tasks would
   /// execute.
   final List<TaskWithDeps> dependencies;
+
   final Set<String> _allDeps;
 
   TaskWithDeps(this._task, [this.dependencies = const []])
@@ -81,6 +82,9 @@ class TaskWithDeps implements Task, Comparable<TaskWithDeps> {
 
   /// All transitive dependencies of this task.
   Set<String> get dependsOn => _allDeps;
+
+  /// The direct dependencies of this task.
+  Set<String> get directDependencies => _task.dependsOn;
 
   String get description => _task.description;
 

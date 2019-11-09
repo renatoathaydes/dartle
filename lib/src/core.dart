@@ -45,7 +45,7 @@ Future<void> run(List<String> args,
     if (options.showInfoOnly) {
       print("======== Showing build information only, no tasks will "
           "be executed ========\n");
-      showTasksInfo(executableTasks, tasks, defaultTasks, options);
+      showTasksInfo(executableTasks, taskMap, defaultTasks, options);
     } else {
       logger.info("Executing ${executableTasks.length} task(s) out of "
           "${taskNames.length} selected task(s)");
@@ -83,8 +83,10 @@ Future<void> _runAll(List<Task> executableTasks, Options options) async {
   }
 }
 
-Future<List<Task>> _getExecutableTasks(Map<String, TaskWithDeps> taskMap,
-    List<String> requestedTasks, Options options) async {
+Future<List<TaskWithDeps>> _getExecutableTasks(
+    Map<String, TaskWithDeps> taskMap,
+    List<String> requestedTasks,
+    Options options) async {
   if (requestedTasks.isEmpty) {
     if (!options.showInfoOnly) {
       logger.warn("No tasks were requested and no default tasks exist.");
@@ -100,7 +102,8 @@ Future<List<Task>> _getExecutableTasks(Map<String, TaskWithDeps> taskMap,
         logger.warn("Task '$taskNameSpec' does not exist.");
         continue;
       }
-      return failBuild(reason: "Unknown task: '${taskNameSpec}'") as List<Task>;
+      return failBuild(reason: "Unknown task: '${taskNameSpec}'")
+          as List<TaskWithDeps>;
     }
     if (options.forceTasks) {
       logger.debug("Will force execution of task '${task.name}'");
@@ -125,14 +128,15 @@ Future<List<Task>> _getExecutableTasks(Map<String, TaskWithDeps> taskMap,
 /// their [RunCondition] are not checked. However, their dependencies'
 /// [RunCondition] will be checked, and only those that should run will be
 /// included in the returned list.
-Future<List<Task>> getInOrderOfExecution(List<TaskWithDeps> tasks) async {
+Future<List<TaskWithDeps>> getInOrderOfExecution(
+    List<TaskWithDeps> tasks) async {
   // first of all, re-order tasks so that dependencies are in order
   tasks.sort();
 
-  final result = <Task>[];
+  final result = <TaskWithDeps>[];
   final seenTasks = <String>{};
 
-  final addTaskOnce = (Task task, bool checkShouldRun) async {
+  final addTaskOnce = (TaskWithDeps task, bool checkShouldRun) async {
     if (seenTasks.add(task.name)) {
       if (!checkShouldRun || await task.runCondition.shouldRun()) {
         result.add(task);
