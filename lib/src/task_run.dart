@@ -21,14 +21,17 @@ class TaskResult {
 ///
 /// This method does not throw any Exception, failures are returned
 /// as [TaskResult] instances with errors.
-Future<List<TaskResult>> runTasks(List<Task> tasks) async {
+Future<List<TaskResult>> runTasks(List<ParallelTasks> tasks) async {
   final results = <TaskResult>[];
-  for (final task in tasks) {
-    var result = await runTask(task);
-    results.add(result);
-    if (result.isFailure) {
-      logger.debug("Aborting task execution due to failure");
-      break;
+  for (final parTasks in tasks) {
+    // TODO run in parallel
+    for (final task in parTasks.tasks) {
+      var result = await runTask(task);
+      results.add(result);
+      if (result.isFailure) {
+        logger.debug("Aborting task execution due to failure");
+        return results;
+      }
     }
   }
   return results;

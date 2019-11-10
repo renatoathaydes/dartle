@@ -1,8 +1,8 @@
 import 'package:args/args.dart';
-import 'package:dartle/dartle.dart';
 import 'package:logging/logging.dart' as log;
 
 import '_log.dart';
+import 'dartle_version.g.dart';
 import 'error.dart';
 
 class Options {

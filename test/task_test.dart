@@ -85,24 +85,49 @@ void main() {
   group('Tasks', () {
     test('can run in order of their dependencies', () async {
       var tasksInOrder = await getInOrderOfExecution([_aw]);
-      expect(tasksInOrder.map((t) => t.name), orderedEquals(['b', 'c', 'a']));
+      expect(
+          tasksInOrder.map((t) => t.tasks.map((t) => t.name)),
+          equals([
+            ['b', 'c'],
+            ['a']
+          ]));
 
       tasksInOrder = await getInOrderOfExecution([_aw, _bw, _cw, _dw]);
       expect(
-          tasksInOrder.map((t) => t.name), orderedEquals(['b', 'c', 'a', 'd']));
+          tasksInOrder.map((t) => t.tasks.map((t) => t.name)),
+          equals([
+            ['b', 'c'],
+            ['a'],
+            ['d']
+          ]));
 
       tasksInOrder = await getInOrderOfExecution([_dw]);
       expect(
-          tasksInOrder.map((t) => t.name), orderedEquals(['b', 'c', 'a', 'd']));
+          tasksInOrder.map((t) => t.tasks.map((t) => t.name)),
+          equals([
+            ['b', 'c'],
+            ['a'],
+            ['d']
+          ]));
     });
 
     test('maintains provided order if no dependency between tasks', () async {
       var tasksInOrder = await getInOrderOfExecution([_cw, _bw, _aw]);
-      expect(tasksInOrder.map((t) => t.name), orderedEquals(['c', 'b', 'a']));
+      expect(
+          tasksInOrder.map((t) => t.tasks.map((t) => t.name)),
+          equals([
+            ['c', 'b'],
+            ['a']
+          ]));
 
       tasksInOrder = await getInOrderOfExecution([_aw, _cw, _bw, _dw]);
       expect(
-          tasksInOrder.map((t) => t.name), orderedEquals(['c', 'b', 'a', 'd']));
+          tasksInOrder.map((t) => t.tasks.map((t) => t.name)),
+          equals([
+            ['c', 'b'],
+            ['a'],
+            ['d']
+          ]));
     });
   });
 }

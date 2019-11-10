@@ -116,6 +116,26 @@ class TaskWithDeps implements Task, Comparable<TaskWithDeps> {
   int get hashCode => _task.hashCode ^ dependencies.hashCode;
 }
 
+class ParallelTasks {
+  final List<TaskWithDeps> tasks = [];
+
+  @override
+  String toString() => 'ParallelTasks{$tasks}';
+
+  /// Returns true the given task can be included in this group of tasks.
+  ///
+  /// If a task can be included, it means that it does not have any
+  /// dependency on tasks in this group, hence it can run in parallel with
+  /// the other tasks.
+  bool canInclude(TaskWithDeps task) {
+    for (final t in tasks) {
+      if (t.dependsOn.contains(task.name)) return false;
+      if (task.dependsOn.contains(t.name)) return false;
+    }
+    return true;
+  }
+}
+
 /// Create a [Map] from the name of a task to the corresponding [TaskWithDeps].
 ///
 /// The transitive dependencies of a task are resolved, so that each returned

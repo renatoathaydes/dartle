@@ -4,7 +4,7 @@ import 'options.dart';
 import 'task.dart';
 
 void showTasksInfo(
-    List<TaskWithDeps> executableTasks,
+    List<ParallelTasks> executableTasks,
     Map<String, TaskWithDeps> taskMap,
     Set<Task> defaultTasks,
     Options options) {
@@ -21,7 +21,7 @@ void showTasksInfo(
   stdout.writeln();
 }
 
-void showAll(List<TaskWithDeps> executableTasks, Map<String, Task> taskMap,
+void showAll(List<ParallelTasks> executableTasks, Map<String, Task> taskMap,
     Set<Task> defaultTasks) {
   final defaultSet = defaultTasks.map((t) => t.name).toSet();
   final taskList = taskMap.values.toList()
@@ -34,7 +34,7 @@ void showAll(List<TaskWithDeps> executableTasks, Map<String, Task> taskMap,
   }
 }
 
-void showTaskGraph(List<Task> executableTasks,
+void showTaskGraph(List<ParallelTasks> executableTasks,
     Map<String, TaskWithDeps> taskMap, Set<Task> defaultTasks) {
   print("Tasks Graph:\n");
 
@@ -70,12 +70,47 @@ void showTaskGraph(List<Task> executableTasks,
   printTasks(taskList, '', true);
 }
 
-void showExecutableTasks(List<TaskWithDeps> executableTasks) {
+void showExecutableTasks(List<ParallelTasks> executableTasks) {
   if (executableTasks.isEmpty) {
     print('No tasks were selected to run.');
   } else {
     print('The following tasks were selected to run, in order:\n');
-    stdout.write('  ');
-    print(executableTasks.map((t) => t.name).join(' -> '));
+
+    final cols = executableTasks.length;
+    final rows = <List<String>>[];
+    for (var col = 0; col < cols; col++) {
+      final row = executableTasks
+          .map((t) => col < t.tasks.length ? t.tasks[col].name : '');
+      if (row.every((t) => t.isEmpty)) break;
+      rows.add(row.toList(growable: false));
+    }
+
+    final colWidths = List<int>(cols);
+
+    for (var col = 0; col < cols; col++) {
+      var width = 0;
+      for (final row in rows) {
+        final w = (col < row.length) ? row[col].length : 0;
+        if (w > width) width = w;
+      }
+      colWidths[col] = width;
+    }
+
+    for (final row in rows) {
+      stdout.write('  ');
+      for (var col = 0; col < row.length; col++) {
+        final task = row[col];
+        stdout.write(task.padRight(colWidths[col]));
+        final lastCol = col + 1 == cols;
+        if (lastCol) continue;
+        if (row == rows[0]) {
+          final lastColInRow = col + 1 == row.length;
+          stdout.write(lastColInRow ? ' -+' : ' ---> ');
+        } else {
+          stdout.write('      ');
+        }
+      }
+      stdout.writeln();
+    }
   }
 }

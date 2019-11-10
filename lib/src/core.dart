@@ -1,13 +1,13 @@
 import 'dart:async';
 import 'dart:io';
 
-import 'package:dartle/src/dartle_version.g.dart';
 import 'package:meta/meta.dart';
 
 import '_log.dart';
 import '_task_graph.dart';
 import '_utils.dart';
 import 'cache.dart';
+import 'dartle_version.g.dart';
 import 'error.dart';
 import 'helpers.dart';
 import 'options.dart';
@@ -52,8 +52,9 @@ Future<void> run(List<String> args,
           "be executed ========\n");
       showTasksInfo(executableTasks, taskMap, defaultTasks, options);
     } else {
-      logger.info("Executing ${executableTasks.length} task(s) out of "
-          "${taskNames.length} selected task(s)");
+      logger.info("Executing "
+          "${executableTasks.fold<int>(0, (i, t) => t.tasks.length + i)} "
+          "task(s) out of ${taskNames.length} selected task(s)");
       await _runAll(executableTasks, options);
     }
 
@@ -73,7 +74,8 @@ Future<void> run(List<String> args,
   }
 }
 
-Future<void> _runAll(List<Task> executableTasks, Options options) async {
+Future<void> _runAll(
+    List<ParallelTasks> executableTasks, Options options) async {
   final allErrors = <Exception>[];
 
   final results = await runTasks(executableTasks);
@@ -88,7 +90,7 @@ Future<void> _runAll(List<Task> executableTasks, Options options) async {
   }
 }
 
-Future<List<TaskWithDeps>> _getExecutableTasks(
+Future<List<ParallelTasks>> _getExecutableTasks(
     Map<String, TaskWithDeps> taskMap,
     List<String> requestedTasks,
     Options options) async {
@@ -108,7 +110,7 @@ Future<List<TaskWithDeps>> _getExecutableTasks(
         continue;
       }
       return failBuild(reason: "Unknown task: '${taskNameSpec}'")
-          as List<TaskWithDeps>;
+          as List<ParallelTasks>;
     }
     if (options.forceTasks) {
       logger.debug("Will force execution of task '${task.name}'");
@@ -133,26 +135,31 @@ Future<List<TaskWithDeps>> _getExecutableTasks(
 /// their [RunCondition] are not checked. However, their dependencies'
 /// [RunCondition] will be checked, and only those that should run will be
 /// included in the returned list.
-Future<List<TaskWithDeps>> getInOrderOfExecution(
+Future<List<ParallelTasks>> getInOrderOfExecution(
     List<TaskWithDeps> tasks) async {
   // first of all, re-order tasks so that dependencies are in order
   tasks.sort();
 
-  final result = <TaskWithDeps>[];
+  final result = <ParallelTasks>[];
   final seenTasks = <String>{};
 
-  final addTaskOnce = (TaskWithDeps task, bool checkShouldRun) async {
+  Future<void> addTaskOnce(TaskWithDeps task, bool checkShouldRun) async {
     if (seenTasks.add(task.name)) {
       if (!checkShouldRun || await task.runCondition.shouldRun()) {
-        result.add(task);
+        final canRunInPreviousGroup =
+            result.isNotEmpty && result.last.canInclude(task);
+        if (canRunInPreviousGroup) {
+          result.last.tasks.add(task);
+        } else {
+          result.add(ParallelTasks()..tasks.add(task));
+        }
       }
     }
-  };
+  }
 
   // de-duplicate tasks, adding their dependencies first
   for (final taskWithDeps in tasks) {
-    final deps = taskWithDeps.dependencies.toList(growable: false);
-    for (final dep in deps) {
+    for (final dep in taskWithDeps.dependencies) {
       await addTaskOnce(dep, true);
     }
     await addTaskOnce(taskWithDeps, false);

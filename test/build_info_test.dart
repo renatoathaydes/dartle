@@ -84,7 +84,9 @@ Tasks declared in this build:
 
 The following tasks were selected to run, in order:
 
-  d -> e -> m -> c -> g -> n -> f -> b -> a
+  d ---> c ---> g ---> f ---> b ---> a
+  e             n                     
+  m                                   
 """;
 
       expect(proc.stdout.join('\n'), equals(expectedOutput));
@@ -121,7 +123,9 @@ Tasks Graph:
 
 The following tasks were selected to run, in order:
 
-  d -> e -> m -> c -> g -> n -> f -> b -> a
+  d ---> c ---> g ---> f ---> b ---> a
+  e             n                     
+  m                                   
 """;
 
       expect(proc.stdout.join('\n'), equals(expectedOutput));
