@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import '_log.dart';
 import '_utils.dart';
 import 'task.dart';
@@ -24,14 +26,14 @@ class TaskResult {
 Future<List<TaskResult>> runTasks(List<ParallelTasks> tasks) async {
   final results = <TaskResult>[];
   for (final parTasks in tasks) {
-    // TODO run in parallel
-    for (final task in parTasks.tasks) {
-      var result = await runTask(task);
-      results.add(result);
-      if (result.isFailure) {
-        logger.debug("Aborting task execution due to failure");
-        return results;
-      }
+    final futureResults = parTasks.tasks.map(runTask).toList(growable: false);
+    for (final futureResult in futureResults) {
+      results.add(await futureResult);
+    }
+
+    if (results.any((r) => r.isFailure)) {
+      logger.debug("Aborting task execution due to failure");
+      return results;
     }
   }
   return results;

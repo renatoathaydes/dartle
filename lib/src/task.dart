@@ -78,7 +78,7 @@ class TaskWithDeps implements Task, Comparable<TaskWithDeps> {
 
   String get name => _task.name;
 
-  get action => _task.action;
+  Function() get action => _task.action;
 
   /// All transitive dependencies of this task.
   Set<String> get dependsOn => _allDeps;
