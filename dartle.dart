@@ -40,7 +40,14 @@ final verifyTask = Task(() => null, // no action, just grouping other tasks
     description: 'Verifies code style and linters, runs tests',
     dependsOn: {'checkImports', 'formatCode', 'analyzeCode', 'test'});
 
+final cleanTask = Task(
+    () async => await ignoreExceptions(
+        () => deleteOutputs({testTask, generateDartleVersionFileTask})),
+    name: 'clean',
+    description: 'Deletes the outputs of all other tasks');
+
 void main(List<String> args) => run(args, tasks: {
+      cleanTask,
       generateDartleVersionFileTask,
       checkImportsTask,
       formatCodeTask,
