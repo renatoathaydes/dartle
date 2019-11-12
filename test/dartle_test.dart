@@ -105,6 +105,7 @@ void main() {
       await ignoreExceptions(() async => await outputFile.delete());
 
       var proc = await runExampleDartBuild(['foo']);
+      expect(proc.stdout.length, equals(2));
       expect(proc.stdout[0], contains('ERROR - Unknown task'));
       expect(proc.stdout[1], contains('Build failed'));
       expect(proc.exitCode, equals(1));
