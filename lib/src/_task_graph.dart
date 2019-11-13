@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:math' show max;
 
 import 'options.dart';
 import 'task.dart';
@@ -40,8 +41,6 @@ void showTaskGraph(List<ParallelTasks> executableTasks,
 
   final seenTasks = <String>{};
 
-  // FIXME running "dart dartle.dart anal format check -sz"
-  //       the graph is missing the check task
   void printTasks(List<TaskWithDeps> tasks, String indent, bool topLevel) {
     var i = 0;
     for (final task in tasks) {
@@ -78,15 +77,15 @@ void showExecutableTasks(List<ParallelTasks> executableTasks) {
   } else {
     print('The following tasks were selected to run, in order:\n');
 
-    final cols = executableTasks.length;
-    final rows = <List<String>>[];
-    for (var col = 0; col < cols; col++) {
-      final row = executableTasks
-          .map((t) => col < t.tasks.length ? t.tasks[col].name : '');
-      if (row.every((t) => t.isEmpty)) break;
-      rows.add(row.toList(growable: false));
+    final rowCount = executableTasks.map((t) => t.tasks.length).fold(0, max);
+    final rows = List<List<String>>(rowCount);
+    for (var r = 0; r < rowCount; r++) {
+      final row =
+          executableTasks.map((t) => r < t.tasks.length ? t.tasks[r].name : '');
+      rows[r] = row.toList(growable: false);
     }
 
+    final cols = executableTasks.length;
     final colWidths = List<int>(cols);
 
     for (var col = 0; col < cols; col++) {
