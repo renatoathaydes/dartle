@@ -6,7 +6,7 @@ import 'package:test/test.dart';
 
 import 'test_utils.dart';
 
-helloTask() => null;
+helloTask([_]) => null;
 
 void main() {
   group('Task name', () {
@@ -17,7 +17,7 @@ void main() {
       expect(Task(helloTask, name: 'foo').name, equals('foo'));
     });
     test('cannot be inferred from lambda', () {
-      expect(() => Task(() {}).name, throwsArgumentError);
+      expect(() => Task(([_]) {}).name, throwsArgumentError);
     });
   });
   group('Task execution', () {

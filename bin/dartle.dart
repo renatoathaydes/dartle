@@ -98,7 +98,7 @@ Future<Task> _createDartCompileTask() async {
     outputs: file(snapshotFile.path),
   );
 
-  return Task(() => createDartSnapshot(buildFile),
+  return Task(([_]) => createDartSnapshot(buildFile),
       name: '_compileDartleFile_',
       runCondition: runCompileCondition,
       description:

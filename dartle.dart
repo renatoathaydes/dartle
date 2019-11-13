@@ -11,7 +11,7 @@ final libDirDartFiles = dir('lib', fileFilter: dartFileFilter);
 final allDartFiles = dir('.', fileFilter: dartFileFilter);
 
 final generateDartleVersionFileTask = Task(
-    () async =>
+    ([_]) async =>
         await generateVersionDartFile(File('lib/src/dartle_version.g.dart')),
     name: 'generateDartSources',
     description: 'Generates Dart source files');
@@ -35,13 +35,13 @@ final testTask = Task(test,
     runCondition:
         RunOnChanges(inputs: dirs(const ['lib', 'bin', 'test', 'example'])));
 
-final verifyTask = Task(() => null, // no action, just grouping other tasks
+final verifyTask = Task(([_]) => null, // no action, just grouping other tasks
     name: 'verify',
     description: 'Verifies code style and linters, runs tests',
     dependsOn: {'checkImports', 'formatCode', 'analyzeCode', 'test'});
 
 final cleanTask = Task(
-    () async => await ignoreExceptions(
+    ([_]) async => await ignoreExceptions(
         () => deleteOutputs({testTask, generateDartleVersionFileTask})),
     name: 'clean',
     description: 'Deletes the outputs of all other tasks');
@@ -58,14 +58,14 @@ void main(List<String> args) => run(args, tasks: {
       verifyTask
     });
 
-test() async {
+test([_]) async {
   final code = await execProc(
       Process.start('pub', const ['run', 'test', '-p', 'vm']),
       name: 'Dart Tests');
   if (code != 0) failBuild(reason: 'Tests failed');
 }
 
-checkImports() async {
+checkImports([_]) async {
   await for (final file in libDirDartFiles.files) {
     final illegalImports = (await file.readAsLines()).where(
         (line) => line.contains(RegExp("^import\\s+['\"]package:dartle")));
@@ -77,13 +77,13 @@ checkImports() async {
   }
 }
 
-formatCode() async {
+formatCode([_]) async {
   final code = await execProc(Process.start('dartfmt', const ['-w', '.']),
       name: 'Dart Formatter');
   if (code != 0) failBuild(reason: 'Dart Formatter failed');
 }
 
-analyzeCode() async {
+analyzeCode([_]) async {
   final code = await execProc(Process.start('dartanalyzer', const ['.']),
       name: 'Dart Analyzer', successMode: StreamRedirectMode.stdout_stderr);
   if (code != 0) failBuild(reason: 'Dart Analyzer failed');

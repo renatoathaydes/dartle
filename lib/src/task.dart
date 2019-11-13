@@ -5,45 +5,61 @@ import 'run_condition.dart';
 
 final _functionNamePatttern = RegExp('[a-zA-Z_0-9]+');
 
+class _NameAction {
+  final String name;
+  final Function([List<String>]) action;
+  final bool isActionTopLevelFunction;
+
+  _NameAction(this.name, this.action, this.isActionTopLevelFunction);
+}
+
+_NameAction _resolveNameAction(Function([List<String>]) action, String name) {
+  bool isTopLevelFunction = false;
+  final funName = "$action";
+  final firstQuote = funName.indexOf("'");
+  if (firstQuote > 0) {
+    final match =
+        _functionNamePatttern.firstMatch(funName.substring(firstQuote + 1));
+    if (match != null) {
+      String inferredName = match.group(0);
+      // likely generated from JS lambda if it looks like 'main___closure',
+      // do not accept it
+      if (!inferredName.contains('___')) {
+        if (name.isEmpty) name = inferredName;
+        isTopLevelFunction = true;
+      }
+    }
+  }
+
+  if (name.isEmpty) {
+    throw ArgumentError('Task name cannot be inferred. Either give the task '
+        'a name explicitly or use a top-level function as its action');
+  }
+
+  return _NameAction(name, action, isTopLevelFunction);
+}
+
 /// A Dartle task whose action is provided by user code in order to execute
 /// some logic during a build run.
 class Task {
-  final String name;
   final String description;
-  final Function() action;
   final RunCondition runCondition;
   final Set<String> dependsOn;
+  final _NameAction _nameAction;
 
   Task(
-    this.action, {
+    Function([List<String>]) action, {
     this.description = '',
     String name = '',
     this.dependsOn = const {},
     this.runCondition = const AlwaysRun(),
-  }) : this.name = _resolveName(action, name ?? '');
+  }) : _nameAction = _resolveNameAction(action, name ?? '');
 
-  static String _resolveName(Function() action, String name) {
-    if (name.isEmpty) {
-      final funName = "$action";
-      final firstQuote = funName.indexOf("'");
-      if (firstQuote > 0) {
-        final match =
-            _functionNamePatttern.firstMatch(funName.substring(firstQuote + 1));
-        if (match != null) {
-          String inferredName = match.group(0);
-          // likely generated from JS lambda if it looks like 'main___closure',
-          // do not accept it
-          if (!inferredName.contains('___')) {
-            return inferredName;
-          }
-        }
-      }
+  String get name => _nameAction.name;
 
-      throw ArgumentError('Task name cannot be inferred. Either give the task '
-          'a name explicitly or use a top-level function as its action');
-    }
-    return name;
-  }
+  Function([List<String>]) get action => _nameAction.action;
+
+  bool get isParallelizable => _nameAction.isActionTopLevelFunction;
 
   @override
   String toString() => 'Task{name: $name}';
@@ -76,9 +92,13 @@ class TaskWithDeps implements Task, Comparable<TaskWithDeps> {
   TaskWithDeps(this._task, [this.dependencies = const []])
       : _allDeps = dependencies.map((t) => t.name).toSet();
 
+  _NameAction get _nameAction => _task._nameAction;
+
   String get name => _task.name;
 
-  Function() get action => _task.action;
+  Function([List<String>]) get action => _task.action;
+
+  bool get isParallelizable => _task.isParallelizable;
 
   /// All transitive dependencies of this task.
   Set<String> get dependsOn => _allDeps;
