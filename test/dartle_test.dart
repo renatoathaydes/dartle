@@ -43,8 +43,10 @@ void main() {
 
     test('logs expected output', () async {
       var proc = await runExampleDartBuild(['hello']);
-      expect(proc.stdout[0],
-          contains('Executing 1 task(s) out of 1 selected task(s)'));
+      expect(
+          proc.stdout[0],
+          contains('Executing 1 task out of a total of 4 tasks:'
+              ' 1 task selected, 0 due to dependencies'));
       expect(proc.stdout[1], contains("Running task 'hello'"));
       expect(proc.stdout[2], equals('Hello!'));
       expect(proc.stdout[3], contains("Build succeeded"));
@@ -53,8 +55,10 @@ void main() {
       expect(proc.stderr, isEmpty);
 
       proc = await runExampleDartBuild(['bye']);
-      expect(proc.stdout[0],
-          contains('Executing 1 task(s) out of 1 selected task(s)'));
+      expect(
+          proc.stdout[0],
+          contains('Executing 1 task out of a total of 4 tasks:'
+              ' 1 task selected, 0 due to dependencies'));
       expect(proc.stdout[1], contains("Running task 'bye'"));
       expect(proc.stdout[2], equals('Bye!'));
       expect(proc.stdout[3], contains("Build succeeded"));
@@ -68,8 +72,10 @@ void main() {
       await ignoreExceptions(() async => await outputFile.delete());
 
       var proc = await runExampleDartBuild(['encode']);
-      expect(proc.stdout[0],
-          contains('Executing 1 task(s) out of 1 selected task(s)'));
+      expect(
+          proc.stdout[0],
+          contains('Executing 1 task out of a total of 4 tasks:'
+              ' 1 task selected, 0 due to dependencies'));
       expect(proc.stdout[1], contains("Running task 'encodeBase64'"));
       expect(proc.stdout[2], contains("Build succeeded"));
       expect(proc.stdout.length, equals(3));
@@ -82,8 +88,10 @@ void main() {
 
       // now the output exists, it should not run again
       proc = await runExampleDartBuild(['encode']);
-      expect(proc.stdout[0],
-          contains('Executing 0 task(s) out of 1 selected task(s)'));
+      expect(
+          proc.stdout[0],
+          contains('Executing 0 tasks out of a total of 4 tasks:'
+              ' 1 task selected, 0 due to dependencies'));
       expect(proc.stdout[1], contains("Build succeeded"));
       expect(proc.stdout.length, equals(2));
       expect(proc.exitCode, equals(0));
@@ -91,8 +99,10 @@ void main() {
 
       // when we force the task to run, it must run again
       proc = await runExampleDartBuild(['encode', '-f']);
-      expect(proc.stdout[0],
-          contains('Executing 1 task(s) out of 1 selected task(s)'));
+      expect(
+          proc.stdout[0],
+          contains('Executing 1 task out of a total of 4 tasks:'
+              ' 1 task selected, 0 due to dependencies'));
       expect(proc.stdout[1], contains("Running task 'encodeBase64'"));
       expect(proc.stdout[2], contains("Build succeeded"));
       expect(proc.stdout.length, equals(3));

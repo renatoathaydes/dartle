@@ -35,9 +35,9 @@ Future<List<TaskResult>> runTasks(List<ParallelTasks> tasks,
     {@required bool parallelize}) async {
   if (logger.isLevelEnabled(LogLevel.debug)) {
     final execMode = parallelize
-        ? 'in parallel, using one Isolate for each parallelizable Task'
-        : 'all on main Isolate as no parallelization was enabled';
-    logger.debug("Executing tasks ${execMode}");
+        ? 'in parallel where possible, using separate Isolates for parallelizable Tasks'
+        : 'on main Isolate as no parallelization was enabled';
+    logger.debug("Will execute tasks ${execMode}");
   }
   final results = <TaskResult>[];
   for (final parTasks in tasks) {

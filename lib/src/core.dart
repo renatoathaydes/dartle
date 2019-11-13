@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:io';
+import 'dart:math';
 
 import 'package:meta/meta.dart';
 
@@ -52,9 +53,22 @@ Future<void> run(List<String> args,
           "be executed ========\n");
       showTasksInfo(executableTasks, taskMap, defaultTasks, options);
     } else {
-      logger.info("Executing "
-          "${executableTasks.fold<int>(0, (i, t) => t.tasks.length + i)} "
-          "task(s) out of ${taskNames.length} selected task(s)");
+      if (logger.isLevelEnabled(LogLevel.info)) {
+        String taskPhrase(int count) =>
+            count == 1 ? "$count task" : "$count tasks";
+        final totalTasksPhrase = taskPhrase(tasks.length);
+        final requestedTasksPhrase = taskPhrase(taskNames.length);
+        final executableTasksCount =
+            executableTasks.expand((t) => t.tasks).length;
+        final executableTasksPhrase = taskPhrase(executableTasksCount);
+        final dependentTasksCount =
+            max(0, executableTasksCount - taskNames.length);
+
+        logger.info("Executing $executableTasksPhrase out of a total of "
+            "$totalTasksPhrase: $requestedTasksPhrase selected, "
+            "$dependentTasksCount due to dependencies");
+      }
+
       await _runAll(executableTasks, options);
     }
 

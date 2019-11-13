@@ -29,8 +29,10 @@ void main() {
 
     test('logs expected output', () async {
       var proc = await runExampleDartBuild(const []);
-      expect(proc.stdout[0],
-          contains('Executing 9 task(s) out of 3 selected task(s)'));
+      expect(
+          proc.stdout[0],
+          contains('Executing 9 tasks out of a total of 15 tasks:'
+              ' 3 tasks selected, 6 due to dependencies'));
       expect(proc.stdout[1], contains("Running task 'd'"));
       expect(proc.stdout[2], contains("Running task 'e'"));
       expect(proc.stdout[3], contains("Running task 'm'"));
@@ -46,8 +48,10 @@ void main() {
       expect(proc.stderr, isEmpty);
 
       proc = await runExampleDartBuild(['l']);
-      expect(proc.stdout[0],
-          contains('Executing 1 task(s) out of 1 selected task(s)'));
+      expect(
+          proc.stdout[0],
+          contains('Executing 1 task out of a total of 15 tasks:'
+              ' 1 task selected, 0 due to dependencies'));
       expect(proc.stdout[1], contains("Running task 'l'"));
       expect(proc.stdout[2], contains("Build succeeded"));
       expect(proc.stdout.length, equals(3));
