@@ -41,8 +41,9 @@ Future<List<TaskResult>> runTasks(List<ParallelTasks> tasks,
   }
   final results = <TaskResult>[];
   for (final parTasks in tasks) {
+    final useIsolate = parallelize && parTasks.tasks.length > 1;
     final futureResults = parTasks.tasks
-        .map((task) => runTask(task, runInIsolate: parallelize))
+        .map((task) => runTask(task, runInIsolate: useIsolate))
         .toList(growable: false);
     for (final futureResult in futureResults) {
       results.add(await futureResult);
