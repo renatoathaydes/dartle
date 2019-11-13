@@ -37,7 +37,7 @@ void main(List<String> args) async {
     logger.info("Compiling dartle.dart file as it is not up-to-date."
         " Next time, the build will run faster.");
 
-    compileTaskResult = await runTask(runCompileTask);
+    compileTaskResult = await runTask(runCompileTask, runInIsolate: false);
   }
 
   final snapshotFile = await runCompileCondition.outputs.files.first;

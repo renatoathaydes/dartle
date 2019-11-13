@@ -1,8 +1,8 @@
 import 'dart:async';
 
-import 'package:dartle/src/_actor_task.dart';
 import 'package:meta/meta.dart';
 
+import '_actor_task.dart';
 import '_log.dart';
 import '_utils.dart';
 import 'task.dart';
