@@ -40,6 +40,8 @@ void showTaskGraph(List<ParallelTasks> executableTasks,
 
   final seenTasks = <String>{};
 
+  // FIXME running "dart dartle.dart anal format check -sz"
+  //       the graph is missing the check task
   void printTasks(List<TaskWithDeps> tasks, String indent, bool topLevel) {
     var i = 0;
     for (final task in tasks) {
