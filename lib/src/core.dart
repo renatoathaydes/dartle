@@ -78,7 +78,8 @@ Future<void> _runAll(
     List<ParallelTasks> executableTasks, Options options) async {
   final allErrors = <Exception>[];
 
-  final results = await runTasks(executableTasks);
+  final results =
+      await runTasks(executableTasks, parallelize: options.parallelizeTasks);
   final failures = results.where((r) => r.isFailure).toList(growable: false);
   final postRunFailures = await runTasksPostRun(results);
 

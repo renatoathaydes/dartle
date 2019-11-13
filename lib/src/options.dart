@@ -8,6 +8,7 @@ import 'error.dart';
 class Options {
   final log.Level logLevel;
   final bool forceTasks;
+  final bool parallelizeTasks;
   final bool showHelp;
   final bool showVersion;
   final bool showTasks;
@@ -22,6 +23,7 @@ class Options {
       this.showTasks = false,
       this.showTaskGraph = false,
       this.forceTasks = false,
+      this.parallelizeTasks = false,
       this.resetCache = false,
       this.requestedTasks = const []});
 
@@ -42,6 +44,12 @@ final _parser = ArgParser()
     abbr: 'f',
     negatable: false,
     help: 'Force all selected tasks to run.',
+  )
+  ..addFlag(
+    'parallel-tasks',
+    abbr: 'p',
+    negatable: true,
+    help: 'Allow tasks to run in parallel using Isolates.',
   )
   ..addFlag(
     'show-tasks',
@@ -116,6 +124,7 @@ Options parseOptions(List<String> args) {
   return Options(
     logLevel: _parseLogLevel(parseResult['log-level'].toString()),
     forceTasks: parseResult.wasParsed('force-tasks'),
+    parallelizeTasks: parseResult.wasParsed('parallel-tasks'),
     showTasks: parseResult.wasParsed('show-tasks'),
     showTaskGraph: parseResult.wasParsed('show-task-graph'),
     requestedTasks: parseResult.rest,

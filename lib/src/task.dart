@@ -57,8 +57,22 @@ class Task {
 
   String get name => _nameAction.name;
 
-  Function([List<String>]) get action => _nameAction.action;
+  /// The action this task performs.
+  ///
+  /// This function is meant to be called by Dartle, so that certain guarantees
+  /// (parallelism, dependencies between tasks) can be held.
+  Function([List<String> args]) get action => _nameAction.action;
 
+  /// Whether this task may run in parallel with others inside [Isolate]s.
+  ///
+  /// Even if this getter returns false, this task may still run asynchronously
+  /// with other tasks on the same Isolate... to avoid that, impose dependencies
+  /// between tasks.
+  ///
+  /// By default, this method only returns true if this Task's [action] is a
+  /// top-level function. If [action] is not a top-level function, this method
+  /// must return false as in that case, the [action] cannot be run in
+  /// an [Isolate].
   bool get isParallelizable => _nameAction.isActionTopLevelFunction;
 
   @override
