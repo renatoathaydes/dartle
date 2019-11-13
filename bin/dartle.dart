@@ -2,12 +2,38 @@ import 'dart:io';
 
 import 'package:dartle/dartle.dart';
 import 'package:dartle/dartle_cache.dart';
-import 'package:logging/logging.dart';
+import 'package:logging/logging.dart' as log;
 
-final logger = Logger('dartle-starter');
+final logger = log.Logger('dartle-starter');
 
 void main(List<String> args) async {
-  final options = parseOptions(args);
+  final stopWatch = Stopwatch()..start();
+  Options options = const Options();
+
+  try {
+    options = parseOptions(args);
+    await _start(args, options);
+    if (!options.showInfoOnly && options.logBuildTime) {
+      logger.info("Build succeeded in ${elapsedTime(stopWatch)}");
+    }
+  } on DartleException catch (e) {
+    activateLogging(log.Level.WARNING);
+    if (e.message.isNotEmpty) logger.severe(e.message);
+    if (options.logBuildTime) {
+      logger.severe("Build failed in ${elapsedTime(stopWatch)}");
+    }
+    exit(e.exitCode);
+  } on Exception catch (e) {
+    activateLogging(log.Level.WARNING);
+    logger.severe("Unexpected error: $e");
+    if (options.logBuildTime) {
+      logger.severe("Build failed in ${elapsedTime(stopWatch)}");
+    }
+    exit(22);
+  }
+}
+
+Future<void> _start(List<String> args, Options options) async {
   if (options.showHelp) {
     return print(dartleUsage);
   }
@@ -42,15 +68,7 @@ void main(List<String> args) async {
 
   final snapshotFile = await runCompileCondition.outputs.files.first;
 
-  try {
-    await _runBuild(snapshotFile, compileTaskResult, args);
-  } on DartleException catch (e) {
-    if (e.message.isNotEmpty) logger.severe(e.message);
-    exit(e.exitCode);
-  } on Exception catch (e) {
-    logger.severe('Unexpected error: $e');
-    exit(20);
-  }
+  await _runBuild(snapshotFile, compileTaskResult, args);
 }
 
 Future<void> _runBuild(
@@ -85,7 +103,9 @@ Future<void> _runBuild(
 }
 
 Future<int> _runSnapshot(File dartSnapshot, {List<String> args = const []}) {
-  return exec(runDartSnapshot(dartSnapshot, args: args), name: 'dartle build');
+  return exec(
+      runDartSnapshot(dartSnapshot, args: [...args, '--no-log-build-time']),
+      name: 'dartle build');
 }
 
 Future<Task> _createDartCompileTask() async {

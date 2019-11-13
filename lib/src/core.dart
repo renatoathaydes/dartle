@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:io';
 import 'dart:math';
 
+import 'package:logging/logging.dart' as log;
 import 'package:meta/meta.dart';
 
 import '_log.dart';
@@ -19,13 +20,42 @@ import 'task_run.dart';
 /// Initializes the dartle library and runs the tasks selected by the user
 /// (or in the provided [args]).
 ///
-/// This method may not return if some error is found, as dartle will
-/// call [exit(code)] with the appropriate error code.
+/// This method will normally not return as Dartle will exit with the
+/// appropriate code. To avoid that, set [doNotExit] to [true].
 Future<void> run(List<String> args,
-    {@required Set<Task> tasks, Set<Task> defaultTasks = const {}}) async {
+    {@required Set<Task> tasks,
+    Set<Task> defaultTasks = const {},
+    bool doNotExit = false}) async {
   final stopWatch = Stopwatch()..start();
+  Options options = const Options();
 
-  final options = parseOptions(args);
+  try {
+    options = parseOptions(args);
+    await _runWithoutErrorHandling(args, tasks, defaultTasks, options);
+    stopWatch.stop();
+    if (!options.showInfoOnly && options.logBuildTime) {
+      logger.info("Build succeeded in ${elapsedTime(stopWatch)}");
+    }
+    if (!doNotExit) exit(0);
+  } on DartleException catch (e) {
+    activateLogging(log.Level.WARNING);
+    logger.error(e.message);
+    if (options.logBuildTime) {
+      logger.error("Build failed in ${elapsedTime(stopWatch)}");
+    }
+    if (!doNotExit) exit(e.exitCode);
+  } on Exception catch (e) {
+    activateLogging(log.Level.WARNING);
+    logger.error("Unexpected error: $e");
+    if (options.logBuildTime) {
+      logger.error("Build failed in ${elapsedTime(stopWatch)}");
+    }
+    if (!doNotExit) exit(22);
+  }
+}
+
+Future<void> _runWithoutErrorHandling(List<String> args, Set<Task> tasks,
+    Set<Task> defaultTasks, Options options) async {
   if (options.showHelp) {
     return print(dartleUsage);
   }
@@ -40,51 +70,35 @@ Future<void> run(List<String> args,
     await DartleCache.instance.clean();
   }
 
-  try {
-    var taskNames = options.requestedTasks;
-    if (taskNames.isEmpty && defaultTasks.isNotEmpty) {
-      taskNames = defaultTasks.map((t) => t.name).toList();
-    }
-    final taskMap = createTaskMap(tasks);
-    final executableTasks =
-        await _getExecutableTasks(taskMap, taskNames, options);
-    if (options.showInfoOnly) {
-      print("======== Showing build information only, no tasks will "
-          "be executed ========\n");
-      showTasksInfo(executableTasks, taskMap, defaultTasks, options);
-    } else {
-      if (logger.isLevelEnabled(LogLevel.info)) {
-        String taskPhrase(int count) =>
-            count == 1 ? "$count task" : "$count tasks";
-        final totalTasksPhrase = taskPhrase(tasks.length);
-        final requestedTasksPhrase = taskPhrase(taskNames.length);
-        final executableTasksCount =
-            executableTasks.expand((t) => t.tasks).length;
-        final executableTasksPhrase = taskPhrase(executableTasksCount);
-        final dependentTasksCount =
-            max(0, executableTasksCount - taskNames.length);
+  var taskNames = options.requestedTasks;
+  if (taskNames.isEmpty && defaultTasks.isNotEmpty) {
+    taskNames = defaultTasks.map((t) => t.name).toList();
+  }
+  final taskMap = createTaskMap(tasks);
+  final executableTasks =
+      await _getExecutableTasks(taskMap, taskNames, options);
+  if (options.showInfoOnly) {
+    print("======== Showing build information only, no tasks will "
+        "be executed ========\n");
+    showTasksInfo(executableTasks, taskMap, defaultTasks, options);
+  } else {
+    if (logger.isLevelEnabled(LogLevel.info)) {
+      String taskPhrase(int count) =>
+          count == 1 ? "$count task" : "$count tasks";
+      final totalTasksPhrase = taskPhrase(tasks.length);
+      final requestedTasksPhrase = taskPhrase(taskNames.length);
+      final executableTasksCount =
+          executableTasks.expand((t) => t.tasks).length;
+      final executableTasksPhrase = taskPhrase(executableTasksCount);
+      final dependentTasksCount =
+          max(0, executableTasksCount - taskNames.length);
 
-        logger.info("Executing $executableTasksPhrase out of a total of "
-            "$totalTasksPhrase: $requestedTasksPhrase selected, "
-            "$dependentTasksCount due to dependencies");
-      }
-
-      await _runAll(executableTasks, options);
+      logger.info("Executing $executableTasksPhrase out of a total of "
+          "$totalTasksPhrase: $requestedTasksPhrase selected, "
+          "$dependentTasksCount due to dependencies");
     }
 
-    stopWatch.stop();
-    if (!options.showInfoOnly) {
-      logger.info("Build succeeded in ${elapsedTime(stopWatch)}");
-    }
-    exit(0);
-  } on DartleException catch (e) {
-    logger.error(e.message);
-    logger.error("Build failed in ${elapsedTime(stopWatch)}");
-    exit(e.exitCode);
-  } on Exception catch (e) {
-    logger.error("Unexpected error: $e");
-    logger.error("Build failed in ${elapsedTime(stopWatch)}");
-    exit(22);
+    await _runAll(executableTasks, options);
   }
 }
 

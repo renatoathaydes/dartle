@@ -14,6 +14,7 @@ class Options {
   final bool showTasks;
   final bool showTaskGraph;
   final bool resetCache;
+  final bool logBuildTime;
   final List<String> requestedTasks;
 
   const Options(
@@ -25,6 +26,7 @@ class Options {
       this.forceTasks = false,
       this.parallelizeTasks = false,
       this.resetCache = false,
+      this.logBuildTime = true,
       this.requestedTasks = const []});
 
   bool get showInfoOnly =>
@@ -81,6 +83,13 @@ final _parser = ArgParser()
     abbr: 'h',
     negatable: false,
     help: 'Show this help message.',
+  )
+  ..addFlag(
+    'log-build-time',
+    negatable: true,
+    defaultsTo: true,
+    hide: true,
+    help: 'Whether to log build time.',
   );
 
 /// Dartle usage message.
@@ -111,7 +120,8 @@ Options parseOptions(List<String> args) {
     parseResult = _parser.parse(args);
   } on FormatException catch (e) {
     throw DartleException(
-        message: '${e.message}\nUsage:\n${_parser.usage}', exitCode: 4);
+        message: '${e.message}.. run with the -h flag to see usage.',
+        exitCode: 4);
   }
 
   if (parseResult.wasParsed('help')) {
@@ -129,6 +139,7 @@ Options parseOptions(List<String> args) {
     showTaskGraph: parseResult.wasParsed('show-task-graph'),
     requestedTasks: parseResult.rest,
     resetCache: parseResult.wasParsed('reset-cache'),
+    logBuildTime: parseResult['log-build-time'] as bool,
   );
 }
 

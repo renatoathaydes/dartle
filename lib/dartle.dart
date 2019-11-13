@@ -10,6 +10,7 @@
 library dartle;
 
 export 'src/_log.dart' show activateLogging;
+export 'src/_utils.dart' show elapsedTime;
 export 'src/core.dart';
 export 'src/dartle_version.g.dart';
 export 'src/error.dart';
