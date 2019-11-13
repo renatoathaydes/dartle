@@ -51,6 +51,7 @@ final _parser = ArgParser()
     'parallel-tasks',
     abbr: 'p',
     negatable: true,
+    defaultsTo: false,
     help: 'Allow tasks to run in parallel using Isolates.',
   )
   ..addFlag(
@@ -134,7 +135,7 @@ Options parseOptions(List<String> args) {
   return Options(
     logLevel: _parseLogLevel(parseResult['log-level'].toString()),
     forceTasks: parseResult.wasParsed('force-tasks'),
-    parallelizeTasks: parseResult.wasParsed('parallel-tasks'),
+    parallelizeTasks: parseResult['parallel-tasks'] as bool,
     showTasks: parseResult.wasParsed('show-tasks'),
     showTaskGraph: parseResult.wasParsed('show-task-graph'),
     requestedTasks: parseResult.rest,
