@@ -8,6 +8,6 @@
 /// since last time they were built from the same inputs.
 library dartle_cache;
 
-export 'src/cache.dart';
+export 'src/cache/cache.dart';
 export 'src/error.dart';
 export 'src/file_collection.dart';

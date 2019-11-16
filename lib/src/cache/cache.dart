@@ -4,10 +4,10 @@ import 'dart:io';
 import 'package:crypto/crypto.dart';
 import 'package:path/path.dart' as path;
 
-import '_log.dart';
-import '_utils.dart';
-import 'file_collection.dart';
-import 'helpers.dart';
+import '../_log.dart';
+import '../_utils.dart';
+import '../file_collection.dart';
+import '../helpers.dart';
 
 const _hashesDir = '$dartleDir/hashes';
 

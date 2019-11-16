@@ -3,7 +3,7 @@ import 'dart:async';
 import 'package:meta/meta.dart';
 
 import '_log.dart';
-import 'cache.dart';
+import 'cache/cache.dart';
 import 'error.dart';
 import 'file_collection.dart';
 import 'task_run.dart';

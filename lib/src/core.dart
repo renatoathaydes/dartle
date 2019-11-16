@@ -8,7 +8,7 @@ import 'package:meta/meta.dart';
 import '_log.dart';
 import '_task_graph.dart';
 import '_utils.dart';
-import 'cache.dart';
+import 'cache/cache.dart';
 import 'dartle_version.g.dart';
 import 'error.dart';
 import 'options.dart';
