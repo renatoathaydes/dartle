@@ -48,7 +48,20 @@ void main() {
           contains('Executing 1 task out of a total of 4 tasks:'
               ' 1 task selected, 0 due to dependencies'));
       expect(proc.stdout[1], contains("Running task 'hello'"));
-      expect(proc.stdout[2], equals('Hello!'));
+      expect(proc.stdout[2], equals('Hello World!'));
+      expect(proc.stdout[3], contains("Build succeeded"));
+      expect(proc.stdout.length, equals(4));
+      expect(proc.exitCode, equals(0));
+      expect(proc.stderr, isEmpty);
+
+      // run with one argument now
+      proc = await runExampleDartBuild(['hello', ':Elvis']);
+      expect(
+          proc.stdout[0],
+          contains('Executing 1 task out of a total of 4 tasks:'
+              ' 1 task selected, 0 due to dependencies'));
+      expect(proc.stdout[1], contains("Running task 'hello'"));
+      expect(proc.stdout[2], equals('Hello Elvis!'));
       expect(proc.stdout[3], contains("Build succeeded"));
       expect(proc.stdout.length, equals(4));
       expect(proc.exitCode, equals(0));

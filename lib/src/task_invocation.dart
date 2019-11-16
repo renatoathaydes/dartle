@@ -4,6 +4,8 @@ import 'error.dart';
 import 'options.dart';
 import 'task.dart';
 
+const taskArgumentPrefix = ':';
+
 class TaskInvocation {
   final TaskWithDeps task;
   final List<String> args;
@@ -29,7 +31,7 @@ List<TaskInvocation> parseInvocation(List<String> tasksInvocation,
   var currentArgs = <String>[];
 
   for (String word in tasksInvocation) {
-    if (word.startsWith(':')) {
+    if (word.startsWith(taskArgumentPrefix)) {
       if (currentTask != null) {
         currentArgs.add(word.substring(1));
       } else if (!followsTask) {

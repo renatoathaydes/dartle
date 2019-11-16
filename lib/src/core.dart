@@ -71,7 +71,10 @@ Future<void> _runWithoutErrorHandling(List<String> args, Set<Task> tasks,
   }
 
   var tasksInvocation = options.tasksInvocation;
-  if (tasksInvocation.isEmpty && defaultTasks.isNotEmpty) {
+  final directTasksCount = tasksInvocation
+      .where((name) => !name.startsWith(taskArgumentPrefix))
+      .length;
+  if (directTasksCount == 0 && defaultTasks.isNotEmpty) {
     tasksInvocation = defaultTasks.map((t) => t.name).toList();
   }
   final taskMap = createTaskMap(tasks);
@@ -86,15 +89,19 @@ Future<void> _runWithoutErrorHandling(List<String> args, Set<Task> tasks,
       String taskPhrase(int count) =>
           count == 1 ? "$count task" : "$count tasks";
       final totalTasksPhrase = taskPhrase(tasks.length);
-      final requestedTasksPhrase = taskPhrase(tasksInvocation.length);
+      final requestedTasksPhrase = directTasksCount == 0
+          ? taskPhrase(defaultTasks.length) + ' (default)'
+          : taskPhrase(directTasksCount) + ' selected';
       final executableTasksCount =
           executableTasks.expand((t) => t.invocations).length;
       final executableTasksPhrase = taskPhrase(executableTasksCount);
-      final dependentTasksCount =
-          max(0, executableTasksCount - tasksInvocation.length);
+      final dependentTasksCount = max(
+          0,
+          executableTasksCount -
+              (directTasksCount == 0 ? defaultTasks.length : directTasksCount));
 
       logger.info("Executing $executableTasksPhrase out of a total of "
-          "$totalTasksPhrase: $requestedTasksPhrase selected, "
+          "$totalTasksPhrase: $requestedTasksPhrase, "
           "$dependentTasksCount due to dependencies");
     }
 

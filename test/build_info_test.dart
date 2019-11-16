@@ -32,7 +32,7 @@ void main() {
       expect(
           proc.stdout[0],
           contains('Executing 9 tasks out of a total of 15 tasks:'
-              ' 3 tasks selected, 6 due to dependencies'));
+              ' 3 tasks (default), 6 due to dependencies'));
       expect(proc.stdout[1], contains("Running task 'd'"));
       expect(proc.stdout[2], contains("Running task 'e'"));
       expect(proc.stdout[3], contains("Running task 'm'"));
