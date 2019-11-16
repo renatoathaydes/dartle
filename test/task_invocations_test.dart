@@ -5,10 +5,13 @@ import 'package:test/test.dart';
 
 void noop([_]) {}
 
-final _a = Task(noop, name: 'a', dependsOn: {'b', 'c'});
-final _b = Task(noop, name: 'b');
-final _c = Task(noop, name: 'c');
-final _d = Task(noop, name: 'd', dependsOn: {'a'});
+final _a = Task(noop,
+    name: 'a', dependsOn: {'b', 'c'}, argsValidator: const AcceptAnyArgs());
+final _b = Task(noop, name: 'b', argsValidator: const AcceptAnyArgs());
+final _c = Task(noop,
+    name: 'c', argsValidator: const AcceptArgs.range(min: 2, max: 3));
+final _d = Task(noop,
+    name: 'd', dependsOn: {'a'}, argsValidator: const AcceptArgs.count(1));
 
 // TaskWithDeps includes transitive dependencies
 final _aw = TaskWithDeps(_a, [_bw, _cw]);
@@ -102,6 +105,45 @@ void main() {
               equals("Several invocation problems found:\n"
                   "  * Argument should follow a task: ':foo'\n"
                   "  * Task 'bad-task' does not exist"))));
+    });
+    test('task requires one arg but gets none', () {
+      expect(
+          () => parseInvocation(['d'], taskMap, const Options()),
+          throwsA(isA<DartleException>().having(
+              (e) => e.message,
+              'expected message',
+              equals("Invocation problem: Invalid arguments for task 'd': [] - "
+                  "exactly 1 argument is expected"))));
+    });
+    test('task requires one arg but gets two', () {
+      expect(
+          () => parseInvocation(['d', ':x', ':z'], taskMap, const Options()),
+          throwsA(isA<DartleException>().having(
+              (e) => e.message,
+              'expected message',
+              equals(
+                  "Invocation problem: Invalid arguments for task 'd': [x, z] - "
+                  "exactly 1 argument is expected"))));
+    });
+    test('task requires 2..3 arg but gets none', () {
+      expect(
+          () => parseInvocation(['c'], taskMap, const Options()),
+          throwsA(isA<DartleException>().having(
+              (e) => e.message,
+              'expected message',
+              equals("Invocation problem: Invalid arguments for task 'c': [] - "
+                  "between 2 and 3 arguments expected"))));
+    });
+    test('task requires 2..3 arg but gets four', () {
+      expect(
+          () => parseInvocation(
+              ['c', ':1', ':2', ':3', ':4'], taskMap, const Options()),
+          throwsA(isA<DartleException>().having(
+              (e) => e.message,
+              'expected message',
+              equals(
+                  "Invocation problem: Invalid arguments for task 'c': [1, 2, 3, 4] - "
+                  "between 2 and 3 arguments expected"))));
     });
   });
 }

@@ -4,7 +4,7 @@ import 'dart:io';
 import 'package:dartle/dartle.dart';
 
 final allTasks = [
-  Task(hello, argsValidator: const AcceptAnyArgs()),
+  Task(hello, argsValidator: const AcceptArgs.range(min: 0, max: 1)),
   Task(bye),
   Task(clean),
   Task(encodeBase64,

@@ -1,4 +1,5 @@
 import 'package:collection/collection.dart';
+import 'package:meta/meta.dart';
 
 import 'error.dart';
 import 'run_condition.dart';
@@ -177,9 +178,9 @@ class ParallelTasks {
 
 /// Validator of arguments passed to a [Task].
 mixin ArgsValidator {
-  /// Validate the given args, throwing an [Exception] in case of invalid
-  /// arguments being provided.
-  void validate(List<String> args);
+  /// Validate the given [args], returning true if the arguments are valid,
+  /// false otherwise.
+  bool validate(List<String> args);
 
   /// Message explaining what arguments are expected.
   String helpMessage();
@@ -193,11 +194,7 @@ class DoNotAcceptArgs with ArgsValidator {
   String helpMessage() => 'no arguments are expected';
 
   @override
-  void validate(List<String> args) {
-    if (args.isNotEmpty) {
-      throw DartleException(message: helpMessage());
-    }
-  }
+  bool validate(List<String> args) => args.isEmpty;
 }
 
 /// An [ArgsValidator] which accepts anything.
@@ -208,7 +205,29 @@ class AcceptAnyArgs with ArgsValidator {
   String helpMessage() => 'all arguments are accepted';
 
   @override
-  void validate(List<String> args) {}
+  bool validate(List<String> args) => true;
+}
+
+class AcceptArgs with ArgsValidator {
+  final int _min;
+  final int _max;
+
+  const AcceptArgs.count(int count)
+      : _min = count,
+        _max = count;
+
+  const AcceptArgs.range({@required int min, @required int max})
+      : _min = min,
+        _max = max;
+
+  @override
+  String helpMessage() => _min == _max
+      ? "exactly $_min argument${_min == 1 ? ' is' : 's are'} expected"
+      : "between $_min and $_max arguments expected";
+
+  @override
+  bool validate(List<String> args) =>
+      _min <= args.length && args.length <= _max;
 }
 
 /// Create a [Map] from the name of a task to the corresponding [TaskWithDeps].

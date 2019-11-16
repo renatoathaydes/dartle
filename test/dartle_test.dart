@@ -148,5 +148,17 @@ void main() {
       expect(proc.stdout[1], contains('Build failed'));
       expect(proc.exitCode, equals(4));
     });
+
+    test('errors if arguments for task are not valid', () async {
+      var proc = await runExampleDartBuild(['hello', ':Joe', ':Mary']);
+      expect(proc.stdout.length, equals(2));
+      expect(
+          proc.stdout[0],
+          contains("ERROR - Invocation problem: "
+              "Invalid arguments for task 'hello': [Joe, Mary] - "
+              "between 0 and 1 arguments expected"));
+      expect(proc.stdout[1], contains('Build failed'));
+      expect(proc.exitCode, equals(1));
+    });
   });
 }

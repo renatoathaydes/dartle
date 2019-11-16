@@ -30,6 +30,18 @@ List<TaskInvocation> parseInvocation(List<String> tasksInvocation,
   final errors = <String>[];
   var currentArgs = <String>[];
 
+  void addCurrentInvocation() {
+    if (currentTask != null) {
+      final isValid = currentTask.argsValidator.validate(currentArgs);
+      if (isValid) {
+        invocations.add(TaskInvocation(currentTask, currentArgs));
+      } else {
+        errors.add("Invalid arguments for task '${currentTask.name}': "
+            "$currentArgs - ${currentTask.argsValidator.helpMessage()}");
+      }
+    }
+  }
+
   for (String word in tasksInvocation) {
     if (word.startsWith(taskArgumentPrefix)) {
       if (currentTask != null) {
@@ -43,18 +55,14 @@ List<TaskInvocation> parseInvocation(List<String> tasksInvocation,
       if (task == null) {
         errors.add("Task '$word' does not exist");
       } else {
-        if (currentTask != null) {
-          invocations.add(TaskInvocation(currentTask, currentArgs));
-        }
+        addCurrentInvocation();
         currentTask = task;
         currentArgs = <String>[];
       }
     }
   }
 
-  if (currentTask != null) {
-    invocations.add(TaskInvocation(currentTask, currentArgs));
-  }
+  addCurrentInvocation();
 
   if (errors.isNotEmpty) {
     if (options.showInfoOnly) {
