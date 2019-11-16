@@ -63,7 +63,8 @@ Future<void> _start(List<String> args, Options options) async {
     logger.info("Compiling dartle.dart file as it is not up-to-date."
         " Next time, the build will run faster.");
 
-    compileTaskResult = await runTask(runCompileTask, runInIsolate: false);
+    compileTaskResult =
+        await runTask(TaskInvocation(runCompileTask), runInIsolate: false);
   }
 
   final snapshotFile = await runCompileCondition.outputs.files.first;
@@ -108,7 +109,7 @@ Future<int> _runSnapshot(File dartSnapshot, {List<String> args = const []}) {
       name: 'dartle build');
 }
 
-Future<Task> _createDartCompileTask() async {
+Future<TaskWithDeps> _createDartCompileTask() async {
   final buildFile = File('dartle.dart').absolute;
   final buildSetupFiles = [buildFile.path, 'pubspec.yaml', 'pubspec.lock'];
   final snapshotFile = await getSnapshotLocation(buildFile);
@@ -118,10 +119,10 @@ Future<Task> _createDartCompileTask() async {
     outputs: file(snapshotFile.path),
   );
 
-  return Task(([_]) => createDartSnapshot(buildFile),
+  return TaskWithDeps(Task(([_]) => createDartSnapshot(buildFile),
       name: '_compileDartleFile_',
       runCondition: runCompileCondition,
       description:
           'Internal task that snapshots or compiles the Dartle project\'s '
-          'build file for better performance');
+          'build file for better performance'));
 }

@@ -77,11 +77,12 @@ void showExecutableTasks(List<ParallelTasks> executableTasks) {
   } else {
     print('The following tasks were selected to run, in order:\n');
 
-    final rowCount = executableTasks.map((t) => t.tasks.length).fold(0, max);
+    final rowCount =
+        executableTasks.map((t) => t.invocations.length).fold(0, max);
     final rows = List<List<String>>(rowCount);
     for (var r = 0; r < rowCount; r++) {
-      final row =
-          executableTasks.map((t) => r < t.tasks.length ? t.tasks[r].name : '');
+      final row = executableTasks.map(
+          (t) => r < t.invocations.length ? t.invocations[r].task.name : '');
       rows[r] = row.toList(growable: false);
     }
 

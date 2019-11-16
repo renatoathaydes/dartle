@@ -1,4 +1,5 @@
 import '_log.dart';
+import '_utils.dart';
 import 'error.dart';
 import 'options.dart';
 import 'task.dart';
@@ -7,7 +8,7 @@ class TaskInvocation {
   final TaskWithDeps task;
   final List<String> args;
 
-  TaskInvocation(this.task, this.args);
+  TaskInvocation(this.task, [this.args = const <String>[]]);
 
   @override
   String toString() {
@@ -15,6 +16,10 @@ class TaskInvocation {
   }
 }
 
+/// Parse the tasks invocation provided by the user.
+///
+/// Assumes all Dartle CLI options have been "consumed" already, and are not
+/// included in the tasksInvocation.
 List<TaskInvocation> parseInvocation(List<String> tasksInvocation,
     Map<String, TaskWithDeps> taskMap, Options options) {
   final invocations = <TaskInvocation>[];
@@ -32,7 +37,7 @@ List<TaskInvocation> parseInvocation(List<String> tasksInvocation,
       }
     } else {
       followsTask = true;
-      final task = taskMap[word];
+      final task = _findTaskByName(taskMap, word);
       if (task == null) {
         errors.add("Task '$word' does not exist");
       } else {
@@ -62,4 +67,12 @@ List<TaskInvocation> parseInvocation(List<String> tasksInvocation,
   }
 
   return invocations;
+}
+
+TaskWithDeps _findTaskByName(
+    Map<String, TaskWithDeps> taskMap, String nameSpec) {
+  final name =
+      findMatchingByWords(nameSpec, taskMap.keys.toList(growable: false));
+  if (name == null) return null;
+  return taskMap[name];
 }

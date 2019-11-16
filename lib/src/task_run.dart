@@ -6,6 +6,7 @@ import '_actor_task.dart';
 import '_log.dart';
 import '_utils.dart';
 import 'task.dart';
+import 'task_invocation.dart';
 
 /// Result of executing a [Task].
 class TaskResult {
@@ -41,9 +42,9 @@ Future<List<TaskResult>> runTasks(List<ParallelTasks> tasks,
   }
   final results = <TaskResult>[];
   for (final parTasks in tasks) {
-    final useIsolate = parallelize && parTasks.tasks.length > 1;
-    final futureResults = parTasks.tasks
-        .map((task) => runTask(task, runInIsolate: useIsolate))
+    final useIsolate = parallelize && parTasks.invocations.length > 1;
+    final futureResults = parTasks.invocations
+        .map((invocation) => runTask(invocation, runInIsolate: useIsolate))
         .toList(growable: false);
     for (final futureResult in futureResults) {
       results.add(await futureResult);
@@ -60,7 +61,9 @@ Future<List<TaskResult>> runTasks(List<ParallelTasks> tasks,
 /// Run a task unconditionally.
 ///
 /// The task's [Task.runCondition] is not checked or used by this method.
-Future<TaskResult> runTask(Task task, {@required bool runInIsolate}) async {
+Future<TaskResult> runTask(TaskInvocation invocation,
+    {@required bool runInIsolate}) async {
+  final task = invocation.task;
   logger.info("Running task '${task.name}'");
 
   bool useIsolate = runInIsolate && task.isParallelizable;
@@ -72,8 +75,7 @@ Future<TaskResult> runTask(Task task, {@required bool runInIsolate}) async {
   final stopwatch = Stopwatch()..start();
   TaskResult result;
   try {
-    // TODO pass args to the action
-    await action(const <String>[]);
+    await action(invocation.args);
     stopwatch.stop();
     result = TaskResult(task);
   } on Exception catch (e) {

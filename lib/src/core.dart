@@ -11,10 +11,10 @@ import '_utils.dart';
 import 'cache.dart';
 import 'dartle_version.g.dart';
 import 'error.dart';
-import 'helpers.dart';
 import 'options.dart';
 import 'run_condition.dart';
 import 'task.dart';
+import 'task_invocation.dart';
 import 'task_run.dart';
 
 /// Initializes the dartle library and runs the tasks selected by the user
@@ -70,13 +70,13 @@ Future<void> _runWithoutErrorHandling(List<String> args, Set<Task> tasks,
     await DartleCache.instance.clean();
   }
 
-  var taskNames = options.requestedTasks;
-  if (taskNames.isEmpty && defaultTasks.isNotEmpty) {
-    taskNames = defaultTasks.map((t) => t.name).toList();
+  var tasksInvocation = options.tasksInvocation;
+  if (tasksInvocation.isEmpty && defaultTasks.isNotEmpty) {
+    tasksInvocation = defaultTasks.map((t) => t.name).toList();
   }
   final taskMap = createTaskMap(tasks);
   final executableTasks =
-      await _getExecutableTasks(taskMap, taskNames, options);
+      await _getExecutableTasks(taskMap, tasksInvocation, options);
   if (options.showInfoOnly) {
     print("======== Showing build information only, no tasks will "
         "be executed ========\n");
@@ -86,12 +86,12 @@ Future<void> _runWithoutErrorHandling(List<String> args, Set<Task> tasks,
       String taskPhrase(int count) =>
           count == 1 ? "$count task" : "$count tasks";
       final totalTasksPhrase = taskPhrase(tasks.length);
-      final requestedTasksPhrase = taskPhrase(taskNames.length);
+      final requestedTasksPhrase = taskPhrase(tasksInvocation.length);
       final executableTasksCount =
-          executableTasks.expand((t) => t.tasks).length;
+          executableTasks.expand((t) => t.invocations).length;
       final executableTasksPhrase = taskPhrase(executableTasksCount);
       final dependentTasksCount =
-          max(0, executableTasksCount - taskNames.length);
+          max(0, executableTasksCount - tasksInvocation.length);
 
       logger.info("Executing $executableTasksPhrase out of a total of "
           "$totalTasksPhrase: $requestedTasksPhrase selected, "
@@ -121,31 +121,25 @@ Future<void> _runAll(
 
 Future<List<ParallelTasks>> _getExecutableTasks(
     Map<String, TaskWithDeps> taskMap,
-    List<String> requestedTasks,
+    List<String> tasksInvocation,
     Options options) async {
-  if (requestedTasks.isEmpty) {
+  if (tasksInvocation.isEmpty) {
     if (!options.showInfoOnly) {
       logger.warn("No tasks were requested and no default tasks exist.");
     }
     return const [];
   }
+  final invocations = parseInvocation(tasksInvocation, taskMap, options);
 
-  final mustRun = <TaskWithDeps>[];
-  for (final taskNameSpec in requestedTasks) {
-    final task = _findTaskByName(taskMap, taskNameSpec);
-    if (task == null) {
-      if (options.showInfoOnly) {
-        logger.warn("Task '$taskNameSpec' does not exist.");
-        continue;
-      }
-      return failBuild(reason: "Unknown task: '${taskNameSpec}'")
-          as List<ParallelTasks>;
-    }
+  final mustRun = <TaskInvocation>[];
+  for (final invocation in invocations) {
+    final task = invocation.task;
     if (options.forceTasks) {
       logger.debug("Will force execution of task '${task.name}'");
-      mustRun.add(task);
+      mustRun.add(invocation);
+      // TODO check args are the same as last time as well
     } else if (await task.runCondition.shouldRun()) {
-      mustRun.add(task);
+      mustRun.add(invocation);
     } else {
       if (options.showTasks) {
         logger.info("Task '${task.name}' is up-to-date");
@@ -160,48 +154,43 @@ Future<List<ParallelTasks>> _getExecutableTasks(
 /// Get the tasks in the order that they should be executed, taking into account
 /// their dependencies.
 ///
-/// All the tasks provided directly in the [tasks] list will be returned, as
-/// their [RunCondition] are not checked. However, their dependencies'
+/// All the tasks provided included in [invocations] will be returned, as
+/// the [Task]'s [RunCondition]s are not checked. However, their dependencies'
 /// [RunCondition] will be checked, and only those that should run will be
 /// included in the returned list.
 Future<List<ParallelTasks>> getInOrderOfExecution(
-    List<TaskWithDeps> tasks) async {
+    List<TaskInvocation> invocations) async {
   // first of all, re-order tasks so that dependencies are in order
-  tasks.sort();
+  invocations.sort((a, b) => a.task.compareTo(b.task));
 
   final result = <ParallelTasks>[];
   final seenTasks = <String>{};
 
-  Future<void> addTaskOnce(TaskWithDeps task, bool checkShouldRun) async {
+  Future<void> addTaskOnce(
+      TaskInvocation invocation, bool checkShouldRun) async {
+    final task = invocation.task;
     if (seenTasks.add(task.name)) {
+      // TODO check previous task invocation args also
       if (!checkShouldRun || await task.runCondition.shouldRun()) {
         final canRunInPreviousGroup =
             result.isNotEmpty && result.last.canInclude(task);
         if (canRunInPreviousGroup) {
-          result.last.tasks.add(task);
+          result.last.invocations.add(invocation);
         } else {
-          result.add(ParallelTasks()..tasks.add(task));
+          result.add(ParallelTasks()..invocations.add(invocation));
         }
       }
     }
   }
 
   // de-duplicate tasks, adding their dependencies first
-  for (final taskWithDeps in tasks) {
-    for (final dep in taskWithDeps.dependencies) {
-      await addTaskOnce(dep, true);
+  for (final invocation in invocations) {
+    for (final dep in invocation.task.dependencies) {
+      await addTaskOnce(TaskInvocation(dep), true);
     }
-    await addTaskOnce(taskWithDeps, false);
+    await addTaskOnce(invocation, false);
   }
   return result;
-}
-
-TaskWithDeps _findTaskByName(
-    Map<String, TaskWithDeps> taskMap, String nameSpec) {
-  final name =
-      findMatchingByWords(nameSpec, taskMap.keys.toList(growable: false));
-  if (name == null) return null;
-  return taskMap[name];
 }
 
 void _throwAggregateErrors(List<Exception> errors) {

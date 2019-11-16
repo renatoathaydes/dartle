@@ -84,26 +84,29 @@ void main() {
 
   group('Tasks', () {
     test('can run in order of their dependencies', () async {
-      var tasksInOrder = await getInOrderOfExecution([_aw]);
+      var tasksInOrder = await getInOrderOfExecution(
+          [_aw].map((t) => TaskInvocation(t)).toList());
       expect(
-          tasksInOrder.map((t) => t.tasks.map((t) => t.name)),
+          tasksInOrder.map((t) => t.invocations.map((i) => i.task.name)),
           equals([
             ['b', 'c'],
             ['a']
           ]));
 
-      tasksInOrder = await getInOrderOfExecution([_aw, _bw, _cw, _dw]);
+      tasksInOrder = await getInOrderOfExecution(
+          [_aw, _bw, _cw, _dw].map((t) => TaskInvocation(t)).toList());
       expect(
-          tasksInOrder.map((t) => t.tasks.map((t) => t.name)),
+          tasksInOrder.map((t) => t.invocations.map((i) => i.task.name)),
           equals([
             ['b', 'c'],
             ['a'],
             ['d']
           ]));
 
-      tasksInOrder = await getInOrderOfExecution([_dw]);
+      tasksInOrder = await getInOrderOfExecution(
+          [_dw].map((t) => TaskInvocation(t)).toList());
       expect(
-          tasksInOrder.map((t) => t.tasks.map((t) => t.name)),
+          tasksInOrder.map((t) => t.invocations.map((i) => i.task.name)),
           equals([
             ['b', 'c'],
             ['a'],
@@ -112,17 +115,19 @@ void main() {
     });
 
     test('maintains provided order if no dependency between tasks', () async {
-      var tasksInOrder = await getInOrderOfExecution([_cw, _bw, _aw]);
+      var tasksInOrder = await getInOrderOfExecution(
+          [_cw, _bw, _aw].map((t) => TaskInvocation(t)).toList());
       expect(
-          tasksInOrder.map((t) => t.tasks.map((t) => t.name)),
+          tasksInOrder.map((t) => t.invocations.map((i) => i.task.name)),
           equals([
             ['c', 'b'],
             ['a']
           ]));
 
-      tasksInOrder = await getInOrderOfExecution([_aw, _cw, _bw, _dw]);
+      tasksInOrder = await getInOrderOfExecution(
+          [_aw, _cw, _bw, _dw].map((t) => TaskInvocation(t)).toList());
       expect(
-          tasksInOrder.map((t) => t.tasks.map((t) => t.name)),
+          tasksInOrder.map((t) => t.invocations.map((i) => i.task.name)),
           equals([
             ['c', 'b'],
             ['a'],

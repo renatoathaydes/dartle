@@ -15,7 +15,7 @@ class Options {
   final bool showTaskGraph;
   final bool resetCache;
   final bool logBuildTime;
-  final List<String> requestedTasks;
+  final List<String> tasksInvocation;
 
   const Options(
       {this.logLevel = log.Level.INFO,
@@ -27,7 +27,7 @@ class Options {
       this.parallelizeTasks = false,
       this.resetCache = false,
       this.logBuildTime = true,
-      this.requestedTasks = const []});
+      this.tasksInvocation = const []});
 
   bool get showInfoOnly =>
       showTasks || showTaskGraph || showHelp || showVersion;
@@ -138,9 +138,9 @@ Options parseOptions(List<String> args) {
     parallelizeTasks: parseResult['parallel-tasks'] as bool,
     showTasks: parseResult.wasParsed('show-tasks'),
     showTaskGraph: parseResult.wasParsed('show-task-graph'),
-    requestedTasks: parseResult.rest,
     resetCache: parseResult.wasParsed('reset-cache'),
     logBuildTime: parseResult['log-build-time'] as bool,
+    tasksInvocation: parseResult.rest,
   );
 }
 

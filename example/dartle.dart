@@ -4,7 +4,7 @@ import 'dart:io';
 import 'package:dartle/dartle.dart';
 
 final allTasks = [
-  Task(hello),
+  Task(hello, argsValidator: const AcceptAnyArgs()),
   Task(bye),
   Task(clean),
   Task(encodeBase64,
@@ -18,14 +18,12 @@ final allTasks = [
 main(List<String> args) async =>
     run(args, tasks: allTasks.toSet(), defaultTasks: {allTasks[0]});
 
-hello([_]) => print("Hello!");
+/// To pass an argument to a task, use a ':' prefix, e.g.:
+/// dartle hello :joe
+hello([List<String> args = const []]) =>
+    print("Hello ${args.isEmpty ? 'World' : args[0]}!");
 
 bye([_]) => print("Bye!");
-
-/// To pass an argument to a task, e.g. "sleep" for this task, run as in
-/// 'dartle sleep -Dsleep=10'.
-sleep([_]) async => await Future.delayed(
-    Duration(seconds: int.fromEnvironment('sleep', defaultValue: 2)));
 
 encodeBase64([_]) async {
   final input = await File('input.txt').readAsBytes();

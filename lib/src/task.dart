@@ -2,6 +2,7 @@ import 'package:collection/collection.dart';
 
 import 'error.dart';
 import 'run_condition.dart';
+import 'task_invocation.dart';
 
 final _functionNamePatttern = RegExp('[a-zA-Z_0-9]+');
 
@@ -44,6 +45,7 @@ _NameAction _resolveNameAction(Function([List<String>]) action, String name) {
 class Task {
   final String description;
   final RunCondition runCondition;
+  final ArgsValidator argsValidator;
   final Set<String> dependsOn;
   final _NameAction _nameAction;
 
@@ -53,6 +55,7 @@ class Task {
     String name = '',
     this.dependsOn = const {},
     this.runCondition = const AlwaysRun(),
+    this.argsValidator = const DoNotAcceptArgs(),
   }) : _nameAction = _resolveNameAction(action, name ?? '');
 
   String get name => _nameAction.name;
@@ -103,7 +106,7 @@ class TaskWithDeps implements Task, Comparable<TaskWithDeps> {
 
   final Set<String> _allDeps;
 
-  TaskWithDeps(this._task, [this.dependencies = const []])
+  TaskWithDeps(this._task, [this.dependencies = const <TaskWithDeps>[]])
       : _allDeps = dependencies.map((t) => t.name).toSet();
 
   _NameAction get _nameAction => _task._nameAction;
@@ -123,6 +126,8 @@ class TaskWithDeps implements Task, Comparable<TaskWithDeps> {
   String get description => _task.description;
 
   RunCondition get runCondition => _task.runCondition;
+
+  ArgsValidator get argsValidator => _task.argsValidator;
 
   @override
   String toString() {
@@ -151,10 +156,10 @@ class TaskWithDeps implements Task, Comparable<TaskWithDeps> {
 }
 
 class ParallelTasks {
-  final List<TaskWithDeps> tasks = [];
+  final List<TaskInvocation> invocations = [];
 
   @override
-  String toString() => 'ParallelTasks{$tasks}';
+  String toString() => 'ParallelTasks{invocations=$invocations}';
 
   /// Returns true the given task can be included in this group of tasks.
   ///
@@ -162,12 +167,48 @@ class ParallelTasks {
   /// dependency on tasks in this group, hence it can run in parallel with
   /// the other tasks.
   bool canInclude(TaskWithDeps task) {
-    for (final t in tasks) {
+    for (final t in invocations.map((i) => i.task)) {
       if (t.dependsOn.contains(task.name)) return false;
       if (task.dependsOn.contains(t.name)) return false;
     }
     return true;
   }
+}
+
+/// Validator of arguments passed to a [Task].
+mixin ArgsValidator {
+  /// Validate the given args, throwing an [Exception] in case of invalid
+  /// arguments being provided.
+  void validate(List<String> args);
+
+  /// Message explaining what arguments are expected.
+  String helpMessage();
+}
+
+/// An [ArgsValidator] which does not accept any arguments.
+class DoNotAcceptArgs with ArgsValidator {
+  const DoNotAcceptArgs();
+
+  @override
+  String helpMessage() => 'no arguments are expected';
+
+  @override
+  void validate(List<String> args) {
+    if (args.isNotEmpty) {
+      throw DartleException(message: helpMessage());
+    }
+  }
+}
+
+/// An [ArgsValidator] which accepts anything.
+class AcceptAnyArgs with ArgsValidator {
+  const AcceptAnyArgs();
+
+  @override
+  String helpMessage() => 'all arguments are accepted';
+
+  @override
+  void validate(List<String> args) {}
 }
 
 /// Create a [Map] from the name of a task to the corresponding [TaskWithDeps].
