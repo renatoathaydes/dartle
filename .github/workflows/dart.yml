@@ -5,14 +5,29 @@ on: [push]
 jobs:
   build:
 
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.os }}
 
-    container:
-      image:  google/dart:latest
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest, macOS-latest]
+        include:
+          - os: ubuntu-latest
+            output-name: dartle-linux
+          - os: macOS-latest
+            output-name: dartle-mac
+          - os: windows-latest
+            output-name: dartle-windows.exe
 
     steps:
+    - uses: DanTup/gh-actions/setup-dart@master
     - uses: actions/checkout@v1
     - name: Install dependencies
       run: pub get
     - name: Run tests
       run: pub run test
+    - name: Compile native
+      run: mkdir binaries && dart2native bin/dartle.dart -o binaries/${{ matrix.output-name }}
+    - uses: actions/upload-artifact@v1
+      with:
+        name: native-executables
+        path: binaries
