@@ -8,8 +8,10 @@ import '../_log.dart';
 import '../_utils.dart';
 import '../file_collection.dart';
 import '../helpers.dart';
+import '../task_invocation.dart';
 
 const _hashesDir = '$dartleDir/hashes';
+const _tasksDir = '$dartleDir/tasks';
 
 File _getCacheLocation(FileSystemEntity entity) {
   final locationHash = _locationHash(entity);
@@ -43,6 +45,7 @@ class DartleCache {
   void init() {
     Directory(dartleDir).createSync(recursive: true);
     Directory(_hashesDir).createSync();
+    Directory(_tasksDir).createSync();
   }
 
   /// Clean the Dartle cache.
@@ -53,13 +56,14 @@ class DartleCache {
   Future<void> clean({FileCollection exclusions = FileCollection.empty}) async {
     final cacheExclusions = await _mapToCacheLocations(exclusions);
     logger.debug('Cleaning Dartle cache');
-    await deleteAll(FileCollection([Directory(_hashesDir)],
-        fileFilter: (file) async {
-          final doExclude = await cacheExclusions.includes(file);
-          if (doExclude) logger.debug("Keeping excluded file: ${file}");
-          return !doExclude;
-        },
-        dirFilter: (dir) async => !await cacheExclusions.includes(dir)));
+    await deleteAll(
+        FileCollection([Directory(_hashesDir), Directory(_tasksDir)],
+            fileFilter: (file) async {
+              final doExclude = await cacheExclusions.includes(file);
+              if (doExclude) logger.debug("Keeping excluded file: ${file}");
+              return !doExclude;
+            },
+            dirFilter: (dir) async => !await cacheExclusions.includes(dir)));
     init();
     logger.debug("Dartle cache has been cleaned.");
   }
@@ -87,6 +91,32 @@ class DartleCache {
   /// Check if the given file system entity is present in the cache.
   bool contains(FileSystemEntity entity) =>
       _getCacheLocation(entity).existsSync();
+
+  /// Cache the given task invocation.
+  Future<void> cacheTaskInvocation(TaskInvocation invocation) async {
+    await File("$_tasksDir/${invocation.task.name}")
+        .writeAsString(invocation.args.toString());
+  }
+
+  /// Check if the given task had been invoked with the same arguments before.
+  ///
+  /// Only successful task invocations are normally cached, hence this method
+  /// will normally return `true` when the previous invocation of [Task] failed.
+  Future<bool> hasTaskInvocationChanged(TaskInvocation invocation) async {
+    final taskFile = File("$_tasksDir/${invocation.task.name}");
+    if (await taskFile.exists()) {
+      final taskArgs = await taskFile.readAsString();
+      return invocation.args.toString() != taskArgs;
+    } else {
+      return true;
+    }
+  }
+
+  /// Remove any previous invocations of a task with the given name
+  /// from the cache.
+  Future<void> removeTaskInvocation(String taskName) async {
+    await ignoreExceptions(() => File("$_tasksDir/${taskName}").delete());
+  }
 
   Future<void> _cacheFile(File file, [File hashFile]) async {
     final hf = hashFile ?? _getCacheLocation(file);

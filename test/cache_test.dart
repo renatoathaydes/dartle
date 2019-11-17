@@ -318,5 +318,124 @@ void main([List<String> args = const []]) {
             'dartleFile is cached (after)': true,
           }));
     });
+
+    test('first-time task invocation has always changed', () async {
+      expect(
+          await cache.hasTaskInvocationChanged(taskInvocation('foo')), isTrue);
+    });
+
+    test(
+        'task invocation has changed if it runs with arguments after no args invocation',
+        () async {
+      final interactions = <String, bool>{};
+      await withFileSystem(fs, () async {
+        await cache.cacheTaskInvocation(taskInvocation('foo'));
+        await Future.delayed(const Duration(milliseconds: 1));
+
+        interactions['with one arg'] = await cache
+            .hasTaskInvocationChanged(taskInvocation('foo', ['bar']));
+        interactions['with one other arg'] =
+            await cache.hasTaskInvocationChanged(taskInvocation('foo', ['bz']));
+        interactions['with two args'] = await cache
+            .hasTaskInvocationChanged(taskInvocation('foo', ['hey', 'ho']));
+        interactions['with no args'] =
+            await cache.hasTaskInvocationChanged(taskInvocation('foo'));
+      });
+
+      expect(
+          interactions,
+          equals({
+            'with one arg': true,
+            'with one other arg': true,
+            'with two args': true,
+            'with no args': false,
+          }));
+    });
+
+    test(
+        'task invocation has changed if it runs with different arguments '
+        'after invocation with arguments', () async {
+      final interactions = <String, bool>{};
+      await withFileSystem(fs, () async {
+        await cache.cacheTaskInvocation(taskInvocation('foo', ['a', 'b']));
+        await Future.delayed(const Duration(milliseconds: 1));
+
+        interactions['with one arg'] =
+            await cache.hasTaskInvocationChanged(taskInvocation('foo', ['a']));
+        interactions['with one other arg'] =
+            await cache.hasTaskInvocationChanged(taskInvocation('foo', ['b']));
+        interactions['with same args, different order'] = await cache
+            .hasTaskInvocationChanged(taskInvocation('foo', ['b', 'a']));
+        interactions['with no args'] =
+            await cache.hasTaskInvocationChanged(taskInvocation('foo'));
+        interactions['with two different args'] = await cache
+            .hasTaskInvocationChanged(taskInvocation('foo', ['x', 'y']));
+        interactions['with two first args the same, but more args'] =
+            await cache.hasTaskInvocationChanged(
+                taskInvocation('foo', ['a', 'b', 'c']));
+        interactions['with same args'] = await cache
+            .hasTaskInvocationChanged(taskInvocation('foo', ['a', 'b']));
+      });
+
+      expect(
+          interactions,
+          equals({
+            'with one arg': true,
+            'with one other arg': true,
+            'with same args, different order': true,
+            'with no args': true,
+            'with two different args': true,
+            'with two first args the same, but more args': true,
+            'with same args': false,
+          }));
+    });
+
+    test('task invocation can be removed', () async {
+      final interactions = <String, bool>{};
+      await withFileSystem(fs, () async {
+        await cache.cacheTaskInvocation(taskInvocation('foo'));
+        await Future.delayed(const Duration(milliseconds: 1));
+
+        interactions['invocation changed after caching it'] =
+            await cache.hasTaskInvocationChanged(taskInvocation('foo'));
+
+        await cache.removeTaskInvocation('foo');
+        await Future.delayed(const Duration(milliseconds: 1));
+
+        interactions['invocation changed after removed'] =
+            await cache.hasTaskInvocationChanged(taskInvocation('foo'));
+
+        // try another task with one arg
+        await cache.cacheTaskInvocation(taskInvocation('bar', ['a']));
+        await Future.delayed(const Duration(milliseconds: 1));
+
+        interactions['invocation changed after cache (one arg)'] =
+            await cache.hasTaskInvocationChanged(taskInvocation('bar', ['a']));
+
+        // remove wrong task
+        await cache.removeTaskInvocation('foo');
+        await Future.delayed(const Duration(milliseconds: 1));
+
+        interactions['invocation changed after removed wrong task'] =
+            await cache.hasTaskInvocationChanged(taskInvocation('bar', ['a']));
+
+        // remove right task
+        await cache.removeTaskInvocation('bar');
+        await Future.delayed(const Duration(milliseconds: 1));
+
+        interactions['invocation changed after removed right task'] =
+            await cache.hasTaskInvocationChanged(taskInvocation('bar', ['a']));
+      });
+
+      expect(
+          interactions,
+          equals({
+            'invocation changed after caching it': false,
+            'invocation changed after removed': true,
+            'invocation changed after cache (one arg)': false,
+            'invocation changed after removed wrong task': false,
+            'invocation changed after removed right task': true,
+          }));
+    });
   });
 }

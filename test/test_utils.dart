@@ -17,6 +17,10 @@ Future<ProcessResult> startProcess(Future<Process> process, String name) async {
   return ProcessResult(stdout, stderr, code);
 }
 
+TaskInvocation taskInvocation(String name, [List<String> args = const []]) {
+  return TaskInvocation(TaskWithDeps(Task(([_]) => null, name: name)), args);
+}
+
 class ProcessResult {
   final StdStreamConsumer _stdout;
   final StdStreamConsumer _stderr;

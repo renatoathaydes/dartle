@@ -6,16 +6,17 @@ import '_log.dart';
 import 'cache/cache.dart';
 import 'error.dart';
 import 'file_collection.dart';
+import 'task_invocation.dart';
 import 'task_run.dart';
 
 /// A run condition for a [Task].
 ///
 /// A [Task] should not run if its [RunCondition] does not allow it.
 mixin RunCondition {
-  /// Check if this task should run.
+  /// Check if the provided task invocation should run.
   ///
   /// Returns true if it should, false otherwise.
-  FutureOr<bool> shouldRun();
+  FutureOr<bool> shouldRun(TaskInvocation invocation);
 
   /// Action to run after a task associated with this [RunCondition]
   /// has run, whether successfully or not.
@@ -33,7 +34,7 @@ class AlwaysRun with RunCondition {
   FutureOr<void> postRun(TaskResult result) {}
 
   @override
-  bool shouldRun() => true;
+  bool shouldRun(TaskInvocation invocation) => true;
 }
 
 /// A [RunCondition] which reports that a task should run whenever its inputs
@@ -62,7 +63,8 @@ class RunOnChanges with RunCondition {
       : this.cache = cache ?? DartleCache.instance;
 
   @override
-  FutureOr<bool> shouldRun() async {
+  FutureOr<bool> shouldRun(TaskInvocation invocation) async {
+    if (await cache.hasTaskInvocationChanged(invocation)) return true;
     final inputsChanged = await cache.hasChanged(inputs);
     if (inputsChanged) {
       logger.debug('Changes detected on task inputs: ${inputs}');
@@ -102,6 +104,7 @@ class RunOnChanges with RunCondition {
     if (success) {
       await cache(inputs);
       await cache(outputs);
+      await cache.cacheTaskInvocation(result.invocation);
     } else {
       if (await outputs.isEmpty) {
         // the task failed without any outputs, so for it to run again next
@@ -112,6 +115,7 @@ class RunOnChanges with RunCondition {
         // may not be correct anymore
         await cache.remove(outputs);
       }
+      await cache.removeTaskInvocation(result.invocation.task.name);
       if (error != null) throw error;
     }
   }

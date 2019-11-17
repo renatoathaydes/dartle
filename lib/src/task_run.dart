@@ -10,10 +10,10 @@ import 'task_invocation.dart';
 
 /// Result of executing a [Task].
 class TaskResult {
-  final Task task;
+  final TaskInvocation invocation;
   final Exception error;
 
-  TaskResult(this.task, [this.error]);
+  TaskResult(this.invocation, [this.error]);
 
   bool get isSuccess => error == null;
 
@@ -77,10 +77,10 @@ Future<TaskResult> runTask(TaskInvocation invocation,
   try {
     await action(invocation.args);
     stopwatch.stop();
-    result = TaskResult(task);
+    result = TaskResult(invocation);
   } on Exception catch (e) {
     stopwatch.stop();
-    result = TaskResult(task, e);
+    result = TaskResult(invocation, e);
   }
   logger.debug("Task '${task.name}' completed "
       "${result.isSuccess ? 'successfully' : 'with errors'}"
@@ -101,7 +101,7 @@ Future<List<Exception>> runTasksPostRun(List<TaskResult> results) async {
 }
 
 Future<void> runTaskPostRun(TaskResult taskResult) async {
-  final task = taskResult.task;
+  final task = taskResult.invocation.task;
   bool isError = false;
   logger.debug("Running post-run action for task '${task.name}'");
   final stopwatch = Stopwatch()..start();

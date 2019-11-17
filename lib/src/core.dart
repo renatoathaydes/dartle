@@ -144,8 +144,7 @@ Future<List<ParallelTasks>> _getExecutableTasks(
     if (options.forceTasks) {
       logger.debug("Will force execution of task '${task.name}'");
       mustRun.add(invocation);
-      // TODO check args are the same as last time as well
-    } else if (await task.runCondition.shouldRun()) {
+    } else if (await task.runCondition.shouldRun(invocation)) {
       mustRun.add(invocation);
     } else {
       if (options.showTasks) {
@@ -177,8 +176,7 @@ Future<List<ParallelTasks>> getInOrderOfExecution(
       TaskInvocation invocation, bool checkShouldRun) async {
     final task = invocation.task;
     if (seenTasks.add(task.name)) {
-      // TODO check previous task invocation args also
-      if (!checkShouldRun || await task.runCondition.shouldRun()) {
+      if (!checkShouldRun || await task.runCondition.shouldRun(invocation)) {
         final canRunInPreviousGroup =
             result.isNotEmpty && result.last.canInclude(task);
         if (canRunInPreviousGroup) {

@@ -53,7 +53,7 @@ Future<void> _start(List<String> args, Options options) async {
   final runCompileCondition = runCompileTask.runCondition as RunOnChanges;
 
   TaskResult compileTaskResult;
-  if (await runCompileCondition.shouldRun()) {
+  if (await runCompileCondition.shouldRun(TaskInvocation(runCompileTask))) {
     // the build logic may change completely, so we must clean the cache
     // (unless the resetCache option is on, as then, it will be cleaned later)
     if (!options.resetCache) {
