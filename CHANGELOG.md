@@ -1,3 +1,11 @@
+## Future release
+
+- forbid tasks from accessing IO resources not declared in inputs/outputs.
+
+## 0.5.1
+
+- Fixed Dartle version in published package.
+
 ## 0.5.0
 
 - Added CLI --version option.
