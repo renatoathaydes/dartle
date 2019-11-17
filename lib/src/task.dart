@@ -208,15 +208,16 @@ class AcceptAnyArgs with ArgsValidator {
   bool validate(List<String> args) => true;
 }
 
-class AcceptArgs with ArgsValidator {
+/// Validates the the number of arguments passed to a [Task].
+class ArgsCount with ArgsValidator {
   final int _min;
   final int _max;
 
-  const AcceptArgs.count(int count)
+  const ArgsCount.count(int count)
       : _min = count,
         _max = count;
 
-  const AcceptArgs.range({@required int min, @required int max})
+  const ArgsCount.range({@required int min, @required int max})
       : _min = min,
         _max = max;
 

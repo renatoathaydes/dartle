@@ -4,8 +4,8 @@ import 'dart:io';
 import 'package:dartle/dartle.dart';
 
 final allTasks = [
-  Task(hello, argsValidator: const AcceptArgs.range(min: 0, max: 1)),
-  Task(bye),
+  Task(hello, argsValidator: const ArgsCount.range(min: 0, max: 1)),
+  Task(bye, dependsOn: const {'hello'}),
   Task(clean),
   Task(encodeBase64,
       description: 'Encodes input.txt in base64, writing to output.txt',
@@ -23,6 +23,7 @@ main(List<String> args) async =>
 hello([List<String> args = const []]) =>
     print("Hello ${args.isEmpty ? 'World' : args[0]}!");
 
+/// If no arguments are expected, use `[_]` as the function parameter.
 bye([_]) => print("Bye!");
 
 encodeBase64([_]) async {

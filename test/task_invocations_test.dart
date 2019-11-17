@@ -9,9 +9,9 @@ final _a = Task(noop,
     name: 'a', dependsOn: {'b', 'c'}, argsValidator: const AcceptAnyArgs());
 final _b = Task(noop, name: 'b', argsValidator: const AcceptAnyArgs());
 final _c = Task(noop,
-    name: 'c', argsValidator: const AcceptArgs.range(min: 2, max: 3));
+    name: 'c', argsValidator: const ArgsCount.range(min: 2, max: 3));
 final _d = Task(noop,
-    name: 'd', dependsOn: {'a'}, argsValidator: const AcceptArgs.count(1));
+    name: 'd', dependsOn: {'a'}, argsValidator: const ArgsCount.count(1));
 
 // TaskWithDeps includes transitive dependencies
 final _aw = TaskWithDeps(_a, [_bw, _cw]);
