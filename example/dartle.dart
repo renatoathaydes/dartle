@@ -20,8 +20,7 @@ main(List<String> args) async =>
 
 /// To pass an argument to a task, use a ':' prefix, e.g.:
 /// dartle hello :joe
-hello([List<String> args = const []]) =>
-    print("Hello ${args.isEmpty ? 'World' : args[0]}!");
+hello(List<String> args) => print("Hello ${args.isEmpty ? 'World' : args[0]}!");
 
 /// If no arguments are expected, use `_` as the function parameter.
 bye(_) => print("Bye!");

@@ -1,3 +1,14 @@
+## 0.5.0
+
+- Added CLI --version option.
+- Improved help messages.
+- Run tasks in parallel when no dependencies force an ordering.
+- Use different Isolates to run parallel tasks when their actions is a top-level function and the `-p` flag is used.
+- Let tasks take arguments (e.g. `dartle task :arg`).
+- Verify task's arguments using its `ArgsValidator`.
+- Changed Task action's parameter list to take a non-optional `List<String>`.
+- Fixed bug where not all executable tasks were shown with the -s flag.
+
 ## 0.4.0
 
 - Implemented task dependencies.
