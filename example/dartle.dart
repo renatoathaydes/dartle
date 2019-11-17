@@ -23,12 +23,12 @@ main(List<String> args) async =>
 hello([List<String> args = const []]) =>
     print("Hello ${args.isEmpty ? 'World' : args[0]}!");
 
-/// If no arguments are expected, use `[_]` as the function parameter.
-bye([_]) => print("Bye!");
+/// If no arguments are expected, use `_` as the function parameter.
+bye(_) => print("Bye!");
 
-encodeBase64([_]) async {
+encodeBase64(_) async {
   final input = await File('input.txt').readAsBytes();
   await File('output.txt').writeAsString(base64.encode(input));
 }
 
-clean([_]) => deleteOutputs(allTasks);
+clean(_) => deleteOutputs(allTasks);

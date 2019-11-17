@@ -11,7 +11,7 @@ final libDirDartFiles = dir('lib', fileFilter: dartFileFilter);
 final allDartFiles = dir('.', fileFilter: dartFileFilter);
 
 final generateDartleVersionFileTask = Task(
-    ([_]) async =>
+    (_) async =>
         await generateVersionDartFile(File('lib/src/dartle_version.g.dart')),
     name: 'generateDartSources',
     description: 'Generates Dart source files');
@@ -30,18 +30,20 @@ final analyzeCodeTask = Task(analyzeCode,
     runCondition: RunOnChanges(inputs: allDartFiles));
 
 final testTask = Task(test,
-    description: 'Runs all tests',
+    description: 'Runs all tests. Arguments can be used to provide the '
+        'platforms the tests should run on.',
     dependsOn: {'analyzeCode'},
+    argsValidator: const AcceptAnyArgs(),
     runCondition:
         RunOnChanges(inputs: dirs(const ['lib', 'bin', 'test', 'example'])));
 
-final verifyTask = Task(([_]) => null, // no action, just grouping other tasks
+final verifyTask = Task((_) => null, // no action, just grouping other tasks
     name: 'verify',
     description: 'Verifies code style and linters, runs tests',
     dependsOn: {'checkImports', 'formatCode', 'analyzeCode', 'test'});
 
 final cleanTask = Task(
-    ([_]) async => await ignoreExceptions(
+    (_) async => await ignoreExceptions(
         () => deleteOutputs({testTask, generateDartleVersionFileTask})),
     name: 'clean',
     description: 'Deletes the outputs of all other tasks');
@@ -58,14 +60,15 @@ void main(List<String> args) => run(args, tasks: {
       verifyTask
     });
 
-test([_]) async {
+test(List<String> platforms) async {
+  final platformArgs = platforms.expand((p) => ['-p', p]);
   final code = await execProc(
-      Process.start('pub', const ['run', 'test', '-p', 'vm']),
+      Process.start('pub', ['run', 'test', ...platformArgs]),
       name: 'Dart Tests');
   if (code != 0) failBuild(reason: 'Tests failed');
 }
 
-checkImports([_]) async {
+checkImports(_) async {
   await for (final file in libDirDartFiles.files) {
     final illegalImports = (await file.readAsLines()).where(
         (line) => line.contains(RegExp("^import\\s+['\"]package:dartle")));
@@ -77,13 +80,13 @@ checkImports([_]) async {
   }
 }
 
-formatCode([_]) async {
+formatCode(_) async {
   final code = await execProc(Process.start('dartfmt', const ['-w', '.']),
       name: 'Dart Formatter');
   if (code != 0) failBuild(reason: 'Dart Formatter failed');
 }
 
-analyzeCode([_]) async {
+analyzeCode(_) async {
   final code = await execProc(Process.start('dartanalyzer', const ['.']),
       name: 'Dart Analyzer', successMode: StreamRedirectMode.stdout_stderr);
   if (code != 0) failBuild(reason: 'Dart Analyzer failed');

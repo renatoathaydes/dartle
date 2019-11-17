@@ -75,7 +75,8 @@ Future<TaskResult> runTask(TaskInvocation invocation,
   final stopwatch = Stopwatch()..start();
   TaskResult result;
   try {
-    await action(invocation.args);
+    final args = invocation.args;
+    await action(args);
     stopwatch.stop();
     result = TaskResult(invocation);
   } on Exception catch (e) {

@@ -9,13 +9,13 @@ final _functionNamePatttern = RegExp('[a-zA-Z_0-9]+');
 
 class _NameAction {
   final String name;
-  final Function([List<String>]) action;
+  final Function(List<String>) action;
   final bool isActionTopLevelFunction;
 
   _NameAction(this.name, this.action, this.isActionTopLevelFunction);
 }
 
-_NameAction _resolveNameAction(Function([List<String>]) action, String name) {
+_NameAction _resolveNameAction(Function(List<String>) action, String name) {
   bool isTopLevelFunction = false;
   final funName = "$action";
   final firstQuote = funName.indexOf("'");
@@ -51,7 +51,7 @@ class Task {
   final _NameAction _nameAction;
 
   Task(
-    Function([List<String>]) action, {
+    Function(List<String>) action, {
     this.description = '',
     String name = '',
     this.dependsOn = const {},
@@ -65,7 +65,7 @@ class Task {
   ///
   /// This function is meant to be called by Dartle, so that certain guarantees
   /// (parallelism, dependencies between tasks) can be held.
-  Function([List<String> args]) get action => _nameAction.action;
+  Function(List<String> args) get action => _nameAction.action;
 
   /// Whether this task may run in parallel with others inside [Isolate]s.
   ///
@@ -114,7 +114,7 @@ class TaskWithDeps implements Task, Comparable<TaskWithDeps> {
 
   String get name => _task.name;
 
-  Function([List<String>]) get action => _task.action;
+  Function(List<String>) get action => _task.action;
 
   bool get isParallelizable => _task.isParallelizable;
 

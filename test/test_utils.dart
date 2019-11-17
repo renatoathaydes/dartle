@@ -18,7 +18,7 @@ Future<ProcessResult> startProcess(Future<Process> process, String name) async {
 }
 
 TaskInvocation taskInvocation(String name, [List<String> args = const []]) {
-  return TaskInvocation(TaskWithDeps(Task(([_]) => null, name: name)), args);
+  return TaskInvocation(TaskWithDeps(Task((_) => null, name: name)), args);
 }
 
 class ProcessResult {

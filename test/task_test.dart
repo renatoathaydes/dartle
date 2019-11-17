@@ -1,7 +1,7 @@
 import 'package:dartle/dartle.dart';
 import 'package:test/test.dart';
 
-void noop([_]) {}
+void noop(_) {}
 
 final _a = Task(noop, name: 'a', dependsOn: {'b', 'c'});
 final _b = Task(noop, name: 'b');

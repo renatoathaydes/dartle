@@ -1,6 +1,6 @@
 import 'package:dartle/dartle.dart';
 
-void noop([_]) {}
+void noop(_) {}
 
 final tasks = [
   Task(noop, name: 'a', description: 'Task A', dependsOn: {'b', 'c'}),

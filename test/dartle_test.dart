@@ -6,7 +6,7 @@ import 'package:test/test.dart';
 
 import 'test_utils.dart';
 
-helloTask([_]) => null;
+helloTask(_) => null;
 
 void main() {
   group('Task name', () {
@@ -17,7 +17,7 @@ void main() {
       expect(Task(helloTask, name: 'foo').name, equals('foo'));
     });
     test('cannot be inferred from lambda', () {
-      expect(() => Task(([_]) {}).name, throwsArgumentError);
+      expect(() => Task((_) {}).name, throwsArgumentError);
     });
   });
   group('Task execution', () {
@@ -70,12 +70,14 @@ void main() {
       proc = await runExampleDartBuild(['bye']);
       expect(
           proc.stdout[0],
-          contains('Executing 1 task out of a total of 4 tasks:'
-              ' 1 task selected, 0 due to dependencies'));
-      expect(proc.stdout[1], contains("Running task 'bye'"));
-      expect(proc.stdout[2], equals('Bye!'));
-      expect(proc.stdout[3], contains("Build succeeded"));
-      expect(proc.stdout.length, equals(4));
+          contains('Executing 2 tasks out of a total of 4 tasks:'
+              ' 1 task selected, 1 due to dependencies'));
+      expect(proc.stdout[1], contains("Running task 'hello'"));
+      expect(proc.stdout[2], equals("Hello World!"));
+      expect(proc.stdout[3], contains("Running task 'bye'"));
+      expect(proc.stdout[4], equals('Bye!'));
+      expect(proc.stdout[5], contains("Build succeeded"));
+      expect(proc.stdout.length, equals(6));
       expect(proc.exitCode, equals(0));
       expect(proc.stderr, isEmpty);
     });

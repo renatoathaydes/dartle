@@ -3,13 +3,13 @@ import 'package:dartle/dartle.dart';
 import 'package:dartle/src/task_invocation.dart';
 import 'package:test/test.dart';
 
-void noop([_]) {}
+void noop(_) {}
 
 final _a = Task(noop,
     name: 'a', dependsOn: {'b', 'c'}, argsValidator: const AcceptAnyArgs());
 final _b = Task(noop, name: 'b', argsValidator: const AcceptAnyArgs());
-final _c = Task(noop,
-    name: 'c', argsValidator: const ArgsCount.range(min: 2, max: 3));
+final _c =
+    Task(noop, name: 'c', argsValidator: const ArgsCount.range(min: 2, max: 3));
 final _d = Task(noop,
     name: 'd', dependsOn: {'a'}, argsValidator: const ArgsCount.count(1));
 

@@ -119,7 +119,7 @@ Future<TaskWithDeps> _createDartCompileTask() async {
     outputs: file(snapshotFile.path),
   );
 
-  return TaskWithDeps(Task(([_]) => createDartSnapshot(buildFile),
+  return TaskWithDeps(Task((_) => createDartSnapshot(buildFile),
       name: '_compileDartleFile_',
       runCondition: runCompileCondition,
       description:
