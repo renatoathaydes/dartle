@@ -60,7 +60,7 @@ class RunOnChanges with RunCondition {
       this.outputs = FileCollection.empty,
       this.verifyOutputsExist = true,
       DartleCache cache})
-      : this.cache = cache ?? DartleCache.instance;
+      : cache = cache ?? DartleCache.instance;
 
   @override
   FutureOr<bool> shouldRun(TaskInvocation invocation) async {
@@ -77,7 +77,7 @@ class RunOnChanges with RunCondition {
     }
     await for (final output in outputs.files) {
       if (!await output.exists()) {
-        logger.debug("Task output does not exist: ${output.path}");
+        logger.debug('Task output does not exist: ${output.path}');
         return true;
       }
     }

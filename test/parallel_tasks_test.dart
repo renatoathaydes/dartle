@@ -36,9 +36,9 @@ void main() {
       expect(tasksOutput, contains("Running task 'sayHi'"));
       expect(tasksOutput, contains("Running task 'sayHo'"));
       expect(tasksOutput, contains("Running task 'sayArgs'"));
-      expect(tasksOutput, contains("\nHi"));
-      expect(tasksOutput, contains("\nHo"));
-      expect(tasksOutput, contains("\n[]"));
+      expect(tasksOutput, contains('\nHi'));
+      expect(tasksOutput, contains('\nHo'));
+      expect(tasksOutput, contains('\n[]'));
     });
 
     test('run in separate Isolates with -p flag', () async {
@@ -52,7 +52,7 @@ void main() {
           contains('Executing 4 tasks out of a total of 4 tasks:'
               ' 1 task selected, 3 due to dependencies'));
       var tasksOutput = proc.stdout.skip(1).join();
-      expect(tasksOutput, contains("Env={}"));
+      expect(tasksOutput, contains('Env={}'));
     });
 
     test('run in the same Isolate without the -p flag', () async {
@@ -67,7 +67,7 @@ void main() {
       final pattern = RegExp('Env={(.*)}');
       final match = pattern.firstMatch(tasksOutput);
       expect(match, isNotNull);
-      final envValues = match.group(1).split(", ");
+      final envValues = match.group(1).split(', ');
       expect(envValues, containsAll({'hi', 'args', 'ho'}));
       expect(envValues, hasLength(3));
     });

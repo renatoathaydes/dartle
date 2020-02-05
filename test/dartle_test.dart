@@ -6,7 +6,7 @@ import 'package:test/test.dart';
 
 import 'test_utils.dart';
 
-helloTask(_) => null;
+void helloTask(_) => null;
 
 void main() {
   group('Task name', () {
@@ -49,7 +49,7 @@ void main() {
               ' 1 task selected, 0 due to dependencies'));
       expect(proc.stdout[1], contains("Running task 'hello'"));
       expect(proc.stdout[2], equals('Hello World!'));
-      expect(proc.stdout[3], contains("Build succeeded"));
+      expect(proc.stdout[3], contains('Build succeeded'));
       expect(proc.stdout.length, equals(4));
       expect(proc.exitCode, equals(0));
       expect(proc.stderr, isEmpty);
@@ -62,7 +62,7 @@ void main() {
               ' 1 task selected, 0 due to dependencies'));
       expect(proc.stdout[1], contains("Running task 'hello'"));
       expect(proc.stdout[2], equals('Hello Elvis!'));
-      expect(proc.stdout[3], contains("Build succeeded"));
+      expect(proc.stdout[3], contains('Build succeeded'));
       expect(proc.stdout.length, equals(4));
       expect(proc.exitCode, equals(0));
       expect(proc.stderr, isEmpty);
@@ -73,10 +73,10 @@ void main() {
           contains('Executing 2 tasks out of a total of 4 tasks:'
               ' 1 task selected, 1 due to dependencies'));
       expect(proc.stdout[1], contains("Running task 'hello'"));
-      expect(proc.stdout[2], equals("Hello World!"));
+      expect(proc.stdout[2], equals('Hello World!'));
       expect(proc.stdout[3], contains("Running task 'bye'"));
       expect(proc.stdout[4], equals('Bye!'));
-      expect(proc.stdout[5], contains("Build succeeded"));
+      expect(proc.stdout[5], contains('Build succeeded'));
       expect(proc.stdout.length, equals(6));
       expect(proc.exitCode, equals(0));
       expect(proc.stderr, isEmpty);
@@ -92,14 +92,14 @@ void main() {
           contains('Executing 1 task out of a total of 4 tasks:'
               ' 1 task selected, 0 due to dependencies'));
       expect(proc.stdout[1], contains("Running task 'encodeBase64'"));
-      expect(proc.stdout[2], contains("Build succeeded"));
+      expect(proc.stdout[2], contains('Build succeeded'));
       expect(proc.stdout.length, equals(3));
       expect(proc.exitCode, equals(0));
       expect(proc.stderr, isEmpty);
 
       // verify that the task really ran
       expect(await outputFile.exists(), isTrue);
-      expect(await outputFile.readAsString(), equals("SGVsbG8gRGFydGxlIQ=="));
+      expect(await outputFile.readAsString(), equals('SGVsbG8gRGFydGxlIQ=='));
 
       // now the output exists, it should not run again
       proc = await runExampleDartBuild(['encode']);
@@ -107,7 +107,7 @@ void main() {
           proc.stdout[0],
           contains('Executing 0 tasks out of a total of 4 tasks:'
               ' 1 task selected, 0 due to dependencies'));
-      expect(proc.stdout[1], contains("Build succeeded"));
+      expect(proc.stdout[1], contains('Build succeeded'));
       expect(proc.stdout.length, equals(2));
       expect(proc.exitCode, equals(0));
       expect(proc.stderr, isEmpty);
@@ -119,7 +119,7 @@ void main() {
           contains('Executing 1 task out of a total of 4 tasks:'
               ' 1 task selected, 0 due to dependencies'));
       expect(proc.stdout[1], contains("Running task 'encodeBase64'"));
-      expect(proc.stdout[2], contains("Build succeeded"));
+      expect(proc.stdout[2], contains('Build succeeded'));
       expect(proc.stdout.length, equals(3));
       expect(proc.exitCode, equals(0));
       expect(proc.stderr, isEmpty);
@@ -156,9 +156,9 @@ void main() {
       expect(proc.stdout.length, equals(2));
       expect(
           proc.stdout[0],
-          contains("ERROR - Invocation problem: "
+          contains('ERROR - Invocation problem: '
               "Invalid arguments for task 'hello': [Joe, Mary] - "
-              "between 0 and 1 arguments expected"));
+              'between 0 and 1 arguments expected'));
       expect(proc.stdout[1], contains('Build failed'));
       expect(proc.exitCode, equals(1));
     });

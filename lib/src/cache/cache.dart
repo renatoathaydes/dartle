@@ -60,12 +60,12 @@ class DartleCache {
         FileCollection([Directory(_hashesDir), Directory(_tasksDir)],
             fileFilter: (file) async {
               final doExclude = await cacheExclusions.includes(file);
-              if (doExclude) logger.debug("Keeping excluded file: ${file}");
+              if (doExclude) logger.debug('Keeping excluded file: ${file}');
               return !doExclude;
             },
             dirFilter: (dir) async => !await cacheExclusions.includes(dir)));
     init();
-    logger.debug("Dartle cache has been cleaned.");
+    logger.debug('Dartle cache has been cleaned.');
   }
 
   /// Remove from this cache all files and directories in the given collection.
@@ -94,7 +94,7 @@ class DartleCache {
 
   /// Cache the given task invocation.
   Future<void> cacheTaskInvocation(TaskInvocation invocation) async {
-    await File("$_tasksDir/${invocation.task.name}")
+    await File('$_tasksDir/${invocation.task.name}')
         .writeAsString(invocation.args.toString());
   }
 
@@ -103,7 +103,7 @@ class DartleCache {
   /// Only successful task invocations are normally cached, hence this method
   /// will normally return `true` when the previous invocation of [Task] failed.
   Future<bool> hasTaskInvocationChanged(TaskInvocation invocation) async {
-    final taskFile = File("$_tasksDir/${invocation.task.name}");
+    final taskFile = File('$_tasksDir/${invocation.task.name}');
     if (await taskFile.exists()) {
       final taskArgs = await taskFile.readAsString();
       return invocation.args.toString() != taskArgs;
@@ -115,25 +115,25 @@ class DartleCache {
   /// Remove any previous invocations of a task with the given name
   /// from the cache.
   Future<void> removeTaskInvocation(String taskName) async {
-    await ignoreExceptions(() => File("$_tasksDir/${taskName}").delete());
+    await ignoreExceptions(() => File('$_tasksDir/${taskName}').delete());
   }
 
   Future<void> _cacheFile(File file, [File hashFile]) async {
     final hf = hashFile ?? _getCacheLocation(file);
-    logger.debug("Caching file ${file.path} at ${hf.path}");
+    logger.debug('Caching file ${file.path} at ${hf.path}');
     await hf.writeAsString(await _hashContents(file));
   }
 
   Future<void> _cacheDir(Directory dir, [File hashFile]) async {
     final hf = hashFile ?? _getCacheLocation(dir);
-    logger.debug("Caching directory: ${dir.path} at ${hf.path}");
+    logger.debug('Caching directory: ${dir.path} at ${hf.path}');
     await hf.writeAsString(await _hashDirectChildren(dir));
   }
 
   Future<void> _removeFile(File file) async {
     final hf = _getCacheLocation(file);
     if (await hf.exists()) {
-      logger.debug("Deleting file from cache: ${file.path} at ${hf.path}");
+      logger.debug('Deleting file from cache: ${file.path} at ${hf.path}');
       await hf.delete();
     }
   }
@@ -141,7 +141,7 @@ class DartleCache {
   Future<void> _removeDir(Directory dir) async {
     final hf = _getCacheLocation(dir);
     if (await hf.exists()) {
-      logger.debug("Deleting directory from cache: ${dir.path} at ${hf.path}");
+      logger.debug('Deleting directory from cache: ${dir.path} at ${hf.path}');
       await hf.delete();
     }
   }
@@ -167,7 +167,7 @@ class DartleCache {
     final hashFile = _getCacheLocation(file);
     var hashExists = await hashFile.exists();
     if (!await file.exists()) {
-      logger.debug("File ${file.path} does not exist "
+      logger.debug('File ${file.path} does not exist '
           "${hashExists ? 'but was cached' : 'and was not known before'}");
       return hashExists;
     }
@@ -175,15 +175,15 @@ class DartleCache {
     if (hashExists) {
       if ((await file.lastModified())
           .isAfter((await hashFile.lastModified()))) {
-        logger.debug("Detected possibly stale cache for file ${file.path}, "
-            "checking file hash");
+        logger.debug('Detected possibly stale cache for file ${file.path}, '
+            'checking file hash');
         final hash = await _hashContents(file);
         final previousHash = await hashFile.readAsString();
         if (hash == previousHash) {
-          logger.debug("File hash is still the same: ${file.path}");
+          logger.debug('File hash is still the same: ${file.path}');
           changed = false;
         } else {
-          logger.debug("File hash changed: ${file.path}");
+          logger.debug('File hash changed: ${file.path}');
           changed = true;
         }
       } else {
@@ -191,7 +191,7 @@ class DartleCache {
         changed = false;
       }
     } else {
-      logger.debug("Hash does not exist for file: ${file.path}");
+      logger.debug('Hash does not exist for file: ${file.path}');
       changed = true;
     }
     return changed;
@@ -206,11 +206,11 @@ class DartleCache {
       if (hash == previousHash) {
         changed = false;
       } else {
-        logger.debug("Directoy hash has changed: ${dir.path}");
+        logger.debug('Directoy hash has changed: ${dir.path}');
         changed = true;
       }
     } else {
-      logger.debug("Hash does not exist for directory: ${dir.path}");
+      logger.debug('Hash does not exist for directory: ${dir.path}');
       changed = true;
     }
     return changed;

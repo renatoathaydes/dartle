@@ -58,7 +58,7 @@ Future<Process> runDartSnapshot(File dartSnapshot,
         workingDirectory: workingDirectory);
   }
 
-  logger.debug("Running compiled Dartle build: ${dartSnapshot.path}");
+  logger.debug('Running compiled Dartle build: ${dartSnapshot.path}');
 
   return proc;
 }

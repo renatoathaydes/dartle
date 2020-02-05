@@ -3,7 +3,7 @@ import 'dart:io';
 
 import 'package:crypto/crypto.dart';
 
-final _capitalLetterPattern = RegExp(r"[A-Z]");
+final _capitalLetterPattern = RegExp(r'[A-Z]');
 
 String decapitalize(String text) {
   if (text.startsWith(_capitalLetterPattern)) {
@@ -30,7 +30,7 @@ List<String> splitWords(String text) {
 
 String findMatchingByWords(String searchText, List<String> options) {
   if (searchText == null || searchText.isEmpty) return null;
-  String result =
+  var result =
       options.firstWhere((opt) => opt == searchText, orElse: () => null);
   // if there's an exact match, return it
   if (result != null) return result;
@@ -64,9 +64,9 @@ String elapsedTime(Stopwatch stopwatch) {
   final millis = stopwatch.elapsedMilliseconds;
   if (millis > 1000) {
     final secs = (millis * 1e-3).toStringAsPrecision(4);
-    return "${secs} seconds";
+    return '${secs} seconds';
   } else {
-    return "${millis} ms";
+    return '${millis} ms';
   }
 }
 

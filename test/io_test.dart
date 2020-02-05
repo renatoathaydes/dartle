@@ -81,7 +81,7 @@ void main() {
           fs.file('A/B/D/E/e.txt'),
         ],
             fileFilter: (file) => file.path != 'b/b.txt',
-            dirFilter: (dir) => !dir.path.startsWith("A/B/D"));
+            dirFilter: (dir) => !dir.path.startsWith('A/B/D'));
         await expectFiles(files,
             files: ['A/B/D/E/e.txt', 'A/B/C/c.txt', 'dartle/some.txt'],
             dirs: const ['A/B', 'b', 'c', 'dartle']);
@@ -103,8 +103,8 @@ Future expectFiles(FileCollection actual,
       if (iter.moveNext()) {
         expect(file.path, equals(iter.current), reason: 'file at index $index');
       } else {
-        fail("Found a file at index $index, "
-            "but expected no more files: ${file.path}");
+        fail('Found a file at index $index, '
+            'but expected no more files: ${file.path}');
       }
       index++;
     }
@@ -116,8 +116,8 @@ Future expectFiles(FileCollection actual,
       if (iter.moveNext()) {
         expect(dir.path, equals(iter.current), reason: 'dir at index $index');
       } else {
-        fail("Found a directory at index $index, "
-            "but expected no more files: ${dir.path}");
+        fail('Found a directory at index $index, '
+            'but expected no more files: ${dir.path}');
       }
       index++;
     }

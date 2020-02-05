@@ -27,28 +27,28 @@ Future<void> run(List<String> args,
     Set<Task> defaultTasks = const {},
     bool doNotExit = false}) async {
   final stopWatch = Stopwatch()..start();
-  Options options = const Options();
+  var options = const Options();
 
   try {
     options = parseOptions(args);
     await _runWithoutErrorHandling(args, tasks, defaultTasks, options);
     stopWatch.stop();
     if (!options.showInfoOnly && options.logBuildTime) {
-      logger.info("Build succeeded in ${elapsedTime(stopWatch)}");
+      logger.info('Build succeeded in ${elapsedTime(stopWatch)}');
     }
     if (!doNotExit) exit(0);
   } on DartleException catch (e) {
     activateLogging(log.Level.WARNING);
     logger.error(e.message);
     if (options.logBuildTime) {
-      logger.error("Build failed in ${elapsedTime(stopWatch)}");
+      logger.error('Build failed in ${elapsedTime(stopWatch)}');
     }
     if (!doNotExit) exit(e.exitCode);
   } on Exception catch (e) {
     activateLogging(log.Level.WARNING);
-    logger.error("Unexpected error: $e");
+    logger.error('Unexpected error: $e');
     if (options.logBuildTime) {
-      logger.error("Build failed in ${elapsedTime(stopWatch)}");
+      logger.error('Build failed in ${elapsedTime(stopWatch)}');
     }
     if (!doNotExit) exit(22);
   }
@@ -60,11 +60,11 @@ Future<void> _runWithoutErrorHandling(List<String> args, Set<Task> tasks,
     return print(dartleUsage);
   }
   if (options.showVersion) {
-    return print("Dartle version ${dartleVersion}");
+    return print('Dartle version ${dartleVersion}');
   }
 
   activateLogging(options.logLevel);
-  logger.debug("Dartle version: ${dartleVersion}");
+  logger.debug('Dartle version: ${dartleVersion}');
 
   if (options.resetCache) {
     await DartleCache.instance.clean();
@@ -81,13 +81,13 @@ Future<void> _runWithoutErrorHandling(List<String> args, Set<Task> tasks,
   final executableTasks =
       await _getExecutableTasks(taskMap, tasksInvocation, options);
   if (options.showInfoOnly) {
-    print("======== Showing build information only, no tasks will "
-        "be executed ========\n");
+    print('======== Showing build information only, no tasks will '
+        'be executed ========\n');
     showTasksInfo(executableTasks, taskMap, defaultTasks, options);
   } else {
     if (logger.isLevelEnabled(LogLevel.info)) {
       String taskPhrase(int count) =>
-          count == 1 ? "$count task" : "$count tasks";
+          count == 1 ? '$count task' : '$count tasks';
       final totalTasksPhrase = taskPhrase(tasks.length);
       final requestedTasksPhrase = directTasksCount == 0
           ? taskPhrase(defaultTasks.length) + ' (default)'
@@ -100,9 +100,9 @@ Future<void> _runWithoutErrorHandling(List<String> args, Set<Task> tasks,
           executableTasksCount -
               (directTasksCount == 0 ? defaultTasks.length : directTasksCount));
 
-      logger.info("Executing $executableTasksPhrase out of a total of "
-          "$totalTasksPhrase: $requestedTasksPhrase, "
-          "$dependentTasksCount due to dependencies");
+      logger.info('Executing $executableTasksPhrase out of a total of '
+          '$totalTasksPhrase: $requestedTasksPhrase, '
+          '$dependentTasksCount due to dependencies');
     }
 
     await _runAll(executableTasks, options);
@@ -132,7 +132,7 @@ Future<List<ParallelTasks>> _getExecutableTasks(
     Options options) async {
   if (tasksInvocation.isEmpty) {
     if (!options.showInfoOnly) {
-      logger.warn("No tasks were requested and no default tasks exist.");
+      logger.warn('No tasks were requested and no default tasks exist.');
     }
     return const [];
   }
@@ -202,7 +202,7 @@ void _throwAggregateErrors(List<Exception> errors) {
   if (errors.isEmpty) return;
   if (errors.length == 1) throw errors[0];
 
-  int exitCode = 1;
+  var exitCode = 1;
   for (final dartleException in errors.whereType<DartleException>()) {
     exitCode = dartleException.exitCode;
     break;

@@ -78,7 +78,7 @@ void main() {
               (e) => e.message,
               'error message',
               equals("Task with name 'g' does not exist "
-                  "(dependency path: [t -> g])"))));
+                  '(dependency path: [t -> g])'))));
     });
   });
 

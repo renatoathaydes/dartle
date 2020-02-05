@@ -16,14 +16,14 @@ class _NameAction {
 }
 
 _NameAction _resolveNameAction(Function(List<String>) action, String name) {
-  bool isTopLevelFunction = false;
-  final funName = "$action";
+  var isTopLevelFunction = false;
+  final funName = '$action';
   final firstQuote = funName.indexOf("'");
   if (firstQuote > 0) {
     final match =
         _functionNamePatttern.firstMatch(funName.substring(firstQuote + 1));
     if (match != null) {
-      String inferredName = match.group(0);
+      var inferredName = match.group(0);
       // likely generated from JS lambda if it looks like 'main___closure',
       // do not accept it
       if (!inferredName.contains('___')) {
@@ -110,24 +110,32 @@ class TaskWithDeps implements Task, Comparable<TaskWithDeps> {
   TaskWithDeps(this._task, [this.dependencies = const <TaskWithDeps>[]])
       : _allDeps = dependencies.map((t) => t.name).toSet();
 
+  @override
   _NameAction get _nameAction => _task._nameAction;
 
+  @override
   String get name => _task.name;
 
+  @override
   Function(List<String>) get action => _task.action;
 
+  @override
   bool get isParallelizable => _task.isParallelizable;
 
   /// All transitive dependencies of this task.
+  @override
   Set<String> get dependsOn => _allDeps;
 
   /// The direct dependencies of this task.
   Set<String> get directDependencies => _task.dependsOn;
 
+  @override
   String get description => _task.description;
 
+  @override
   RunCondition get runCondition => _task.runCondition;
 
+  @override
   ArgsValidator get argsValidator => _task.argsValidator;
 
   @override
@@ -139,8 +147,8 @@ class TaskWithDeps implements Task, Comparable<TaskWithDeps> {
   int compareTo(TaskWithDeps other) {
     const thisBeforeOther = -1;
     const thisAfterOther = 1;
-    if (this.dependsOn.contains(other.name)) return thisAfterOther;
-    if (other.dependsOn.contains(this.name)) return thisBeforeOther;
+    if (dependsOn.contains(other.name)) return thisAfterOther;
+    if (other.dependsOn.contains(name)) return thisBeforeOther;
     return 0;
   }
 
@@ -224,7 +232,7 @@ class ArgsCount with ArgsValidator {
   @override
   String helpMessage() => _min == _max
       ? "exactly $_min argument${_min == 1 ? ' is' : 's are'} expected"
-      : "between $_min and $_max arguments expected";
+      : 'between $_min and $_max arguments expected';
 
   @override
   bool validate(List<String> args) =>

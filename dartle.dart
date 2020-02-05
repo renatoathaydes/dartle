@@ -60,7 +60,7 @@ void main(List<String> args) => run(args, tasks: {
       verifyTask
     });
 
-test(List<String> platforms) async {
+Future<void> test(List<String> platforms) async {
   final platformArgs = platforms.expand((p) => ['-p', p]);
   final code = await execProc(
       Process.start('pub', ['run', 'test', ...platformArgs]),
@@ -68,7 +68,7 @@ test(List<String> platforms) async {
   if (code != 0) failBuild(reason: 'Tests failed');
 }
 
-checkImports(_) async {
+Future<void> checkImports(_) async {
   await for (final file in libDirDartFiles.files) {
     final illegalImports = (await file.readAsLines()).where(
         (line) => line.contains(RegExp("^import\\s+['\"]package:dartle")));
@@ -80,13 +80,13 @@ checkImports(_) async {
   }
 }
 
-formatCode(_) async {
+Future<void> formatCode(_) async {
   final code = await execProc(Process.start('dartfmt', const ['-w', '.']),
       name: 'Dart Formatter');
   if (code != 0) failBuild(reason: 'Dart Formatter failed');
 }
 
-analyzeCode(_) async {
+Future<void> analyzeCode(_) async {
   final code = await execProc(Process.start('dartanalyzer', const ['.']),
       name: 'Dart Analyzer', successMode: StreamRedirectMode.stdout_stderr);
   if (code != 0) failBuild(reason: 'Dart Analyzer failed');

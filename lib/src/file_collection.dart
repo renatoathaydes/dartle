@@ -121,8 +121,10 @@ class _SingleFileCollection implements FileCollection {
   @override
   Stream<Directory> get directories => Stream.empty();
 
+  @override
   bool get isEmpty => false;
 
+  @override
   bool get isNotEmpty => true;
 
   @override
@@ -135,15 +137,18 @@ class _SingleFileCollection implements FileCollection {
 class _FileCollection implements FileCollection {
   final List<File> allFiles;
 
-  const _FileCollection(List<File> files) : this.allFiles = files;
+  const _FileCollection(List<File> files) : allFiles = files;
 
+  @override
   Stream<File> get files => Stream.fromIterable(allFiles);
 
   @override
   Stream<Directory> get directories => Stream.empty();
 
+  @override
   bool get isEmpty => allFiles.isEmpty;
 
+  @override
   bool get isNotEmpty => allFiles.isNotEmpty;
 
   @override
@@ -163,7 +168,7 @@ class _DirectoryCollection implements FileCollection {
 
   _DirectoryCollection(Iterable<Directory> dirs, Iterable<File> files,
       this.fileFilter, this.dirFilter)
-      : this.dirs = _sort(dirs),
+      : dirs = _sort(dirs),
         _extraFiles = _sort(files);
 
   @override
@@ -179,8 +184,10 @@ class _DirectoryCollection implements FileCollection {
   @override
   Stream<Directory> get directories => Stream.fromIterable(dirs);
 
+  @override
   Future<bool> get isEmpty => files.isEmpty;
 
+  @override
   Future<bool> get isNotEmpty async => !await isEmpty;
 
   @override

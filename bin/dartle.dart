@@ -8,26 +8,26 @@ final logger = log.Logger('dartle-starter');
 
 void main(List<String> args) async {
   final stopWatch = Stopwatch()..start();
-  Options options = const Options();
+  var options = const Options();
 
   try {
     options = parseOptions(args);
     await _start(args, options);
     if (!options.showInfoOnly && options.logBuildTime) {
-      logger.info("Build succeeded in ${elapsedTime(stopWatch)}");
+      logger.info('Build succeeded in ${elapsedTime(stopWatch)}');
     }
   } on DartleException catch (e) {
     activateLogging(log.Level.WARNING);
     if (e.message.isNotEmpty) logger.severe(e.message);
     if (options.logBuildTime) {
-      logger.severe("Build failed in ${elapsedTime(stopWatch)}");
+      logger.severe('Build failed in ${elapsedTime(stopWatch)}');
     }
     exit(e.exitCode);
   } on Exception catch (e) {
     activateLogging(log.Level.WARNING);
-    logger.severe("Unexpected error: $e");
+    logger.severe('Unexpected error: $e');
     if (options.logBuildTime) {
-      logger.severe("Build failed in ${elapsedTime(stopWatch)}");
+      logger.severe('Build failed in ${elapsedTime(stopWatch)}');
     }
     exit(22);
   }
@@ -38,7 +38,7 @@ Future<void> _start(List<String> args, Options options) async {
     return print(dartleUsage);
   }
   if (options.showVersion) {
-    return print("Dartle version ${dartleVersion}");
+    return print('Dartle version ${dartleVersion}');
   }
 
   activateLogging(options.logLevel);
@@ -60,8 +60,8 @@ Future<void> _start(List<String> args, Options options) async {
       await DartleCache.instance.clean(exclusions: runCompileCondition.inputs);
     }
 
-    logger.info("Compiling dartle.dart file as it is not up-to-date."
-        " Next time, the build will run faster.");
+    logger.info('Compiling dartle.dart file as it is not up-to-date.'
+        ' Next time, the build will run faster.');
 
     compileTaskResult =
         await runTask(TaskInvocation(runCompileTask), runInIsolate: false);
@@ -74,21 +74,21 @@ Future<void> _start(List<String> args, Options options) async {
 
 Future<void> _runBuild(
     File snapshotFile, TaskResult compileTaskResult, List<String> args) async {
-  int exitCode = 0;
+  var exitCode = 0;
 
   if (compileTaskResult == null) {
     exitCode = await _runSnapshot(snapshotFile, args: args);
   } else {
     try {
       if (compileTaskResult.isSuccess) {
-        logger.info("Dartle build file compiled successfully, starting build.");
+        logger.info('Dartle build file compiled successfully, starting build.');
         exitCode = await _runSnapshot(snapshotFile, args: args);
       }
     } finally {
       try {
         await runTaskPostRun(compileTaskResult);
       } on Exception catch (e) {
-        logger.warning("Failed to cache compiled Dartle due to: $e");
+        logger.warning('Failed to cache compiled Dartle due to: $e');
       }
       if (compileTaskResult.isFailure) {
         failBuild(

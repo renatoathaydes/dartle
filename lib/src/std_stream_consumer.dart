@@ -45,6 +45,7 @@ class _LinesAccumulator {
 }
 
 class _ActualLinesAccumulator implements _LinesAccumulator {
+  @override
   final List<String> lines = [];
 
   @override

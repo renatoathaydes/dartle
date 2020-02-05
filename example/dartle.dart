@@ -15,19 +15,20 @@ final allTasks = [
       )),
 ];
 
-main(List<String> args) async =>
+void main(List<String> args) async =>
     run(args, tasks: allTasks.toSet(), defaultTasks: {allTasks[0]});
 
 /// To pass an argument to a task, use a ':' prefix, e.g.:
 /// dartle hello :joe
-hello(List<String> args) => print("Hello ${args.isEmpty ? 'World' : args[0]}!");
+void hello(List<String> args) =>
+    print("Hello ${args.isEmpty ? 'World' : args[0]}!");
 
 /// If no arguments are expected, use `_` as the function parameter.
-bye(_) => print("Bye!");
+void bye(_) => print('Bye!');
 
-encodeBase64(_) async {
+Future<void> encodeBase64(_) async {
   final input = await File('input.txt').readAsBytes();
   await File('output.txt').writeAsString(base64.encode(input));
 }
 
-clean(_) => deleteOutputs(allTasks);
+Future<void> clean(_) => deleteOutputs(allTasks);

@@ -42,7 +42,7 @@ void main() {
       expect(proc.stdout[7], contains("Running task 'f'"));
       expect(proc.stdout[8], contains("Running task 'b'"));
       expect(proc.stdout[9], contains("Running task 'a'"));
-      expect(proc.stdout[10], contains("Build succeeded"));
+      expect(proc.stdout[10], contains('Build succeeded'));
       expect(proc.stdout.length, equals(11));
       expect(proc.exitCode, equals(0));
       expect(proc.stderr, isEmpty);
@@ -53,7 +53,7 @@ void main() {
           contains('Executing 1 task out of a total of 15 tasks:'
               ' 1 task selected, 0 due to dependencies'));
       expect(proc.stdout[1], contains("Running task 'l'"));
-      expect(proc.stdout[2], contains("Build succeeded"));
+      expect(proc.stdout[2], contains('Build succeeded'));
       expect(proc.stdout.length, equals(3));
       expect(proc.exitCode, equals(0));
       expect(proc.stderr, isEmpty);
@@ -62,7 +62,7 @@ void main() {
     test('can show all tasks', () async {
       var proc = await runExampleDartBuild(const ['-s']);
 
-      final expectedOutput = r"""
+      final expectedOutput = r'''
 ======== Showing build information only, no tasks will be executed ========
 
 Tasks declared in this build:
@@ -91,7 +91,7 @@ The following tasks were selected to run, in order:
   d ---> c ---> g ---> f ---> b ---> a
   e             n                     
   m                                   
-""";
+''';
 
       expect(proc.stdout.join('\n'), equals(expectedOutput));
       expect(proc.exitCode, equals(0));
@@ -101,7 +101,7 @@ The following tasks were selected to run, in order:
     test('can show task graph', () async {
       var proc = await runExampleDartBuild(const ['-g']);
 
-      final expectedOutput = r"""
+      final expectedOutput = r'''
 ======== Showing build information only, no tasks will be executed ========
 
 Tasks Graph:
@@ -130,7 +130,7 @@ The following tasks were selected to run, in order:
   d ---> c ---> g ---> f ---> b ---> a
   e             n                     
   m                                   
-""";
+''';
 
       expect(proc.stdout.join('\n'), equals(expectedOutput));
       expect(proc.exitCode, equals(0));

@@ -26,7 +26,7 @@ List<TaskInvocation> parseInvocation(List<String> tasksInvocation,
     Map<String, TaskWithDeps> taskMap, Options options) {
   final invocations = <TaskInvocation>[];
   TaskWithDeps currentTask;
-  bool followsTask = false;
+  var followsTask = false;
   final errors = <String>[];
   var currentArgs = <String>[];
 
@@ -37,12 +37,12 @@ List<TaskInvocation> parseInvocation(List<String> tasksInvocation,
         invocations.add(TaskInvocation(currentTask, currentArgs));
       } else {
         errors.add("Invalid arguments for task '${currentTask.name}': "
-            "$currentArgs - ${currentTask.argsValidator.helpMessage()}");
+            '$currentArgs - ${currentTask.argsValidator.helpMessage()}');
       }
     }
   }
 
-  for (String word in tasksInvocation) {
+  for (var word in tasksInvocation) {
     if (word.startsWith(taskArgumentPrefix)) {
       if (currentTask != null) {
         currentArgs.add(word.substring(1));
@@ -70,7 +70,7 @@ List<TaskInvocation> parseInvocation(List<String> tasksInvocation,
     } else {
       final message = errors.length > 1
           ? 'Several invocation problems found:\n' +
-              errors.map((err) => "  * $err").join('\n')
+              errors.map((err) => '  * $err').join('\n')
           : 'Invocation problem: ${errors[0]}';
       throw DartleException(message: message);
     }

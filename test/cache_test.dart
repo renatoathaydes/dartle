@@ -112,8 +112,8 @@ void main([List<String> args = const []]) {
         await cache(dirCollection);
         await Future.delayed(const Duration(milliseconds: 1));
 
-        await File("${directory.path}/new-file.txt").writeAsString('hey');
-        await File("${directory.path}/other-file.txt").writeAsString('ho');
+        await File('${directory.path}/new-file.txt').writeAsString('hey');
+        await File('${directory.path}/other-file.txt').writeAsString('ho');
 
         interactions['hasChangedAfterAddingFiles'] =
             await cache.hasChanged(dirCollection);
@@ -121,7 +121,7 @@ void main([List<String> args = const []]) {
         await cache(dirCollection);
         await Future.delayed(const Duration(milliseconds: 1));
 
-        await File("${directory.path}/other-file.txt").delete();
+        await File('${directory.path}/other-file.txt').delete();
 
         interactions['hasChangedAfterDeletingFile'] =
             await cache.hasChanged(dirCollection);
@@ -129,7 +129,7 @@ void main([List<String> args = const []]) {
         await cache(dirCollection);
         await Future.delayed(const Duration(milliseconds: 1));
 
-        await Directory("${directory.path}/sub-dir").create();
+        await Directory('${directory.path}/sub-dir').create();
 
         interactions['hasChangedAfterCreatingSubDir'] =
             await cache.hasChanged(dirCollection);
@@ -137,8 +137,8 @@ void main([List<String> args = const []]) {
         await cache(dirCollection);
         await Future.delayed(const Duration(milliseconds: 1));
 
-        await Directory("${directory.path}/sub-dir").delete();
-        await File("${directory.path}/sub-dir").writeAsString('not dir now');
+        await Directory('${directory.path}/sub-dir').delete();
+        await File('${directory.path}/sub-dir').writeAsString('not dir now');
 
         interactions['hasChangedAfterSubDirTurnedIntoFile'] =
             await cache.hasChanged(dirCollection);
@@ -146,8 +146,8 @@ void main([List<String> args = const []]) {
         await cache(dirCollection);
         await Future.delayed(const Duration(milliseconds: 1));
 
-        await Directory("another-dir").create();
-        await File("another-dir/something").writeAsString("let's go");
+        await Directory('another-dir').create();
+        await File('another-dir/something').writeAsString("let's go");
 
         interactions['hasChangedAfterCreatingOtherDirAndFile'] =
             await cache.hasChanged(dirCollection);

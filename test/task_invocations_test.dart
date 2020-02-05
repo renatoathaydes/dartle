@@ -102,7 +102,7 @@ void main() {
           throwsA(isA<DartleException>().having(
               (e) => e.message,
               'expected message',
-              equals("Several invocation problems found:\n"
+              equals('Several invocation problems found:\n'
                   "  * Argument should follow a task: ':foo'\n"
                   "  * Task 'bad-task' does not exist"))));
     });
@@ -113,7 +113,7 @@ void main() {
               (e) => e.message,
               'expected message',
               equals("Invocation problem: Invalid arguments for task 'd': [] - "
-                  "exactly 1 argument is expected"))));
+                  'exactly 1 argument is expected'))));
     });
     test('task requires one arg but gets two', () {
       expect(
@@ -123,7 +123,7 @@ void main() {
               'expected message',
               equals(
                   "Invocation problem: Invalid arguments for task 'd': [x, z] - "
-                  "exactly 1 argument is expected"))));
+                  'exactly 1 argument is expected'))));
     });
     test('task requires 2..3 arg but gets none', () {
       expect(
@@ -132,7 +132,7 @@ void main() {
               (e) => e.message,
               'expected message',
               equals("Invocation problem: Invalid arguments for task 'c': [] - "
-                  "between 2 and 3 arguments expected"))));
+                  'between 2 and 3 arguments expected'))));
     });
     test('task requires 2..3 arg but gets four', () {
       expect(
@@ -143,7 +143,7 @@ void main() {
               'expected message',
               equals(
                   "Invocation problem: Invalid arguments for task 'c': [1, 2, 3, 4] - "
-                  "between 2 and 3 arguments expected"))));
+                  'between 2 and 3 arguments expected'))));
     });
   });
 }
@@ -157,6 +157,7 @@ class TaskInvocationMatcher extends Matcher {
 
   TaskInvocationMatcher(this.taskName, this.args);
 
+  @override
   Description describe(Description description) {
     return description.add("task '$taskName', args $args");
   }

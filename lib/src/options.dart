@@ -94,7 +94,7 @@ final _parser = ArgParser()
   );
 
 /// Dartle usage message.
-String get dartleUsage => """
+String get dartleUsage => '''
 Dartle ${dartleVersion}
 
 Usage: dartle [<options>] [<tasks>]
@@ -105,7 +105,7 @@ default tasks are run.
 
 Options:
 ${_parser.usage}
-""";
+''';
 
 /// Parse the given args, setting the options as appropriate and returning the
 /// tasks the user requested to run.
@@ -147,7 +147,7 @@ Options parseOptions(List<String> args) {
 log.Level _parseLogLevel(String value) {
   final logLevel = levelByName[value];
   if (logLevel == null) {
-    throw StateError("Invalid log level: $value");
+    throw StateError('Invalid log level: $value');
   }
   return logLevel;
 }

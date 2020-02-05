@@ -27,17 +27,17 @@ void showAll(List<ParallelTasks> executableTasks, Map<String, Task> taskMap,
   final defaultSet = defaultTasks.map((t) => t.name).toSet();
   final taskList = taskMap.values.toList()
     ..sort((t1, t2) => t1.name.compareTo(t2.name));
-  print("Tasks declared in this build:\n");
+  print('Tasks declared in this build:\n');
   for (final task in taskList) {
     final desc = task.description.isEmpty ? '' : '\n      ${task.description}';
     final isDefault = defaultSet.contains(task.name) ? ' [default]' : '';
-    print("  * ${task.name}${isDefault}${desc}");
+    print('  * ${task.name}${isDefault}${desc}');
   }
 }
 
 void showTaskGraph(List<ParallelTasks> executableTasks,
     Map<String, TaskWithDeps> taskMap, Set<Task> defaultTasks) {
-  print("Tasks Graph:\n");
+  print('Tasks Graph:\n');
 
   final seenTasks = <String>{};
 
@@ -50,7 +50,7 @@ void showTaskGraph(List<ParallelTasks> executableTasks,
       if (notSeenYet || !topLevel) {
         final branch =
             topLevel ? '-' : lastTask ? '\\---' : firstTask ? '+---' : '|---';
-        stdout.write("$indent$branch ${task.name}");
+        stdout.write('$indent$branch ${task.name}');
       }
       if (notSeenYet) {
         stdout.writeln();
@@ -60,7 +60,7 @@ void showTaskGraph(List<ParallelTasks> executableTasks,
             topLevel ? '  ' : indent + (lastTask ? '     ' : '|     '),
             false);
       } else if (!topLevel) {
-        stdout.writeln(task.dependsOn.isNotEmpty ? " ..." : '');
+        stdout.writeln(task.dependsOn.isNotEmpty ? ' ...' : '');
       }
     }
   }

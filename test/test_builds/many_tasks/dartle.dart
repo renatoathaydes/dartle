@@ -20,5 +20,5 @@ final tasks = [
   Task(noop, name: 'o', description: 'Task O'),
 ];
 
-main(List<String> args) =>
+void main(List<String> args) =>
     run(args, tasks: tasks.toSet(), defaultTasks: tasks.sublist(0, 3).toSet());
