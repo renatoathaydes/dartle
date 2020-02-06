@@ -56,25 +56,24 @@ final _logByLevel = <log.Level, _Log>{
 
 void _colorized(String message, [LogColor color]) {
   if (color == null) {
-    _pen.reset();
-  } else {
-    switch (color) {
-      case LogColor.red:
-        _pen.red();
-        break;
-      case LogColor.green:
-        _pen.green();
-        break;
-      case LogColor.blue:
-        _pen.blue();
-        break;
-      case LogColor.yellow:
-        _pen.yellow();
-        break;
-      case LogColor.gray:
-        _pen.gray();
-        break;
-    }
+    return print(message);
+  }
+  switch (color) {
+    case LogColor.red:
+      _pen.red();
+      break;
+    case LogColor.green:
+      _pen.green();
+      break;
+    case LogColor.blue:
+      _pen.blue();
+      break;
+    case LogColor.yellow:
+      _pen.yellow();
+      break;
+    case LogColor.gray:
+      _pen.gray();
+      break;
   }
   try {
     print(_pen(message));
