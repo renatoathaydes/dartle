@@ -91,19 +91,32 @@ bool _loggingActivated = false;
 ///
 /// If this call was accepted (i.e. first call), this method returns true,
 /// otherwise it returns false.
-bool activateLogging(log.Level level) {
+bool activateLogging(log.Level level, {bool colorfulLog = true}) {
   if (!_loggingActivated) {
     _loggingActivated = true;
     log.Logger.root.level = level;
     log.Logger.root.onRecord.listen((log.LogRecord rec) {
-      final obj = rec.object;
-      if (obj is ColoredLogMessage) {
-        _Log(obj.color)(rec.message);
+      _Log log;
+      String msg;
+      if (colorfulLog) {
+        final obj = rec.object;
+        if (obj is ColoredLogMessage) {
+          log = _Log(obj.color);
+          msg = rec.message;
+        } else {
+          log = _logByLevel[rec.level] ?? const _Log(null);
+        }
       } else {
-        final log = _logByLevel[rec.level] ?? const _Log(null);
-        log('${rec.time} - ${rec.loggerName}[${Isolate.current.debugName}] - '
-            '${_nameByLevel[rec.level] ?? rec.level} - ${rec.message}');
+        log = const _Log(null);
+        if (rec.object is ColoredLogMessage) {
+          msg = rec.message;
+        }
       }
+
+      msg ??= '${rec.time} - ${rec.loggerName}[${Isolate.current.debugName}] - '
+          '${_nameByLevel[rec.level] ?? rec.level} - ${rec.message}';
+
+      log(msg);
     });
     return true;
   }

@@ -18,7 +18,7 @@ void main(List<String> args) async {
           '✔ Build succeeded in ${elapsedTime(stopWatch)}', LogColor.green));
     }
   } on DartleException catch (e) {
-    activateLogging(log.Level.WARNING);
+    activateLogging(log.Level.SEVERE);
     if (e.message.isNotEmpty) logger.severe(e.message);
     if (options.logBuildTime) {
       logger.severe(ColoredLogMessage(
@@ -26,7 +26,7 @@ void main(List<String> args) async {
     }
     exit(e.exitCode);
   } on Exception catch (e) {
-    activateLogging(log.Level.WARNING);
+    activateLogging(log.Level.SEVERE);
     logger.severe('Unexpected error: $e');
     if (options.logBuildTime) {
       logger.severe(ColoredLogMessage(
@@ -44,7 +44,7 @@ Future<void> _start(List<String> args, Options options) async {
     return print('Dartle version ${dartleVersion}');
   }
 
-  activateLogging(options.logLevel);
+  activateLogging(options.logLevel, colorfulLog: options.colorfulLog);
 
   final buildFile = File('dartle.dart').absolute;
   if (!await buildFile.exists()) {

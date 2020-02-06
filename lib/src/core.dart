@@ -39,7 +39,7 @@ Future<void> run(List<String> args,
     }
     if (!doNotExit) exit(0);
   } on DartleException catch (e) {
-    activateLogging(log.Level.WARNING);
+    activateLogging(log.Level.SEVERE);
     logger.severe(e.message);
     if (options.logBuildTime) {
       logger.severe(ColoredLogMessage(
@@ -47,7 +47,7 @@ Future<void> run(List<String> args,
     }
     if (!doNotExit) exit(e.exitCode);
   } on Exception catch (e) {
-    activateLogging(log.Level.WARNING);
+    activateLogging(log.Level.SEVERE);
     logger.severe('Unexpected error: $e');
     if (options.logBuildTime) {
       logger.severe(ColoredLogMessage(
@@ -66,8 +66,9 @@ Future<void> _runWithoutErrorHandling(List<String> args, Set<Task> tasks,
     return print('Dartle version ${dartleVersion}');
   }
 
-  activateLogging(options.logLevel);
-  logger.fine('Dartle version: ${dartleVersion}');
+  activateLogging(options.logLevel, colorfulLog: options.colorfulLog);
+  logger.fine(() => 'Dartle version: ${dartleVersion}');
+  logger.fine(() => 'Options: ${options}');
 
   if (options.resetCache) {
     await DartleCache.instance.clean();

@@ -7,6 +7,7 @@ import 'error.dart';
 
 class Options {
   final log.Level logLevel;
+  final bool colorfulLog;
   final bool forceTasks;
   final bool parallelizeTasks;
   final bool showHelp;
@@ -19,6 +20,7 @@ class Options {
 
   const Options(
       {this.logLevel = log.Level.INFO,
+      this.colorfulLog = true,
       this.showHelp = false,
       this.showVersion = false,
       this.showTasks = false,
@@ -31,6 +33,15 @@ class Options {
 
   bool get showInfoOnly =>
       showTasks || showTaskGraph || showHelp || showVersion;
+
+  @override
+  String toString() =>
+      'Options{logLevel: $logLevel, colorfulLog: $colorfulLog, '
+      'forceTasks: $forceTasks, parallelizeTasks: $parallelizeTasks, '
+      'showHelp: $showHelp, showVersion: $showVersion, '
+      'showTasks: $showTasks, showTaskGraph: $showTaskGraph, '
+      'resetCache: $resetCache, logBuildTime: $logBuildTime, '
+      'tasksInvocation: $tasksInvocation}';
 }
 
 final _parser = ArgParser()
@@ -42,6 +53,13 @@ final _parser = ArgParser()
     allowed: levelByName.keys,
   )
   ..addFlag(
+    'colorful-log',
+    abbr: 'c',
+    negatable: true,
+    defaultsTo: true,
+    help: 'Use ANSI colors to colorize log output.',
+  )
+  ..addFlag(
     'force-tasks',
     abbr: 'f',
     negatable: false,
@@ -51,7 +69,6 @@ final _parser = ArgParser()
     'parallel-tasks',
     abbr: 'p',
     negatable: true,
-    defaultsTo: false,
     help: 'Allow tasks to run in parallel using Isolates.',
   )
   ..addFlag(
@@ -134,11 +151,12 @@ Options parseOptions(List<String> args) {
 
   return Options(
     logLevel: _parseLogLevel(parseResult['log-level'].toString()),
-    forceTasks: parseResult.wasParsed('force-tasks'),
+    colorfulLog: parseResult['colorful-log'] as bool,
+    forceTasks: parseResult['force-tasks'] as bool,
     parallelizeTasks: parseResult['parallel-tasks'] as bool,
-    showTasks: parseResult.wasParsed('show-tasks'),
-    showTaskGraph: parseResult.wasParsed('show-task-graph'),
-    resetCache: parseResult.wasParsed('reset-cache'),
+    showTasks: parseResult['show-tasks'] as bool,
+    showTaskGraph: parseResult['show-task-graph'] as bool,
+    resetCache: parseResult['reset-cache'] as bool,
     logBuildTime: parseResult['log-build-time'] as bool,
     tasksInvocation: parseResult.rest,
   );
