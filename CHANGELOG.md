@@ -2,6 +2,11 @@
 
 - forbid tasks from accessing IO resources not declared in inputs/outputs.
 
+## 0.6.0
+
+- improved logging output.
+- added option to turn off colorful-log.
+
 ## 0.5.1
 
 - Fixed Dartle version in published package.
