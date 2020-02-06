@@ -46,7 +46,7 @@ final cleanTask = Task(
     (_) async => await ignoreExceptions(
         () => deleteOutputs({testTask, generateDartleVersionFileTask})),
     name: 'clean',
-    description: 'Deletes the outputs of all other tasks');
+    description: 'Deletes the outputs of all other tasks in this build');
 
 void main(List<String> args) => run(args, tasks: {
       cleanTask,
