@@ -89,12 +89,12 @@ dartle hello bye
 Output:
 
 ```
-2019-11-17 14:35:09.597494 - dartle[main] - INFO - Executing 2 tasks out of a total of 3 tasks: 2 tasks selected, 0 due to dependencies
-2019-11-17 14:35:09.597619 - dartle[main] - INFO - Running task 'hello'
+2020-02-06 20:53:26.917795 - dartle[main] - INFO - Executing 2 tasks out of a total of 4 tasks: 2 tasks selected, 0 due to dependencies
+2020-02-06 20:53:26.918155 - dartle[main] - INFO - Running task 'hello'
 Hello World!
-2019-11-17 14:35:09.597702 - dartle[main] - INFO - Running task 'bye'
+2020-02-06 20:53:26.918440 - dartle[main] - INFO - Running task 'bye'
 Bye!
-2019-11-17 14:35:09.597824 - dartle[main] - INFO - Build succeeded in 0 ms
+✔ Build succeeded in 3 ms
 ```
 
 > Notice that the `dartle` executable will cache resources to make builds run faster.
@@ -110,10 +110,10 @@ dartle hello :Joe
 Prints:
 
 ```
-2019-11-17 14:37:26.503476 - dartle[main] - INFO - Executing 1 task out of a total of 3 tasks: 1 task selected, 0 due to dependencies
-2019-11-17 14:37:26.503686 - dartle[main] - INFO - Running task 'hello'
+2020-02-06 20:55:00.502056 - dartle[main] - INFO - Executing 1 task out of a total of 4 tasks: 1 task selected, 0 due to dependencies
+2020-02-06 20:55:00.502270 - dartle[main] - INFO - Running task 'hello'
 Hello Joe!
-2019-11-17 14:37:26.504267 - dartle[main] - INFO - Build succeeded in 1 ms
+✔ Build succeeded in 1 ms
 ```
 
 ### Declaring tasks
@@ -166,7 +166,7 @@ In the example above, the `bye` task depends on the `hello` task:
 
 ```dart
 Task(bye, dependsOn: const {'hello'})
-``` 
+```
 
 This means that whenever `bye` runs, `hello` runs first.
 
