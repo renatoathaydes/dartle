@@ -114,6 +114,8 @@ final _parser = ArgParser()
 String get dartleUsage => '''
 Dartle ${dartleVersion}
 
+https://github.com/renatoathaydes/dartle
+
 Usage: dartle [<options>] [<tasks>]
 
 Runs a Dartle build.
