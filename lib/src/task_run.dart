@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:logging/logging.dart';
 import 'package:meta/meta.dart';
 
 import '_actor_task.dart';
@@ -34,11 +35,11 @@ class TaskResult {
 /// as [TaskResult] instances with errors.
 Future<List<TaskResult>> runTasks(List<ParallelTasks> tasks,
     {@required bool parallelize}) async {
-  if (logger.isLevelEnabled(LogLevel.debug)) {
+  if (logger.isLoggable(Level.FINE)) {
     final execMode = parallelize
         ? 'in parallel where possible, using separate Isolates for parallelizable Tasks'
         : 'on main Isolate as no parallelization was enabled';
-    logger.debug('Will execute tasks ${execMode}');
+    logger.fine('Will execute tasks ${execMode}');
   }
   final results = <TaskResult>[];
   for (final parTasks in tasks) {
@@ -51,7 +52,7 @@ Future<List<TaskResult>> runTasks(List<ParallelTasks> tasks,
     }
 
     if (results.any((r) => r.isFailure)) {
-      logger.debug('Aborting task execution due to failure');
+      logger.fine('Aborting task execution due to failure');
       return results;
     }
   }
@@ -68,7 +69,7 @@ Future<TaskResult> runTask(TaskInvocation invocation,
 
   var useIsolate = runInIsolate && task.isParallelizable;
 
-  logger.debug("Using ${useIsolate ? 'separate' : 'main'} "
+  logger.fine("Using ${useIsolate ? 'separate' : 'main'} "
       "Isolate to run task '${task.name}'");
 
   final action = useIsolate ? actorAction(task.action) : task.action;
@@ -83,7 +84,7 @@ Future<TaskResult> runTask(TaskInvocation invocation,
     stopwatch.stop();
     result = TaskResult(invocation, e);
   }
-  logger.debug("Task '${task.name}' completed "
+  logger.fine("Task '${task.name}' completed "
       "${result.isSuccess ? 'successfully' : 'with errors'}"
       ' in ${elapsedTime(stopwatch)}');
   return result;
@@ -104,7 +105,7 @@ Future<List<Exception>> runTasksPostRun(List<TaskResult> results) async {
 Future<void> runTaskPostRun(TaskResult taskResult) async {
   final task = taskResult.invocation.task;
   var isError = false;
-  logger.debug("Running post-run action for task '${task.name}'");
+  logger.fine("Running post-run action for task '${task.name}'");
   final stopwatch = Stopwatch()..start();
   try {
     await task.runCondition.postRun(taskResult);
@@ -114,7 +115,7 @@ Future<void> runTaskPostRun(TaskResult taskResult) async {
     isError = true;
     rethrow;
   } finally {
-    logger.debug("Post-run action of task '${task.name}' completed "
+    logger.fine("Post-run action of task '${task.name}' completed "
         "${!isError ? 'successfully' : 'with errors'}"
         ' in ${elapsedTime(stopwatch)}');
   }

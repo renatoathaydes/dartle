@@ -55,17 +55,17 @@ class DartleCache {
   /// this cache).
   Future<void> clean({FileCollection exclusions = FileCollection.empty}) async {
     final cacheExclusions = await _mapToCacheLocations(exclusions);
-    logger.debug('Cleaning Dartle cache');
+    logger.fine('Cleaning Dartle cache');
     await deleteAll(
         FileCollection([Directory(_hashesDir), Directory(_tasksDir)],
             fileFilter: (file) async {
               final doExclude = await cacheExclusions.includes(file);
-              if (doExclude) logger.debug('Keeping excluded file: ${file}');
+              if (doExclude) logger.fine('Keeping excluded file: ${file}');
               return !doExclude;
             },
             dirFilter: (dir) async => !await cacheExclusions.includes(dir)));
     init();
-    logger.debug('Dartle cache has been cleaned.');
+    logger.fine('Dartle cache has been cleaned.');
   }
 
   /// Remove from this cache all files and directories in the given collection.
@@ -120,20 +120,20 @@ class DartleCache {
 
   Future<void> _cacheFile(File file, [File hashFile]) async {
     final hf = hashFile ?? _getCacheLocation(file);
-    logger.debug('Caching file ${file.path} at ${hf.path}');
+    logger.fine('Caching file ${file.path} at ${hf.path}');
     await hf.writeAsString(await _hashContents(file));
   }
 
   Future<void> _cacheDir(Directory dir, [File hashFile]) async {
     final hf = hashFile ?? _getCacheLocation(dir);
-    logger.debug('Caching directory: ${dir.path} at ${hf.path}');
+    logger.fine('Caching directory: ${dir.path} at ${hf.path}');
     await hf.writeAsString(await _hashDirectChildren(dir));
   }
 
   Future<void> _removeFile(File file) async {
     final hf = _getCacheLocation(file);
     if (await hf.exists()) {
-      logger.debug('Deleting file from cache: ${file.path} at ${hf.path}');
+      logger.fine('Deleting file from cache: ${file.path} at ${hf.path}');
       await hf.delete();
     }
   }
@@ -141,7 +141,7 @@ class DartleCache {
   Future<void> _removeDir(Directory dir) async {
     final hf = _getCacheLocation(dir);
     if (await hf.exists()) {
-      logger.debug('Deleting directory from cache: ${dir.path} at ${hf.path}');
+      logger.fine('Deleting directory from cache: ${dir.path} at ${hf.path}');
       await hf.delete();
     }
   }
@@ -167,7 +167,7 @@ class DartleCache {
     final hashFile = _getCacheLocation(file);
     var hashExists = await hashFile.exists();
     if (!await file.exists()) {
-      logger.debug('File ${file.path} does not exist '
+      logger.fine('File ${file.path} does not exist '
           "${hashExists ? 'but was cached' : 'and was not known before'}");
       return hashExists;
     }
@@ -175,15 +175,15 @@ class DartleCache {
     if (hashExists) {
       if ((await file.lastModified())
           .isAfter((await hashFile.lastModified()))) {
-        logger.debug('Detected possibly stale cache for file ${file.path}, '
+        logger.fine('Detected possibly stale cache for file ${file.path}, '
             'checking file hash');
         final hash = await _hashContents(file);
         final previousHash = await hashFile.readAsString();
         if (hash == previousHash) {
-          logger.debug('File hash is still the same: ${file.path}');
+          logger.fine('File hash is still the same: ${file.path}');
           changed = false;
         } else {
-          logger.debug('File hash changed: ${file.path}');
+          logger.fine('File hash changed: ${file.path}');
           changed = true;
         }
       } else {
@@ -191,7 +191,7 @@ class DartleCache {
         changed = false;
       }
     } else {
-      logger.debug('Hash does not exist for file: ${file.path}');
+      logger.fine('Hash does not exist for file: ${file.path}');
       changed = true;
     }
     return changed;
@@ -206,11 +206,11 @@ class DartleCache {
       if (hash == previousHash) {
         changed = false;
       } else {
-        logger.debug('Directoy hash has changed: ${dir.path}');
+        logger.fine('Directoy hash has changed: ${dir.path}');
         changed = true;
       }
     } else {
-      logger.debug('Hash does not exist for directory: ${dir.path}');
+      logger.fine('Hash does not exist for directory: ${dir.path}');
       changed = true;
     }
     return changed;

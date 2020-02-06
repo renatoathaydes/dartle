@@ -34,21 +34,24 @@ Future<void> run(List<String> args,
     await _runWithoutErrorHandling(args, tasks, defaultTasks, options);
     stopWatch.stop();
     if (!options.showInfoOnly && options.logBuildTime) {
-      logger.info('Build succeeded in ${elapsedTime(stopWatch)}');
+      logger.info(ColoredLogMessage(
+          '✔ Build succeeded in ${elapsedTime(stopWatch)}', LogColor.green));
     }
     if (!doNotExit) exit(0);
   } on DartleException catch (e) {
     activateLogging(log.Level.WARNING);
-    logger.error(e.message);
+    logger.severe(e.message);
     if (options.logBuildTime) {
-      logger.error('Build failed in ${elapsedTime(stopWatch)}');
+      logger.severe(ColoredLogMessage(
+          '✗ Build failed in ${elapsedTime(stopWatch)}', LogColor.red));
     }
     if (!doNotExit) exit(e.exitCode);
   } on Exception catch (e) {
     activateLogging(log.Level.WARNING);
-    logger.error('Unexpected error: $e');
+    logger.severe('Unexpected error: $e');
     if (options.logBuildTime) {
-      logger.error('Build failed in ${elapsedTime(stopWatch)}');
+      logger.severe(ColoredLogMessage(
+          '✗ Build failed in ${elapsedTime(stopWatch)}', LogColor.red));
     }
     if (!doNotExit) exit(22);
   }
@@ -64,7 +67,7 @@ Future<void> _runWithoutErrorHandling(List<String> args, Set<Task> tasks,
   }
 
   activateLogging(options.logLevel);
-  logger.debug('Dartle version: ${dartleVersion}');
+  logger.fine('Dartle version: ${dartleVersion}');
 
   if (options.resetCache) {
     await DartleCache.instance.clean();
@@ -85,7 +88,7 @@ Future<void> _runWithoutErrorHandling(List<String> args, Set<Task> tasks,
         'be executed ========\n');
     showTasksInfo(executableTasks, taskMap, defaultTasks, options);
   } else {
-    if (logger.isLevelEnabled(LogLevel.info)) {
+    if (logger.isLoggable(log.Level.INFO)) {
       String taskPhrase(int count) =>
           count == 1 ? '$count task' : '$count tasks';
       final totalTasksPhrase = taskPhrase(tasks.length);
@@ -132,7 +135,7 @@ Future<List<ParallelTasks>> _getExecutableTasks(
     Options options) async {
   if (tasksInvocation.isEmpty) {
     if (!options.showInfoOnly) {
-      logger.warn('No tasks were requested and no default tasks exist.');
+      logger.warning('No tasks were requested and no default tasks exist.');
     }
     return const [];
   }
@@ -142,7 +145,7 @@ Future<List<ParallelTasks>> _getExecutableTasks(
   for (final invocation in invocations) {
     final task = invocation.task;
     if (options.forceTasks) {
-      logger.debug("Will force execution of task '${task.name}'");
+      logger.fine("Will force execution of task '${task.name}'");
       mustRun.add(invocation);
     } else if (await task.runCondition.shouldRun(invocation)) {
       mustRun.add(invocation);
@@ -150,7 +153,7 @@ Future<List<ParallelTasks>> _getExecutableTasks(
       if (options.showTasks) {
         logger.info("Task '${task.name}' is up-to-date");
       } else {
-        logger.debug("Skipping task '${task.name}' as it is up-to-date");
+        logger.fine("Skipping task '${task.name}' as it is up-to-date");
       }
     }
   }

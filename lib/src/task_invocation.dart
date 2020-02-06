@@ -66,7 +66,7 @@ List<TaskInvocation> parseInvocation(List<String> tasksInvocation,
 
   if (errors.isNotEmpty) {
     if (options.showInfoOnly) {
-      errors.forEach((err) => logger.warn(err));
+      errors.forEach((err) => logger.severe(err));
     } else {
       final message = errors.length > 1
           ? 'Several invocation problems found:\n' +

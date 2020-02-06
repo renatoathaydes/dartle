@@ -3,38 +3,35 @@ import 'dart:isolate';
 import 'package:ansicolor/ansicolor.dart' as colors;
 import 'package:logging/logging.dart' as log;
 
-class Logger {
-  final _log = log.Logger('dartle');
+/// Supported log colors.
+enum LogColor { red, green, blue, yellow, gray }
 
-  Logger._create();
-
-  bool isLevelEnabled(LogLevel level) =>
-      _log.isLoggable(_levelByLogLevel[level]);
-
-  void debug(String message) => _log.fine(message);
-
-  void info(String message) => _log.info(message);
-
-  void warn(String message) => _log.warning(message);
-
-  void error(String message, [Object error, StackTrace stackTrace]) =>
-      _log.severe(message, error, stackTrace);
-}
-
-final Logger logger = Logger._create();
+final log.Logger logger = log.Logger('dartle');
 
 final _pen = colors.AnsiPen();
 
-typedef _Log = Function(String);
+class _Log {
+  final LogColor color;
+
+  const _Log(this.color);
+
+  void call(String message) {
+    _colorized(message, color);
+  }
+}
+
+/// A log message that should be displayed with a specific color.
+class ColoredLogMessage {
+  final Object message;
+  final LogColor color;
+
+  const ColoredLogMessage(this.message, this.color);
+
+  @override
+  String toString() => message?.toString() ?? 'null';
+}
 
 enum LogLevel { debug, info, warn, error }
-
-final _levelByLogLevel = <LogLevel, log.Level>{
-  LogLevel.debug: log.Level.FINE,
-  LogLevel.info: log.Level.INFO,
-  LogLevel.warn: log.Level.WARNING,
-  LogLevel.error: log.Level.SEVERE,
-};
 
 const levelByName = <String, log.Level>{
   'debug': log.Level.FINE,
@@ -51,32 +48,39 @@ final _nameByLevel = <log.Level, String>{
 };
 
 final _logByLevel = <log.Level, _Log>{
-  log.Level.FINE: _debug,
-  log.Level.INFO: _info,
-  log.Level.WARNING: _warn,
-  log.Level.SEVERE: _error,
+  log.Level.FINE: const _Log(LogColor.gray),
+  log.Level.INFO: const _Log(null),
+  log.Level.WARNING: const _Log(LogColor.yellow),
+  log.Level.SEVERE: const _Log(LogColor.red),
 };
 
-void _debug(String message) {
-  print(_pen(message));
-  _pen.reset();
-}
-
-void _info(String message) {
-  print(_pen(message));
-  _pen.reset();
-}
-
-void _warn(String message) {
-  _pen.yellow();
-  print(_pen(message));
-  _pen.reset();
-}
-
-void _error(String message) {
-  _pen.red();
-  print(_pen(message));
-  _pen.reset();
+void _colorized(String message, [LogColor color]) {
+  if (color == null) {
+    _pen.reset();
+  } else {
+    switch (color) {
+      case LogColor.red:
+        _pen.red();
+        break;
+      case LogColor.green:
+        _pen.green();
+        break;
+      case LogColor.blue:
+        _pen.blue();
+        break;
+      case LogColor.yellow:
+        _pen.yellow();
+        break;
+      case LogColor.gray:
+        _pen.gray();
+        break;
+    }
+  }
+  try {
+    print(_pen(message));
+  } finally {
+    _pen.reset();
+  }
 }
 
 bool _loggingActivated = false;
@@ -92,9 +96,14 @@ bool activateLogging(log.Level level) {
     _loggingActivated = true;
     log.Logger.root.level = level;
     log.Logger.root.onRecord.listen((log.LogRecord rec) {
-      final log = _logByLevel[rec.level] ?? _info;
-      log('${rec.time} - ${rec.loggerName}[${Isolate.current.debugName}] - '
-          '${_nameByLevel[rec.level] ?? rec.level} - ${rec.message}');
+      final obj = rec.object;
+      if (obj is ColoredLogMessage) {
+        _Log(obj.color)(rec.message);
+      } else {
+        final log = _logByLevel[rec.level] ?? const _Log(null);
+        log('${rec.time} - ${rec.loggerName}[${Isolate.current.debugName}] - '
+            '${_nameByLevel[rec.level] ?? rec.level} - ${rec.message}');
+      }
     });
     return true;
   }

@@ -58,13 +58,13 @@ Future<Process> runDartSnapshot(File dartSnapshot,
         workingDirectory: workingDirectory);
   }
 
-  logger.debug('Running compiled Dartle build: ${dartSnapshot.path}');
+  logger.fine('Running compiled Dartle build: ${dartSnapshot.path}');
 
   return proc;
 }
 
 Future<void> _dart2native(File dartFile, File destination) async {
-  logger.debug("Using 'dart2native' to compile Dart file: ${dartFile.path}");
+  logger.fine("Using 'dart2native' to compile Dart file: ${dartFile.path}");
   final code = await exec(
       Process.start('dart2native', [dartFile.path, '-o', destination.path]),
       name: 'dart2native');
@@ -72,7 +72,7 @@ Future<void> _dart2native(File dartFile, File destination) async {
 }
 
 Future<void> _snapshot(File dartFile, File destination) async {
-  logger.debug("Using 'dart' to snapshot Dart file: ${dartFile.path}");
+  logger.fine("Using 'dart' to snapshot Dart file: ${dartFile.path}");
   final code = await exec(
       Process.start('dart', ['--snapshot=${destination.path}', dartFile.path]),
       name: 'dart snapshot');

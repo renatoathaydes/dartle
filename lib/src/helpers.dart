@@ -49,7 +49,7 @@ Future<int> exec(Future<Process> process,
   final proc = await process;
   final procDescription = "process${name.isEmpty ? '' : " '$name'"} "
       '(PID=${proc.pid})';
-  logger.debug('Started ${procDescription}');
+  logger.fine('Started ${procDescription}');
   onStdoutLine ??= StdStreamConsumer(printToStdout: true);
   onStderrLine ??= StdStreamConsumer(printToStderr: true);
 
@@ -63,7 +63,7 @@ Future<int> exec(Future<Process> process,
       .listen(onStderrLine);
 
   final code = await proc.exitCode;
-  logger.debug('${procDescription} exited with code $code');
+  logger.fine('${procDescription} exited with code $code');
   return code;
 }
 
@@ -143,13 +143,13 @@ Future<void> deleteOutputs(Iterable<Task> tasks) async {
 /// [FileCollection] exclude files or sub-directories within such directory.
 Future<void> deleteAll(FileCollection fileCollection) async {
   await for (final file in fileCollection.files) {
-    logger.debug('Deleting file ${file.path}');
+    logger.fine('Deleting file ${file.path}');
     await ignoreExceptions(file.delete);
   }
   await for (final dir in fileCollection.directories) {
     if (await dir.exists()) {
       if (await dir.list().isEmpty) {
-        logger.debug('Deleting directory ${dir.path}');
+        logger.fine('Deleting directory ${dir.path}');
         await ignoreExceptions(dir.delete);
       }
     }

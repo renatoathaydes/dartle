@@ -14,20 +14,23 @@ void main(List<String> args) async {
     options = parseOptions(args);
     await _start(args, options);
     if (!options.showInfoOnly && options.logBuildTime) {
-      logger.info('Build succeeded in ${elapsedTime(stopWatch)}');
+      logger.info(ColoredLogMessage(
+          '✔ Build succeeded in ${elapsedTime(stopWatch)}', LogColor.green));
     }
   } on DartleException catch (e) {
     activateLogging(log.Level.WARNING);
     if (e.message.isNotEmpty) logger.severe(e.message);
     if (options.logBuildTime) {
-      logger.severe('Build failed in ${elapsedTime(stopWatch)}');
+      logger.severe(ColoredLogMessage(
+          '✗ Build failed in ${elapsedTime(stopWatch)}', LogColor.red));
     }
     exit(e.exitCode);
   } on Exception catch (e) {
     activateLogging(log.Level.WARNING);
     logger.severe('Unexpected error: $e');
     if (options.logBuildTime) {
-      logger.severe('Build failed in ${elapsedTime(stopWatch)}');
+      logger.severe(ColoredLogMessage(
+          '✗ Build failed in ${elapsedTime(stopWatch)}', LogColor.red));
     }
     exit(22);
   }
