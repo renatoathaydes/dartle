@@ -1,7 +1,6 @@
 import 'dart:async';
 
 import 'package:logging/logging.dart';
-import 'package:meta/meta.dart';
 
 import '_actor_task.dart';
 import '_log.dart';
@@ -12,7 +11,7 @@ import 'task_invocation.dart';
 /// Result of executing a [Task].
 class TaskResult {
   final TaskInvocation invocation;
-  final Exception error;
+  final Exception? error;
 
   TaskResult(this.invocation, [this.error]);
 
@@ -34,7 +33,7 @@ class TaskResult {
 /// This method does not throw any Exception, failures are returned
 /// as [TaskResult] instances with errors.
 Future<List<TaskResult>> runTasks(List<ParallelTasks> tasks,
-    {@required bool parallelize}) async {
+    {required bool parallelize}) async {
   if (logger.isLoggable(Level.FINE)) {
     final execMode = parallelize
         ? 'in parallel where possible, using separate Isolates for parallelizable Tasks'
@@ -63,7 +62,7 @@ Future<List<TaskResult>> runTasks(List<ParallelTasks> tasks,
 ///
 /// The task's [Task.runCondition] is not checked or used by this method.
 Future<TaskResult> runTask(TaskInvocation invocation,
-    {@required bool runInIsolate}) async {
+    {required bool runInIsolate}) async {
   final task = invocation.task;
   logger.info("Running task '${task.name}'");
 

@@ -118,13 +118,13 @@ class DartleCache {
     await ignoreExceptions(() => File('$_tasksDir/${taskName}').delete());
   }
 
-  Future<void> _cacheFile(File file, [File hashFile]) async {
+  Future<void> _cacheFile(File file, [File? hashFile]) async {
     final hf = hashFile ?? _getCacheLocation(file);
     logger.fine('Caching file ${file.path} at ${hf.path}');
     await hf.writeAsString(await _hashContents(file));
   }
 
-  Future<void> _cacheDir(Directory dir, [File hashFile]) async {
+  Future<void> _cacheDir(Directory dir, [File? hashFile]) async {
     final hf = hashFile ?? _getCacheLocation(dir);
     logger.fine('Caching directory: ${dir.path} at ${hf.path}');
     await hf.writeAsString(await _hashDirectChildren(dir));

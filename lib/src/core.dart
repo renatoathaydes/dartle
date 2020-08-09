@@ -3,7 +3,6 @@ import 'dart:io';
 import 'dart:math';
 
 import 'package:logging/logging.dart' as log;
-import 'package:meta/meta.dart';
 
 import '_log.dart';
 import '_task_graph.dart';
@@ -23,7 +22,7 @@ import 'task_run.dart';
 /// This method will normally not return as Dartle will exit with the
 /// appropriate code. To avoid that, set [doNotExit] to [true].
 Future<void> run(List<String> args,
-    {@required Set<Task> tasks,
+    {required Set<Task> tasks,
     Set<Task> defaultTasks = const {},
     bool doNotExit = false}) async {
   final stopWatch = Stopwatch()..start();
@@ -119,10 +118,9 @@ Future<void> _runAll(
 
   final results =
       await runTasks(executableTasks, parallelize: options.parallelizeTasks);
-  final failures = results.where((r) => r.isFailure).toList(growable: false);
   final postRunFailures = await runTasksPostRun(results);
 
-  allErrors.addAll(failures.map((f) => f.error));
+  allErrors.addAll(results.map((f) => f.error).whereType<Exception>());
   allErrors.addAll(postRunFailures);
 
   if (allErrors.isNotEmpty) {

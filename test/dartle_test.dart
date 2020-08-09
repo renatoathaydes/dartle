@@ -24,7 +24,7 @@ void main() {
     final outputFile = File('example/output.txt');
 
     // create a snapshot so we can run the build quickly, several times
-    File exampleDartleBuild;
+    var exampleDartleBuild = File('');
 
     setUpAll(() async {
       exampleDartleBuild =

@@ -25,7 +25,7 @@ class TaskInvocation {
 List<TaskInvocation> parseInvocation(List<String> tasksInvocation,
     Map<String, TaskWithDeps> taskMap, Options options) {
   final invocations = <TaskInvocation>[];
-  TaskWithDeps currentTask;
+  TaskWithDeps? currentTask;
   var followsTask = false;
   final errors = <String>[];
   var currentArgs = <String>[];
@@ -79,7 +79,7 @@ List<TaskInvocation> parseInvocation(List<String> tasksInvocation,
   return invocations;
 }
 
-TaskWithDeps _findTaskByName(
+TaskWithDeps? _findTaskByName(
     Map<String, TaskWithDeps> taskMap, String nameSpec) {
   final name =
       findMatchingByWords(nameSpec, taskMap.keys.toList(growable: false));

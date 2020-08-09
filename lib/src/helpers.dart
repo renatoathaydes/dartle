@@ -2,8 +2,6 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
-import 'package:meta/meta.dart';
-
 import '_log.dart';
 import 'error.dart';
 import 'file_collection.dart';
@@ -17,7 +15,7 @@ const dartleDir = '.dartle_tool';
 /// Fail the build for the given [reason].
 ///
 /// This function never returns.
-void failBuild({@required String reason, int exitCode = 1}) {
+void failBuild({required String reason, int exitCode = 1}) {
   throw DartleException(message: reason, exitCode: exitCode);
 }
 
@@ -44,8 +42,8 @@ FutureOr ignoreExceptions(FutureOr Function() action) async {
 /// process' output.
 Future<int> exec(Future<Process> process,
     {String name = '',
-    Function(String) onStdoutLine,
-    Function(String) onStderrLine}) async {
+    Function(String)? onStdoutLine,
+    Function(String)? onStderrLine}) async {
   final proc = await process;
   final procDescription = "process${name.isEmpty ? '' : " '$name'"} "
       '(PID=${proc.pid})';

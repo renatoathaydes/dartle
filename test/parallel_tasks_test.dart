@@ -7,7 +7,7 @@ import 'test_utils.dart';
 
 void main() {
   // create a snapshot so we can run the build quickly, several times
-  File parallelTasksBuild;
+  var parallelTasksBuild = File('');
 
   setUpAll(() async {
     parallelTasksBuild = (await createDartSnapshot(
@@ -67,7 +67,7 @@ void main() {
       final pattern = RegExp('Env={(.*)}');
       final match = pattern.firstMatch(tasksOutput);
       expect(match, isNotNull);
-      final envValues = match.group(1).split(', ');
+      final envValues = match?.group(1)?.split(', ') ?? [];
       expect(envValues, containsAll({'hi', 'args', 'ho'}));
       expect(envValues, hasLength(3));
     });

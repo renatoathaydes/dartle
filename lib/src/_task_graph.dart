@@ -55,7 +55,7 @@ void showTaskGraph(List<ParallelTasks> executableTasks,
       if (notSeenYet) {
         stdout.writeln();
         printTasks(
-            task.directDependencies.map((t) => taskMap[t]).toList()
+            task.directDependencies.map((t) => taskMap[t]!).toList()
               ..sort((t1, t2) => t1.name.compareTo(t2.name)),
             topLevel ? '  ' : indent + (lastTask ? '     ' : '|     '),
             false);
@@ -79,7 +79,7 @@ void showExecutableTasks(List<ParallelTasks> executableTasks) {
 
     final rowCount =
         executableTasks.map((t) => t.invocations.length).fold(0, max);
-    final rows = List<List<String>>(rowCount);
+    final rows = List<List<String>>.filled(rowCount, const []);
     for (var r = 0; r < rowCount; r++) {
       final row = executableTasks.map(
           (t) => r < t.invocations.length ? t.invocations[r].task.name : '');
@@ -87,7 +87,7 @@ void showExecutableTasks(List<ParallelTasks> executableTasks) {
     }
 
     final cols = executableTasks.length;
-    final colWidths = List<int>(cols);
+    final colWidths = List<int>.filled(cols, 0);
 
     for (var col = 0; col < cols; col++) {
       var width = 0;

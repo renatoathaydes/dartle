@@ -10,13 +10,15 @@ import 'helpers.dart';
 
 const _snapshotsDir = '$dartleDir/snapshots';
 
-bool _dart2nativeAvailable;
+bool? _dart2nativeAvailable;
 
 FutureOr<bool> _isDart2nativeAvailable() {
-  if (_dart2nativeAvailable != null) return _dart2nativeAvailable;
+  final isAvailable = _dart2nativeAvailable;
+  if (isAvailable != null) return isAvailable;
   return Future(() async {
-    _dart2nativeAvailable = await isValidCommand('dart2native');
-    return _dart2nativeAvailable;
+    final result = await isValidCommand('dart2native');
+    _dart2nativeAvailable = result;
+    return result;
   });
 }
 
@@ -43,7 +45,7 @@ Future<File> createDartSnapshot(File dartFile) async {
 /// Run a Dart snapshot or compiled binary created via the [createDartSnapshot]
 /// method.
 Future<Process> runDartSnapshot(File dartSnapshot,
-    {List<String> args = const [], String workingDirectory}) async {
+    {List<String> args = const [], String? workingDirectory}) async {
   if (!await dartSnapshot.exists()) {
     throw DartleException(
         message: 'Cannot run Dart snapshot as it does '
@@ -51,10 +53,11 @@ Future<Process> runDartSnapshot(File dartSnapshot,
   }
   Future<Process> proc;
   if (await _isDart2nativeAvailable()) {
-    proc = Process.start(dartSnapshot.path, args,
+    proc = Process.start(dartSnapshot.path, [enableNNBDExperiment, ...args],
         workingDirectory: workingDirectory);
   } else {
-    proc = Process.start('dart', [dartSnapshot.absolute.path, ...args],
+    proc = Process.start(
+        'dart', [enableNNBDExperiment, dartSnapshot.absolute.path, ...args],
         workingDirectory: workingDirectory);
   }
 
@@ -66,7 +69,8 @@ Future<Process> runDartSnapshot(File dartSnapshot,
 Future<void> _dart2native(File dartFile, File destination) async {
   logger.fine("Using 'dart2native' to compile Dart file: ${dartFile.path}");
   final code = await exec(
-      Process.start('dart2native', [dartFile.path, '-o', destination.path]),
+      Process.start('dart2native',
+          [enableNNBDExperiment, dartFile.path, '-o', destination.path]),
       name: 'dart2native');
   await _onSnapshotDone(code, dartFile, destination);
 }
@@ -74,14 +78,19 @@ Future<void> _dart2native(File dartFile, File destination) async {
 Future<void> _snapshot(File dartFile, File destination) async {
   logger.fine("Using 'dart' to snapshot Dart file: ${dartFile.path}");
   final code = await exec(
-      Process.start('dart', ['--snapshot=${destination.path}', dartFile.path]),
+      Process.start('dart', [
+        enableNNBDExperiment,
+        '--snapshot=${destination.path}',
+        dartFile.path
+      ]),
       name: 'dart snapshot');
   await _onSnapshotDone(code, dartFile, destination);
 }
 
-void _onSnapshotDone(int code, File dartFile, File destination) {
+FutureOr<void> _onSnapshotDone(
+    int code, File dartFile, File destination) async {
   if (code != 0) {
-    ignoreExceptions(destination.deleteSync);
+    await ignoreExceptions(destination.deleteSync);
     throw DartleException(
         message: 'Error compiling Dart source at '
             '${dartFile.path}. Process exit code: ${code}');

@@ -4,7 +4,7 @@ version: 0.6.1
 homepage: https://github.com/renatoathaydes/dartle
 
 environment:
-  sdk: '>=2.4.0 <3.0.0'
+  sdk: '>=2.9.0 <3.0.0'
 
 dependencies:
   args: ^1.5.2

@@ -59,7 +59,7 @@ class RunOnChanges with RunCondition {
       {this.inputs = FileCollection.empty,
       this.outputs = FileCollection.empty,
       this.verifyOutputsExist = true,
-      DartleCache cache})
+      DartleCache? cache})
       : cache = cache ?? DartleCache.instance;
 
   @override
@@ -87,7 +87,7 @@ class RunOnChanges with RunCondition {
   @override
   Future<void> postRun(TaskResult result) async {
     var success = result.isSuccess;
-    DartleException error;
+    DartleException? error;
 
     if (success) {
       if (await outputs.isNotEmpty && verifyOutputsExist) {

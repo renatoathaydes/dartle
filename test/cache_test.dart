@@ -17,7 +17,7 @@ void main([List<String> args = const []]) {
   final cache = DartleCache.instance;
 
   group('DartleCache', () {
-    MemoryFileSystem fs;
+    var fs = MemoryFileSystem();
 
     setUp(() async {
       fs = MemoryFileSystem();

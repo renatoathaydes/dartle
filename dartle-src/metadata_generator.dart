@@ -5,7 +5,7 @@ import 'package:yaml/yaml.dart';
 
 Future<void> generateVersionDartFile(File dartFile) async {
   final yaml = loadYaml(await File('pubspec.yaml').readAsString());
-  final dartleVersion = yaml['version'] as String;
+  final dartleVersion = yaml['version'] as String?;
   if (dartleVersion == null) {
     throw DartleException(message: 'pubspec.yaml does not have a version');
   }

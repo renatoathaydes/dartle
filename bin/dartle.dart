@@ -55,7 +55,7 @@ Future<void> _start(List<String> args, Options options) async {
   final runCompileTask = await _createDartCompileTask();
   final runCompileCondition = runCompileTask.runCondition as RunOnChanges;
 
-  TaskResult compileTaskResult;
+  TaskResult? compileTaskResult;
   if (await runCompileCondition.shouldRun(TaskInvocation(runCompileTask))) {
     // the build logic may change completely, so we must clean the cache
     // (unless the resetCache option is on, as then, it will be cleaned later)
@@ -76,7 +76,7 @@ Future<void> _start(List<String> args, Options options) async {
 }
 
 Future<void> _runBuild(
-    File snapshotFile, TaskResult compileTaskResult, List<String> args) async {
+    File snapshotFile, TaskResult? compileTaskResult, List<String> args) async {
   var exitCode = 0;
 
   if (compileTaskResult == null) {

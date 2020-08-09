@@ -9,7 +9,7 @@ import 'test_utils.dart';
 final _invocation = taskInvocation('name');
 
 void main() {
-  _TestCache cache;
+  var cache = _TestCache();
   setUp(() {
     cache = _TestCache();
     when(cache.hasTaskInvocationChanged(_invocation))

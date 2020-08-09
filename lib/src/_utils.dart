@@ -3,6 +3,8 @@ import 'dart:io';
 
 import 'package:crypto/crypto.dart';
 
+const enableNNBDExperiment = '--enable-experiment=non-nullable';
+
 final _capitalLetterPattern = RegExp(r'[A-Z]');
 
 String decapitalize(String text) {
@@ -28,12 +30,12 @@ List<String> splitWords(String text) {
   return result;
 }
 
-String findMatchingByWords(String searchText, List<String> options) {
-  if (searchText == null || searchText.isEmpty) return null;
-  var result =
-      options.firstWhere((opt) => opt == searchText, orElse: () => null);
+String? findMatchingByWords(String searchText, List<String> options) {
+  if (searchText.isEmpty) return null;
+  String? result =
+      options.firstWhere((opt) => opt == searchText, orElse: () => '');
   // if there's an exact match, return it
-  if (result != null) return result;
+  if (result?.isNotEmpty ?? false) return result;
 
   // no exact match found, try to find match by words after splitting the text
   final searchTerms = splitWords(searchText);

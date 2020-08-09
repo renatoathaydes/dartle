@@ -7,7 +7,7 @@ import 'test_utils.dart';
 
 void main() {
   group('FilesCollection', () {
-    FileSystem fs;
+    FileSystem fs = MemoryFileSystem();
 
     setUpAll(() async {
       fs = await createFileSystem([

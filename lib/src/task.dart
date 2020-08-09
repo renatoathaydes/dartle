@@ -1,5 +1,4 @@
 import 'package:collection/collection.dart';
-import 'package:meta/meta.dart';
 
 import 'error.dart';
 import 'run_condition.dart';
@@ -23,7 +22,7 @@ _NameAction _resolveNameAction(Function(List<String>) action, String name) {
     final match =
         _functionNamePatttern.firstMatch(funName.substring(firstQuote + 1));
     if (match != null) {
-      var inferredName = match.group(0);
+      final inferredName = match.group(0) ?? '';
       // likely generated from JS lambda if it looks like 'main___closure',
       // do not accept it
       if (!inferredName.contains('___')) {
@@ -57,7 +56,7 @@ class Task {
     this.dependsOn = const {},
     this.runCondition = const AlwaysRun(),
     this.argsValidator = const DoNotAcceptArgs(),
-  }) : _nameAction = _resolveNameAction(action, name ?? '');
+  }) : _nameAction = _resolveNameAction(action, name);
 
   String get name => _nameAction.name;
 
@@ -225,7 +224,7 @@ class ArgsCount with ArgsValidator {
       : _min = count,
         _max = count;
 
-  const ArgsCount.range({@required int min, @required int max})
+  const ArgsCount.range({required int min, required int max})
       : _min = min,
         _max = max;
 

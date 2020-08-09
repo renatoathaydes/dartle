@@ -9,7 +9,7 @@ import 'test_utils.dart';
 void main() {
   group('Build information', () {
     // create a snapshot so we can run the build quickly, several times
-    File manyTasksBuild;
+    var manyTasksBuild = File('');
 
     setUpAll(() async {
       manyTasksBuild = (await createDartSnapshot(
