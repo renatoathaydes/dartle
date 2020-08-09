@@ -2,6 +2,10 @@
 
 - forbid tasks from accessing IO resources not declared in inputs/outputs.
 
+## 0.6.1
+
+- better 'debug' log level message color
+
 ## 0.6.0
 
 - improved logging output.
