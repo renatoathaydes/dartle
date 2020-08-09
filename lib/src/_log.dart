@@ -48,7 +48,7 @@ final _nameByLevel = <log.Level, String>{
 };
 
 final _logByLevel = <log.Level, _Log>{
-  log.Level.FINE: const _Log(LogColor.gray),
+  log.Level.FINE: const _Log(LogColor.blue),
   log.Level.INFO: const _Log(null),
   log.Level.WARNING: const _Log(LogColor.yellow),
   log.Level.SEVERE: const _Log(LogColor.red),
