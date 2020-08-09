@@ -1,5 +1,9 @@
 # Dartle
 
+![Dartle CI](https://github.com/renatoathaydes/dartle/workflows/Dartle%20CI/badge.svg)
+
+[Dartle on pub.dev](https://pub.dev/packages/dartle)
+
 A simple build system (or task runner, really) written in Dart.
  
 Dartle is designed to integrate well with [pub](https://dart.dev/tools/pub/cmd) and Dart's own
