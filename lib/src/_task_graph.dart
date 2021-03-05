@@ -48,8 +48,13 @@ void showTaskGraph(List<ParallelTasks> executableTasks,
       final lastTask = ++i == tasks.length;
       final notSeenYet = seenTasks.add(task.name);
       if (notSeenYet || !topLevel) {
-        final branch =
-            topLevel ? '-' : lastTask ? '\\---' : firstTask ? '+---' : '|---';
+        final branch = topLevel
+            ? '-'
+            : lastTask
+                ? '\\---'
+                : firstTask
+                    ? '+---'
+                    : '|---';
         stdout.write('$indent$branch ${task.name}');
       }
       if (notSeenYet) {

@@ -23,41 +23,35 @@ FutureOr<bool> _isDart2nativeAvailable() {
 }
 
 /// Get the location Dartle would store snapshots (or native binary, if
-/// dart2native is available on the system) taken with the [createDartSnapshot]
+/// dart2native is available on the system) taken with the [createDartExe]
 /// method.
 File getSnapshotLocation(File dartFile) {
   return File(path.join(_snapshotsDir, hash(dartFile.absolute.path)));
 }
 
-/// Take a snapshot of the given [dartFile], or compile it to a native binary
-/// if dart2native is available on the system.
-Future<File> createDartSnapshot(File dartFile) async {
+/// Compiles the given [dartFile] to an executable.
+Future<File> createDartExe(File dartFile) async {
   await Directory(_snapshotsDir).create(recursive: true);
-  var snapshotLocation = getSnapshotLocation(dartFile);
-  if (await _isDart2nativeAvailable()) {
-    await _dart2native(dartFile, snapshotLocation);
-  } else {
-    await _snapshot(dartFile, snapshotLocation);
-  }
-  return snapshotLocation;
+  var exeLocation = getSnapshotLocation(dartFile);
+  await _dart2exe(dartFile, exeLocation);
+  return exeLocation;
 }
 
-/// Run a Dart snapshot or compiled binary created via the [createDartSnapshot]
+/// Run a Dart binary created via the [createDartExe]
 /// method.
 Future<Process> runDartSnapshot(File dartSnapshot,
     {List<String> args = const [], String? workingDirectory}) async {
   if (!await dartSnapshot.exists()) {
     throw DartleException(
-        message: 'Cannot run Dart snapshot as it does '
+        message: 'Cannot run Dart executable as it does '
             'not exist: ${dartSnapshot.path}');
   }
   Future<Process> proc;
   if (await _isDart2nativeAvailable()) {
-    proc = Process.start(dartSnapshot.path, [enableNNBDExperiment, ...args],
+    proc = Process.start(dartSnapshot.path, args,
         workingDirectory: workingDirectory);
   } else {
-    proc = Process.start(
-        'dart', [enableNNBDExperiment, dartSnapshot.absolute.path, ...args],
+    proc = Process.start('dart', [dartSnapshot.absolute.path, ...args],
         workingDirectory: workingDirectory);
   }
 
@@ -66,29 +60,12 @@ Future<Process> runDartSnapshot(File dartSnapshot,
   return proc;
 }
 
-Future<void> _dart2native(File dartFile, File destination) async {
-  logger.fine("Using 'dart2native' to compile Dart file: ${dartFile.path}");
+Future<void> _dart2exe(File dartFile, File destination) async {
+  logger.fine('Compiling to executable: ${dartFile.path}');
   final code = await exec(
-      Process.start('dart2native',
-          [enableNNBDExperiment, dartFile.path, '-o', destination.path]),
+      Process.start(
+          'dart', ['compile', 'exe', dartFile.path, '-o', destination.path]),
       name: 'dart2native');
-  await _onSnapshotDone(code, dartFile, destination);
-}
-
-Future<void> _snapshot(File dartFile, File destination) async {
-  logger.fine("Using 'dart' to snapshot Dart file: ${dartFile.path}");
-  final code = await exec(
-      Process.start('dart', [
-        enableNNBDExperiment,
-        '--snapshot=${destination.path}',
-        dartFile.path
-      ]),
-      name: 'dart snapshot');
-  await _onSnapshotDone(code, dartFile, destination);
-}
-
-FutureOr<void> _onSnapshotDone(
-    int code, File dartFile, File destination) async {
   if (code != 0) {
     await ignoreExceptions(destination.deleteSync);
     throw DartleException(

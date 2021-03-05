@@ -10,7 +10,7 @@ void main() {
   var parallelTasksBuild = File('');
 
   setUpAll(() async {
-    parallelTasksBuild = (await createDartSnapshot(
+    parallelTasksBuild = (await createDartExe(
             File('test/test_builds/parallel_tasks/dartle.dart')))
         .absolute;
   });

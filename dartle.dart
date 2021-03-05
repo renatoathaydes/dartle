@@ -4,7 +4,6 @@ import 'package:dartle/dartle.dart';
 import 'package:path/path.dart' show extension;
 
 import 'dartle-src/metadata_generator.dart' show generateVersionDartFile;
-import 'lib/src/_utils.dart' show enableNNBDExperiment;
 
 FileFilter dartFileFilter = (f) => extension(f.path) == '.dart';
 
@@ -88,9 +87,7 @@ Future<void> formatCode(_) async {
 }
 
 Future<void> analyzeCode(_) async {
-  final code = await execProc(
-      Process.start('dartanalyzer', const [enableNNBDExperiment, '.']),
-      name: 'Dart Analyzer',
-      successMode: StreamRedirectMode.stdout_stderr);
+  final code = await execProc(Process.start('dart', const ['analyze', '.']),
+      name: 'Dart Analyzer', successMode: StreamRedirectMode.stdout_stderr);
   if (code != 0) failBuild(reason: 'Dart Analyzer failed');
 }

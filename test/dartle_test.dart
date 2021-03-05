@@ -28,7 +28,7 @@ void main() {
 
     setUpAll(() async {
       exampleDartleBuild =
-          (await createDartSnapshot(File('example/dartle.dart'))).absolute;
+          (await createDartExe(File('example/dartle.dart'))).absolute;
     });
     tearDownAll(() async {
       await deleteAll(FileCollection([outputFile, exampleDartleBuild]));
