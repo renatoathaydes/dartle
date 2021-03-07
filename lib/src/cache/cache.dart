@@ -53,8 +53,9 @@ class DartleCache {
   /// Exclusions are given as the original files that may be already cached,
   /// not the actual cache files (whose paths are a implementation detail of
   /// this cache).
-  Future<void> clean({FileCollection exclusions = FileCollection.empty}) async {
-    final cacheExclusions = await _mapToCacheLocations(exclusions);
+  Future<void> clean({FileCollection? exclusions}) async {
+    final cacheExclusions =
+        await _mapToCacheLocations(exclusions ?? FileCollection.empty);
     logger.fine('Cleaning Dartle cache');
     await deleteAll(
         FileCollection([Directory(_hashesDir), Directory(_tasksDir)],

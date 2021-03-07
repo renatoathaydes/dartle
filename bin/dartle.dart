@@ -41,7 +41,7 @@ Future<void> _start(List<String> args, Options options) async {
     return print(dartleUsage);
   }
   if (options.showVersion) {
-    return print('Dartle version ${dartleVersion}');
+    return print('Dartle version $dartleVersion');
   }
 
   activateLogging(options.logLevel, colorfulLog: options.colorfulLog);
@@ -70,22 +70,22 @@ Future<void> _start(List<String> args, Options options) async {
         await runTask(TaskInvocation(runCompileTask), runInIsolate: false);
   }
 
-  final snapshotFile = await runCompileCondition.outputs.files.first;
+  final exec = await runCompileCondition.outputs.files.first;
 
-  await _runBuild(snapshotFile, compileTaskResult, args);
+  await _runBuild(exec, compileTaskResult, args);
 }
 
 Future<void> _runBuild(
-    File snapshotFile, TaskResult? compileTaskResult, List<String> args) async {
+    File execFile, TaskResult? compileTaskResult, List<String> args) async {
   var exitCode = 0;
 
   if (compileTaskResult == null) {
-    exitCode = await _runSnapshot(snapshotFile, args: args);
+    exitCode = await _runDartExecutable(execFile, args: args);
   } else {
     try {
       if (compileTaskResult.isSuccess) {
         logger.info('Dartle build file compiled successfully, starting build.');
-        exitCode = await _runSnapshot(snapshotFile, args: args);
+        exitCode = await _runDartExecutable(execFile, args: args);
       }
     } finally {
       try {
@@ -106,20 +106,20 @@ Future<void> _runBuild(
   }
 }
 
-Future<int> _runSnapshot(File dartSnapshot, {List<String> args = const []}) {
+Future<int> _runDartExecutable(File dartExec, {List<String> args = const []}) {
   return exec(
-      runDartSnapshot(dartSnapshot, args: [...args, '--no-log-build-time']),
+      runDartExe(dartExec, args: [...args, '--no-log-build-time']),
       name: 'dartle build');
 }
 
 Future<TaskWithDeps> _createDartCompileTask() async {
   final buildFile = File('dartle.dart').absolute;
   final buildSetupFiles = [buildFile.path, 'pubspec.yaml', 'pubspec.lock'];
-  final snapshotFile = await getSnapshotLocation(buildFile);
+  final execFile = getExeLocation(buildFile);
 
   final runCompileCondition = RunOnChanges(
     inputs: files(buildSetupFiles),
-    outputs: file(snapshotFile.path),
+    outputs: file(execFile.path),
   );
 
   return TaskWithDeps(Task((_) => createDartExe(buildFile),

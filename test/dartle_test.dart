@@ -36,7 +36,7 @@ void main() {
 
     Future<ProcessResult> runExampleDartBuild(List<String> args) async {
       return startProcess(
-          runDartSnapshot(exampleDartleBuild,
+          runDartExe(exampleDartleBuild,
               args: args, workingDirectory: 'example'),
           'example dart build');
     }

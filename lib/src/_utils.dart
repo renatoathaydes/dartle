@@ -54,7 +54,7 @@ String? findMatchingByWords(String searchText, List<String> options) {
       return null;
     }
   }
-  return result;
+  return result.isEmpty ? null : result;
 }
 
 String hash(String text) => sha1.convert(utf8.encode(text)).toString();

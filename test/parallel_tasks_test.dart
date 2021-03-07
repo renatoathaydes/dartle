@@ -20,7 +20,7 @@ void main() {
 
   Future<ProcessResult> runBuild(List<String> args) async {
     return startProcess(
-        runDartSnapshot(parallelTasksBuild,
+        runDartExe(parallelTasksBuild,
             args: args, workingDirectory: 'test/test_builds/many_tasks'),
         'many_tasks test dart build');
   }

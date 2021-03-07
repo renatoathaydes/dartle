@@ -18,7 +18,7 @@ export 'src/file_collection.dart';
 export 'src/helpers.dart';
 export 'src/options.dart';
 export 'src/run_condition.dart';
-export 'src/snapshot.dart';
+export 'src/exec.dart';
 export 'src/std_stream_consumer.dart';
 export 'src/task.dart';
 export 'src/task_invocation.dart';

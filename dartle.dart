@@ -9,6 +9,7 @@ FileFilter dartFileFilter = (f) => extension(f.path) == '.dart';
 
 final libDirDartFiles = dir('lib', fileFilter: dartFileFilter);
 final allDartFiles = dir('.', fileFilter: dartFileFilter);
+final testDartFiles = dir('test', fileFilter: dartFileFilter);
 
 final generateDartleVersionFileTask = Task(
     (_) async =>
@@ -24,9 +25,14 @@ final formatCodeTask = Task(formatCode,
     description: 'Formats all Dart source code',
     runCondition: RunOnChanges(inputs: allDartFiles));
 
+final runBuildRunnerTask = Task(runBuildRunner,
+    description: 'Runs the Dart build_runner tool',
+    dependsOn: {'generateDartSources'},
+    runCondition: RunOnChanges(inputs: testDartFiles));
+
 final analyzeCodeTask = Task(analyzeCode,
     description: 'Analyzes Dart source code',
-    dependsOn: {'generateDartSources'},
+    dependsOn: {'generateDartSources', 'runBuildRunner'},
     runCondition: RunOnChanges(inputs: allDartFiles));
 
 final testTask = Task(test,
@@ -52,6 +58,7 @@ void main(List<String> args) => run(args, tasks: {
       cleanTask,
       generateDartleVersionFileTask,
       checkImportsTask,
+      runBuildRunnerTask,
       formatCodeTask,
       analyzeCodeTask,
       testTask,
@@ -75,7 +82,7 @@ Future<void> checkImports(_) async {
     if (illegalImports.isNotEmpty) {
       failBuild(
           reason: 'File ${file.path} contains '
-              'self import to the dartle package: ${illegalImports}');
+              'self import to the dartle package: $illegalImports');
     }
   }
 }
@@ -84,6 +91,15 @@ Future<void> formatCode(_) async {
   final code = await execProc(Process.start('dartfmt', const ['-w', '.']),
       name: 'Dart Formatter');
   if (code != 0) failBuild(reason: 'Dart Formatter failed');
+}
+
+Future<void> runBuildRunner(_) async {
+  final code = await execProc(
+    Process.start('dart', const ['run', 'build_runner', 'build']),
+    name: 'Dart Analyzer',
+    successMode: StreamRedirectMode.stdout_stderr,
+  );
+  if (code != 0) failBuild(reason: 'Dart Analyzer failed');
 }
 
 Future<void> analyzeCode(_) async {
