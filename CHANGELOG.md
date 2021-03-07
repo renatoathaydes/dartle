@@ -2,9 +2,13 @@
 
 - forbid tasks from accessing IO resources not declared in inputs/outputs.
 
+## 0.7.0
+
+- Non-null-by-default stable release.
+
 ## 0.6.1
 
-- better 'debug' log level message color
+- better 'debug' log level message color.
 
 ## 0.6.0
 
