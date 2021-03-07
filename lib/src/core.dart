@@ -62,12 +62,12 @@ Future<void> _runWithoutErrorHandling(List<String> args, Set<Task> tasks,
     return print(dartleUsage);
   }
   if (options.showVersion) {
-    return print('Dartle version ${dartleVersion}');
+    return print('Dartle version $dartleVersion');
   }
 
   activateLogging(options.logLevel, colorfulLog: options.colorfulLog);
-  logger.fine(() => 'Dartle version: ${dartleVersion}');
-  logger.fine(() => 'Options: ${options}');
+  logger.fine(() => 'Dartle version: $dartleVersion');
+  logger.fine(() => 'Options: $options');
 
   if (options.resetCache) {
     await DartleCache.instance.clean();

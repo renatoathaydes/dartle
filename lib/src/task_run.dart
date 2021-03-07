@@ -38,7 +38,7 @@ Future<List<TaskResult>> runTasks(List<ParallelTasks> tasks,
     final execMode = parallelize
         ? 'in parallel where possible, using separate Isolates for parallelizable Tasks'
         : 'on main Isolate as no parallelization was enabled';
-    logger.fine('Will execute tasks ${execMode}');
+    logger.fine('Will execute tasks $execMode');
   }
   final results = <TaskResult>[];
   for (final parTasks in tasks) {

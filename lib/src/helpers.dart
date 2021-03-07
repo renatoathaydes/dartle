@@ -47,7 +47,7 @@ Future<int> exec(Future<Process> process,
   final proc = await process;
   final procDescription = "process${name.isEmpty ? '' : " '$name'"} "
       '(PID=${proc.pid})';
-  logger.fine('Started ${procDescription}');
+  logger.fine('Started $procDescription');
   onStdoutLine ??= StdStreamConsumer(printToStdout: true);
   onStderrLine ??= StdStreamConsumer(printToStderr: true);
 
@@ -61,7 +61,7 @@ Future<int> exec(Future<Process> process,
       .listen(onStderrLine);
 
   final code = await proc.exitCode;
-  logger.fine('${procDescription} exited with code $code');
+  logger.fine('$procDescription exited with code $code');
   return code;
 }
 
@@ -98,20 +98,20 @@ Future<int> execProc(Future<Process> process,
         break;
       case StreamRedirectMode.stderr:
         stderr
-          ..writeAll(await stderrConsumer.lines, '\n')
+          ..writeAll(stderrConsumer.lines, '\n')
           ..writeln();
         break;
       case StreamRedirectMode.stdout:
         stdout
-          ..writeAll(await stdoutConsumer.lines, '\n')
+          ..writeAll(stdoutConsumer.lines, '\n')
           ..writeln();
         break;
       case StreamRedirectMode.stdout_stderr:
         stdout
-          ..writeAll(await stdoutConsumer.lines, '\n')
+          ..writeAll(stdoutConsumer.lines, '\n')
           ..writeln();
         stderr
-          ..writeAll(await stderrConsumer.lines, '\n')
+          ..writeAll(stderrConsumer.lines, '\n')
           ..writeln();
     }
   };

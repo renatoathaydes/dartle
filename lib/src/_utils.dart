@@ -63,9 +63,9 @@ String elapsedTime(Stopwatch stopwatch) {
   final millis = stopwatch.elapsedMilliseconds;
   if (millis > 1000) {
     final secs = (millis * 1e-3).toStringAsPrecision(4);
-    return '${secs} seconds';
+    return '$secs seconds';
   } else {
-    return '${millis} ms';
+    return '$millis ms';
   }
 }
 

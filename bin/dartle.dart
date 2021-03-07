@@ -107,8 +107,7 @@ Future<void> _runBuild(
 }
 
 Future<int> _runDartExecutable(File dartExec, {List<String> args = const []}) {
-  return exec(
-      runDartExe(dartExec, args: [...args, '--no-log-build-time']),
+  return exec(runDartExe(dartExec, args: [...args, '--no-log-build-time']),
       name: 'dartle build');
 }
 

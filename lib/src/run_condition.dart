@@ -67,12 +67,12 @@ class RunOnChanges with RunCondition {
     if (await cache.hasTaskInvocationChanged(invocation)) return true;
     final inputsChanged = await cache.hasChanged(inputs);
     if (inputsChanged) {
-      logger.fine('Changes detected on task inputs: ${inputs}');
+      logger.fine('Changes detected on task inputs: $inputs');
       return true;
     }
     final outputsChanged = await cache.hasChanged(outputs);
     if (outputsChanged) {
-      logger.fine('Changes detected on task outputs: ${outputs}');
+      logger.fine('Changes detected on task outputs: $outputs');
       return true;
     }
     await for (final output in outputs.files) {

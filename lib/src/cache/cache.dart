@@ -61,7 +61,7 @@ class DartleCache {
         FileCollection([Directory(_hashesDir), Directory(_tasksDir)],
             fileFilter: (file) async {
               final doExclude = await cacheExclusions.includes(file);
-              if (doExclude) logger.fine('Keeping excluded file: ${file}');
+              if (doExclude) logger.fine('Keeping excluded file: $file');
               return !doExclude;
             },
             dirFilter: (dir) async => !await cacheExclusions.includes(dir)));
@@ -116,7 +116,7 @@ class DartleCache {
   /// Remove any previous invocations of a task with the given name
   /// from the cache.
   Future<void> removeTaskInvocation(String taskName) async {
-    await ignoreExceptions(() => File('$_tasksDir/${taskName}').delete());
+    await ignoreExceptions(() => File('$_tasksDir/$taskName').delete());
   }
 
   Future<void> _cacheFile(File file, [File? hashFile]) async {
@@ -226,5 +226,5 @@ Future<String> _hashContents(File file) async =>
 Future<String> _hashDirectChildren(Directory dir) async {
   final children = await dir.list(recursive: false).map((c) => c.path).toList();
   children.sort();
-  return await hash(children.join(';'));
+  return hash(children.join(';'));
 }

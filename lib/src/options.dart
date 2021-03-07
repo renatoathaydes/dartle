@@ -112,7 +112,7 @@ final _parser = ArgParser()
 
 /// Dartle usage message.
 String get dartleUsage => '''
-Dartle ${dartleVersion}
+Dartle $dartleVersion
 
 https://github.com/renatoathaydes/dartle
 

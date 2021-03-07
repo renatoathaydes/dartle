@@ -31,7 +31,7 @@ void showAll(List<ParallelTasks> executableTasks, Map<String, Task> taskMap,
   for (final task in taskList) {
     final desc = task.description.isEmpty ? '' : '\n      ${task.description}';
     final isDefault = defaultSet.contains(task.name) ? ' [default]' : '';
-    print('  * ${task.name}${isDefault}${desc}');
+    print('  * ${task.name}$isDefault$desc');
   }
 }
 
