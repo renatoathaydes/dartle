@@ -2,21 +2,24 @@ import 'package:dartle/dartle.dart';
 import 'package:dartle/dartle_cache.dart';
 import 'package:mockito/mockito.dart';
 import 'package:test/test.dart';
+import 'package:mockito/annotations.dart';
 
 import 'io_test.dart';
 import 'test_utils.dart';
+import 'run_on_changes_test.mocks.dart';
 
 final _invocation = taskInvocation('name');
 
+@GenerateMocks([DartleCache])
 void main() {
-  var cache = _TestCache();
-  setUp(() {
-    cache = _TestCache();
-    when(cache.hasTaskInvocationChanged(_invocation))
-        .thenAnswer((_) => Future.value(false));
-  });
-
   group('RunOnChanges', () {
+    var cache = MockDartleCache();
+    setUp(() {
+      cache = MockDartleCache();
+      when(cache.hasTaskInvocationChanged(_invocation))
+          .thenAnswer((_) async => false);
+    });
+
     test('never runs if inputs/outputs are empty', () async {
       final ins = FileCollection.empty;
       final outs = FileCollection.empty;
@@ -102,5 +105,3 @@ void main() {
     });
   });
 }
-
-class _TestCache extends Mock implements DartleCache {}

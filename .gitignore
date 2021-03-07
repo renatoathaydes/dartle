@@ -1,5 +1,6 @@
 # Files and directories created by pub
 .dart_tool/
+.dartle_tool/
 .packages
 
 # Conventional directory for build outputs
@@ -8,9 +9,11 @@ build/
 # Directory created by dartdoc
 doc/api/
 
+# IDE
 .idea/
 *.iml
 
-**/.dartle_tool/
+# Generated files
+*.mocks.dart
 
 dartlex
