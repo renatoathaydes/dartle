@@ -32,7 +32,9 @@ final runBuildRunnerTask = Task(runBuildRunner,
 
 final analyzeCodeTask = Task(analyzeCode,
     description: 'Analyzes Dart source code',
-    dependsOn: {'generateDartSources', 'runBuildRunner'},
+    dependsOn: {
+      'generateDartSources', /*'runBuildRunner'*/
+    },
     runCondition: RunOnChanges(inputs: allDartFiles));
 
 final testTask = Task(test,
@@ -58,7 +60,7 @@ void main(List<String> args) => run(args, tasks: {
       cleanTask,
       generateDartleVersionFileTask,
       checkImportsTask,
-      runBuildRunnerTask,
+      // runBuildRunnerTask,
       formatCodeTask,
       analyzeCodeTask,
       testTask,

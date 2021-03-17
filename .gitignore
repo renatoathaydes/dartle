@@ -14,6 +14,4 @@ doc/api/
 *.iml
 
 # Generated files
-*.mocks.dart
-
 dartlex
