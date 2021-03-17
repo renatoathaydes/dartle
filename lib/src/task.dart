@@ -46,7 +46,7 @@ class Task {
   final String description;
   final RunCondition runCondition;
   final ArgsValidator argsValidator;
-  final Set<String> dependsOn;
+  Set<String> dependsOn;
   final _NameAction _nameAction;
 
   Task(
@@ -124,6 +124,11 @@ class TaskWithDeps implements Task, Comparable<TaskWithDeps> {
   /// All transitive dependencies of this task.
   @override
   Set<String> get dependsOn => _allDeps;
+
+  @override
+  set dependsOn(Set<String> dependencies) {
+    _task.dependsOn = dependencies;
+  }
 
   /// The direct dependencies of this task.
   Set<String> get directDependencies => _task.dependsOn;
