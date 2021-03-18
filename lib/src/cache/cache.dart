@@ -10,12 +10,12 @@ import '../file_collection.dart';
 import '../helpers.dart';
 import '../task_invocation.dart';
 
-const _hashesDir = '$dartleDir/hashes';
-const _tasksDir = '$dartleDir/tasks';
+final _hashesDir = path.join(dartleDir, 'hashes');
+final _tasksDir = path.join(dartleDir, 'tasks');
 
 File _getCacheLocation(FileSystemEntity entity) {
   final locationHash = _locationHash(entity);
-  return File(path.join(_hashesDir, locationHash));
+  return File(path.join(projectDir, _hashesDir, locationHash));
 }
 
 Future<FileCollection> _mapToCacheLocations(FileCollection collection) async {
@@ -43,9 +43,9 @@ class DartleCache {
   /// This method does not normally need to be called explicitly as the
   /// constructor will call it.
   void init() {
-    Directory(dartleDir).createSync(recursive: true);
-    Directory(_hashesDir).createSync();
-    Directory(_tasksDir).createSync();
+    Directory(path.join(projectDir, dartleDir)).createSync(recursive: true);
+    Directory(path.join(projectDir, _hashesDir)).createSync();
+    Directory(path.join(projectDir, _tasksDir)).createSync();
   }
 
   /// Clean the Dartle cache.
@@ -57,14 +57,13 @@ class DartleCache {
     final cacheExclusions =
         await _mapToCacheLocations(exclusions ?? FileCollection.empty);
     logger.fine('Cleaning Dartle cache');
-    await deleteAll(
-        FileCollection([Directory(_hashesDir), Directory(_tasksDir)],
-            fileFilter: (file) async {
-              final doExclude = await cacheExclusions.includes(file);
-              if (doExclude) logger.fine('Keeping excluded file: $file');
-              return !doExclude;
-            },
-            dirFilter: (dir) async => !await cacheExclusions.includes(dir)));
+    await deleteAll(dirs([_hashesDir, _tasksDir],
+        fileFilter: (file) async {
+          final doExclude = await cacheExclusions.includes(file);
+          if (doExclude) logger.fine('Keeping excluded file: $file');
+          return !doExclude;
+        },
+        dirFilter: (dir) async => !await cacheExclusions.includes(dir)));
     init();
     logger.fine('Dartle cache has been cleaned.');
   }
@@ -95,7 +94,7 @@ class DartleCache {
 
   /// Cache the given task invocation.
   Future<void> cacheTaskInvocation(TaskInvocation invocation) async {
-    await File('$_tasksDir/${invocation.task.name}')
+    await File(path.join(projectDir, _tasksDir, invocation.task.name))
         .writeAsString(invocation.args.toString());
   }
 
@@ -104,7 +103,8 @@ class DartleCache {
   /// Only successful task invocations are normally cached, hence this method
   /// will normally return `true` when the previous invocation of [Task] failed.
   Future<bool> hasTaskInvocationChanged(TaskInvocation invocation) async {
-    final taskFile = File('$_tasksDir/${invocation.task.name}');
+    final taskFile =
+        File(path.join(projectDir, _tasksDir, invocation.task.name));
     if (await taskFile.exists()) {
       final taskArgs = await taskFile.readAsString();
       return invocation.args.toString() != taskArgs;
@@ -116,7 +116,8 @@ class DartleCache {
   /// Remove any previous invocations of a task with the given name
   /// from the cache.
   Future<void> removeTaskInvocation(String taskName) async {
-    await ignoreExceptions(() => File('$_tasksDir/$taskName').delete());
+    final file = File(path.join(projectDir, _tasksDir, taskName));
+    await ignoreExceptions(() => file.delete());
   }
 
   Future<void> _cacheFile(File file, [File? hashFile]) async {

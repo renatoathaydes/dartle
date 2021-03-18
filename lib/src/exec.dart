@@ -13,12 +13,14 @@ const _executablesDir = '$dartleDir/executables';
 /// Get the location Dartle would store binaries created with the [createDartExe]
 /// method.
 File getExeLocation(File dartFile) {
-  return File(path.join(_executablesDir, hash(dartFile.absolute.path)));
+  return File(
+      path.join(projectDir, _executablesDir, hash(dartFile.absolute.path)));
 }
 
 /// Compiles the given [dartFile] to an executable.
 Future<File> createDartExe(File dartFile) async {
-  await Directory(_executablesDir).create(recursive: true);
+  await Directory(path.join(projectDir, _executablesDir))
+      .create(recursive: true);
   var exeLocation = getExeLocation(dartFile);
   await _dart2exe(dartFile, exeLocation);
   return exeLocation;
