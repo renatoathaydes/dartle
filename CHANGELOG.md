@@ -1,10 +1,15 @@
 ## Future release
 
 - forbid tasks from accessing IO resources not declared in inputs/outputs.
+- run task only after a certain period of time has passed.
+- task must run before/after another task without hard dependency.
 
-## 0.7.0
+## 1.0.0
 
 - Non-null-by-default stable release.
+- Created dartle_dart library.
+- Compile dartle.dart into dartlex executable automatically.
+- Automatically re-compile dartlex on script changes.
 
 ## 0.6.1
 

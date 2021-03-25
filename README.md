@@ -51,7 +51,7 @@ clean(_) => deleteOutputs(allTasks);
 
 #### Run your build!
 
-In **dev mode**, use `dart` to run the build file directly:
+In **dev mode** (while you're setting up your build), use `dart` to run the build file directly:
 
 ```bash
 dart dartle.dart
@@ -60,25 +60,24 @@ dart dartle.dart
 > Notice that all `dev_dependencies` can be used in your build! And all Dart tools work with it, 
 > including the Observatory and debugger, after all this is just plain Dart!
 
-Once you're done making changes to the build file (at least for a while), run it with `dartle` instead:
+Once you're done with the basics of your build, compile it to a native executable called `dartlex`
+(the name is important for Dartle to detect when it's running in native mode - it's short for "Dartle executable"):
 
-1. Activate `dartle` (only first time)
-
-```bash
-pub global activate dartle
+```
+dart compile exe dartle.dart -o dartlex
 ```
 
-2. Run the build
+> Alternatively, you can install the `dartle` command with `pub global activate dartle` and then just run
+> `dartle` on your project root directory. That will run the build and compile `dartlex` for you automatically.
 
-```bash
-dartle
+Now, run your build with `./dartlex` instead:
+
+```
+./dartlex
 ```
 
-This will execute the default tasks in the build file, `dartle.dart`, which should be located in the working directory,
-after compiling it to native using 
-[dart2native](https://medium.com/dartlang/dart2native-a76c815e6baf)
-(if available, otherwise it will use `dart --snapshot`) whenever necessary (i.e. every time a change is made to 
-the build file or `pubspec.yaml`).
+> `dartlex` automatically re-compiles itself if the `dartle.dart` script or the `pubsec` file is changed,
+> so you don't need to remember to re-compile it!
 
 ### Selecting tasks
 
@@ -87,7 +86,7 @@ In the examples above, the `defaultTasks` ran because no argument was provided t
 To run specific task(s), give them as arguments when invoking `dartle`:
 
 ```bash
-dartle hello bye
+./dartlex hello bye
 ```
 
 Output:
@@ -108,7 +107,7 @@ Bye!
 To provide arguments to a task, provide the argument immediately following the task invocation, prefixing it with `:`:
 
 ```bash
-dartle hello :Joe
+./dartlex hello :Joe
 ```
 
 Prints:
