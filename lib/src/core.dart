@@ -3,12 +3,14 @@ import 'dart:io';
 import 'dart:math';
 
 import 'package:logging/logging.dart' as log;
+import 'package:path/path.dart' as p;
 
 import '_log.dart';
 import '_task_graph.dart';
 import '_utils.dart';
 import 'cache/cache.dart';
 import 'dartle_version.g.dart';
+import 'dartlex.dart';
 import 'error.dart';
 import 'options.dart';
 import 'run_condition.dart';
@@ -25,17 +27,44 @@ Future<void> run(List<String> args,
     {required Set<Task> tasks,
     Set<Task> defaultTasks = const {},
     bool doNotExit = false}) async {
-  final stopWatch = Stopwatch()..start();
-  var options = const Options();
+  await runSafely(args, doNotExit, (stopWatch, options) async {
+    if (options.showHelp) {
+      return print(dartleUsage);
+    }
+    if (options.showVersion) {
+      return print('Dartle version $dartleVersion');
+    }
 
-  try {
-    options = parseOptions(args);
+    activateLogging(options.logLevel, colorfulLog: options.colorfulLog);
+
+    if (!doNotExit && p.basename(Platform.script.path) == 'dartlex') {
+      await runDartlex(args, onlyIfChanged: true);
+      logger.fine('dartlex did not require re-compilation, continuing...');
+    }
+
     await _runWithoutErrorHandling(args, tasks, defaultTasks, options);
     stopWatch.stop();
     if (!options.showInfoOnly && options.logBuildTime) {
       logger.info(ColoredLogMessage(
           '✔ Build succeeded in ${elapsedTime(stopWatch)}', LogColor.green));
     }
+  });
+}
+
+/// Run the given action in a safe try/catch block, allowing Dartle to handle
+/// any errors by logging the appropriate build failure.
+///
+/// If [doNotExit] is `true`, then this method will not call [exit] on build
+/// completion, even on failures. Otherwise, the process will exit with 0 on
+/// success, or the appropriate error code on error.
+Future<void> runSafely(List<String> args, bool doNotExit,
+    FutureOr<Object?> Function(Stopwatch, Options) action) async {
+  final stopWatch = Stopwatch()..start();
+  var options = const Options();
+
+  try {
+    options = parseOptions(args);
+    await action(stopWatch, options);
     if (!doNotExit) exit(0);
   } on DartleException catch (e) {
     activateLogging(log.Level.SEVERE);
@@ -58,14 +87,6 @@ Future<void> run(List<String> args,
 
 Future<void> _runWithoutErrorHandling(List<String> args, Set<Task> tasks,
     Set<Task> defaultTasks, Options options) async {
-  if (options.showHelp) {
-    return print(dartleUsage);
-  }
-  if (options.showVersion) {
-    return print('Dartle version $dartleVersion');
-  }
-
-  activateLogging(options.logLevel, colorfulLog: options.colorfulLog);
   logger.fine(() => 'Dartle version: $dartleVersion');
   logger.fine(() => 'Options: $options');
 

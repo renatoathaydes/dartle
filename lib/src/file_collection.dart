@@ -1,9 +1,6 @@
 import 'dart:async';
 import 'dart:io';
 
-import 'package:dartle/dartle.dart';
-import 'package:path/path.dart' as p;
-
 import '_utils.dart';
 
 /// Function that filters files, returning true to keep a file,
@@ -18,25 +15,15 @@ bool _noFileFilter(File f) => true;
 
 bool _noDirFilter(Directory f) => true;
 
-String _canonicalPath(String location) =>
-    p.isAbsolute(location) ? location : p.join(projectDir, location);
-
 /// Create a [FileCollection] consisting of a single file.
-///
-/// The given path, if relative, is relativized against the [projectDir].
-FileCollection file(String path) =>
-    _SingleFileCollection(File(_canonicalPath(path)));
+FileCollection file(String path) => _SingleFileCollection(File(path));
 
 /// Create a [FileCollection] consisting of multiple files.
-///
-/// The given paths, if relative, are relativized against the [projectDir].
 FileCollection files(Iterable<String> paths) =>
-    _FileCollection(_sort(paths.map((f) => File(_canonicalPath(f)))));
+    _FileCollection(_sort(paths.map((f) => File(f))));
 
 /// Create a [FileCollection] consisting of a directory, possibly filtering
 /// sub-directories and specific files.
-///
-/// The given directory, if relative, is relativized against the [projectDir].
 ///
 /// The provided [DirectoryFilter] can only be used to filter sub-directories
 /// of the given directory.
@@ -47,13 +34,11 @@ FileCollection files(Iterable<String> paths) =>
 FileCollection dir(String directory,
         {FileFilter fileFilter = _noFileFilter,
         DirectoryFilter dirFilter = _noDirFilter}) =>
-    _DirectoryCollection([Directory(_canonicalPath(directory))], const [],
-        fileFilter, dirFilter);
+    _DirectoryCollection(
+        [Directory(directory)], const [], fileFilter, dirFilter);
 
 /// Create a [FileCollection] consisting of multiple directories, possibly
 /// filtering sub-directories and specific files.
-///
-/// The given directories, if relative, are relativized against the [projectDir].
 ///
 /// The provided [DirectoryFilter] can only be used to filter sub-directories
 /// of the given directories.
@@ -66,8 +51,8 @@ FileCollection dir(String directory,
 FileCollection dirs(Iterable<String> directories,
         {FileFilter fileFilter = _noFileFilter,
         DirectoryFilter dirFilter = _noDirFilter}) =>
-    _DirectoryCollection(directories.map((d) => Directory(_canonicalPath(d))),
-        const [], fileFilter, dirFilter);
+    _DirectoryCollection(
+        directories.map((d) => Directory(d)), const [], fileFilter, dirFilter);
 
 /// A collection of [File] and [Directory] which can be used to declare a set
 /// of inputs or outputs for a [Task].

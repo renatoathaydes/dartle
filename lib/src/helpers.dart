@@ -2,8 +2,6 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
-import 'package:path/path.dart' show dirname;
-
 import '_log.dart';
 import 'error.dart';
 import 'file_collection.dart';
@@ -13,17 +11,6 @@ import 'task.dart';
 
 /// Location of the dartle directory within a project.
 const dartleDir = '.dartle_tool';
-
-/// Get the default project directory.
-String projectDir = () {
-  var script = Platform.script;
-  if (script.hasEmptyPath || script.data != null) {
-    // all paths will be relative to the working directory
-    // as we can't know where the project root directory is!
-    return '';
-  }
-  return dirname(script.toFilePath());
-}();
 
 /// Fail the build for the given [reason].
 ///

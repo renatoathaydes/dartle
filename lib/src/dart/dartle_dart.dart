@@ -1,7 +1,11 @@
 import 'dart:io';
 
-import 'package:dartle/dartle.dart';
 import 'package:path/path.dart' show extension, join, dirname;
+
+import '../file_collection.dart';
+import '../helpers.dart';
+import '../run_condition.dart';
+import '../task.dart';
 
 /// Configuration for the [DartleDart] class.
 class DartConfig {

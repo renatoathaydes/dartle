@@ -13,15 +13,16 @@ const _executablesDir = '$dartleDir/executables';
 /// Get the location Dartle would store binaries created with the [createDartExe]
 /// method.
 File getExeLocation(File dartFile) {
-  return File(
-      path.join(projectDir, _executablesDir, hash(dartFile.absolute.path)));
+  return File(path.join(_executablesDir, hash(dartFile.absolute.path)));
 }
 
 /// Compiles the given [dartFile] to an executable.
-Future<File> createDartExe(File dartFile) async {
-  await Directory(path.join(projectDir, _executablesDir))
-      .create(recursive: true);
-  var exeLocation = getExeLocation(dartFile);
+///
+/// If [destination] is given, the executable is saved in its location,
+/// otherwise it's saved in the `.dartle_tools/executables` directory.
+Future<File> createDartExe(File dartFile, [File? destination]) async {
+  await Directory(_executablesDir).create(recursive: true);
+  var exeLocation = destination ?? getExeLocation(dartFile);
   await _dart2exe(dartFile, exeLocation);
   return exeLocation;
 }
@@ -35,8 +36,8 @@ Future<Process> runDartExe(File dartExec,
         message: 'Cannot run Dart executable as it does '
             'not exist: ${dartExec.path}');
   }
-  final proc =
-      Process.start(dartExec.path, args, workingDirectory: workingDirectory);
+  final proc = Process.start(dartExec.absolute.path, args,
+      workingDirectory: workingDirectory);
 
   logger.fine('Running compiled Dartle build: ${dartExec.path}');
 

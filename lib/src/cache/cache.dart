@@ -15,7 +15,7 @@ final _tasksDir = path.join(dartleDir, 'tasks');
 
 File _getCacheLocation(FileSystemEntity entity) {
   final locationHash = _locationHash(entity);
-  return File(path.join(projectDir, _hashesDir, locationHash));
+  return File(path.join(_hashesDir, locationHash));
 }
 
 Future<FileCollection> _mapToCacheLocations(FileCollection collection) async {
@@ -43,9 +43,9 @@ class DartleCache {
   /// This method does not normally need to be called explicitly as the
   /// constructor will call it.
   void init() {
-    Directory(path.join(projectDir, dartleDir)).createSync(recursive: true);
-    Directory(path.join(projectDir, _hashesDir)).createSync();
-    Directory(path.join(projectDir, _tasksDir)).createSync();
+    Directory(dartleDir).createSync(recursive: true);
+    Directory(_hashesDir).createSync();
+    Directory(_tasksDir).createSync();
   }
 
   /// Clean the Dartle cache.
@@ -94,7 +94,7 @@ class DartleCache {
 
   /// Cache the given task invocation.
   Future<void> cacheTaskInvocation(TaskInvocation invocation) async {
-    await File(path.join(projectDir, _tasksDir, invocation.task.name))
+    await File(path.join(_tasksDir, invocation.task.name))
         .writeAsString(invocation.args.toString());
   }
 
@@ -103,12 +103,20 @@ class DartleCache {
   /// Only successful task invocations are normally cached, hence this method
   /// will normally return `true` when the previous invocation of [Task] failed.
   Future<bool> hasTaskInvocationChanged(TaskInvocation invocation) async {
-    final taskFile =
-        File(path.join(projectDir, _tasksDir, invocation.task.name));
+    final taskFile = File(path.join(_tasksDir, invocation.task.name));
     if (await taskFile.exists()) {
       final taskArgs = await taskFile.readAsString();
-      return invocation.args.toString() != taskArgs;
+      final isChanged = invocation.args.toString() != taskArgs;
+      if (isChanged) {
+        logger.fine('Task "${invocation.task.name}" invocation changed '
+            'because args were $taskArgs, but is now ${invocation.args}.');
+      } else {
+        logger.fine('Task "${invocation.task.name}" invocation has not '
+            'changed, args are $taskArgs');
+      }
+      return isChanged;
     } else {
+      logger.fine('Task "${invocation.task.name}" has not been executed yet');
       return true;
     }
   }
@@ -116,7 +124,7 @@ class DartleCache {
   /// Remove any previous invocations of a task with the given name
   /// from the cache.
   Future<void> removeTaskInvocation(String taskName) async {
-    final file = File(path.join(projectDir, _tasksDir, taskName));
+    final file = File(path.join(_tasksDir, taskName));
     await ignoreExceptions(() => file.delete());
   }
 
@@ -169,7 +177,7 @@ class DartleCache {
     final hashFile = _getCacheLocation(file);
     var hashExists = await hashFile.exists();
     if (!await file.exists()) {
-      logger.fine('File ${file.path} does not exist '
+      logger.fine("File '${file.path}' does not exist "
           "${hashExists ? 'but was cached' : 'and was not known before'}");
       return hashExists;
     }
@@ -177,23 +185,24 @@ class DartleCache {
     if (hashExists) {
       if ((await file.lastModified())
           .isAfter((await hashFile.lastModified()))) {
-        logger.fine('Detected possibly stale cache for file ${file.path}, '
+        logger.fine("Detected possibly stale cache for file '${file.path}', "
             'checking file hash');
         final hash = await _hashContents(file);
         final previousHash = await hashFile.readAsString();
         if (hash == previousHash) {
-          logger.fine('File hash is still the same: ${file.path}');
+          logger.fine("File '${file.path}' hash is still the same: '$hash'");
           changed = false;
         } else {
-          logger.fine('File hash changed: ${file.path}');
+          logger.fine(() => "File '${file.path}' hash changed - "
+              "old hash='$previousHash', new hash='$hash'");
           changed = true;
         }
       } else {
-        // cache is fresh, it must be still good
+        logger.fine("File '${file.path}' hash is fresh.");
         changed = false;
       }
     } else {
-      logger.fine('Hash does not exist for file: ${file.path}');
+      logger.fine("Hash does not exist for file: '${file.path}'");
       changed = true;
     }
     return changed;
