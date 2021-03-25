@@ -98,6 +98,18 @@ class DartleCache {
         .writeAsString(invocation.args.toString());
   }
 
+  /// Get the [DateTime] when this task was last invoked successfully.
+  ///
+  /// This time is only known if the [TaskInvocation] was previously cached via
+  /// [cacheTaskInvocation].
+  Future<DateTime?> getLatestInvocationTime(TaskInvocation invocation) async {
+    final file = File(path.join(_tasksDir, invocation.task.name));
+    if (await file.exists()) {
+      return await file.lastModified();
+    }
+    return null;
+  }
+
   /// Check if the given task had been invoked with the same arguments before.
   ///
   /// Only successful task invocations are normally cached, hence this method

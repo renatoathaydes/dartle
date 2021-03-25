@@ -4,7 +4,9 @@ import 'package:dartle/dartle_cache.dart';
 import 'package:dartle/src/task_invocation.dart';
 
 class CacheMock implements DartleCache {
-  final Map<FileCollection, bool> hasChangedInvocations = {};
+  Map<FileCollection, bool> hasChangedInvocations = {};
+  Map<String, DateTime> invocationTimes = {};
+  Map<String, List<bool>> invocationChanges = {};
 
   @override
   Future<void> cacheTaskInvocation(TaskInvocation invocation) {
@@ -37,7 +39,11 @@ class CacheMock implements DartleCache {
 
   @override
   Future<bool> hasTaskInvocationChanged(TaskInvocation invocation) async {
-    return false;
+    final changes = invocationChanges[invocation.task.name];
+    if (changes == null) {
+      throw 'invocataion not mocked';
+    }
+    return changes.removeAt(0);
   }
 
   @override
@@ -49,7 +55,13 @@ class CacheMock implements DartleCache {
   }
 
   @override
-  Future<void> removeTaskInvocation(String taskName) {
-    throw UnimplementedError();
+  Future<void> removeTaskInvocation(String taskName) async {
+    invocationChanges.remove(taskName);
+    invocationTimes.remove(taskName);
+  }
+
+  @override
+  Future<DateTime?> getLatestInvocationTime(TaskInvocation invocation) async {
+    return invocationTimes[invocation.task.name];
   }
 }

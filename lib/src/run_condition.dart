@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:clock/clock.dart';
 import 'package:meta/meta.dart';
 
 import '_log.dart';
@@ -133,5 +134,37 @@ class RunOnChanges with RunCondition {
           message: 'task did not produce the following expected outputs:\n' +
               missingOutputs.map((f) => '  * $f').join('\n'));
     }
+  }
+}
+
+/// A [RunCondition] which reports that a task should run at most every
+/// [period].
+///
+/// The [period] is computed at the time of checking if the task should run and
+/// starts counting from the last time the task was executed successfully.
+class RunAtMostEvery with RunCondition {
+  final Duration period;
+  final DartleCache cache;
+
+  RunAtMostEvery(this.period, [DartleCache? cache])
+      : cache = cache ?? DartleCache.instance;
+
+  @override
+  FutureOr<void> postRun(TaskResult result) async {
+    if (result.isSuccess) {
+      await cache.cacheTaskInvocation(result.invocation);
+    } else {
+      await cache.removeTaskInvocation(result.invocation.task.name);
+    }
+  }
+
+  @override
+  FutureOr<bool> shouldRun(TaskInvocation invocation) async {
+    if (await cache.hasTaskInvocationChanged(invocation)) return true;
+    final lastTime = await cache.getLatestInvocationTime(invocation);
+    if (lastTime == null) {
+      return true;
+    }
+    return clock.now().isAfter(lastTime.add(period));
   }
 }
