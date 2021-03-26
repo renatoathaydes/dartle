@@ -24,11 +24,15 @@ class DartConfig {
   /// Project's root directory (location of dartle.dart file, by default).
   final String? rootDir;
 
+  /// Period of time after which `pub get` should be run.
+  final Duration runPubGetAtMostEvery;
+
   const DartConfig({
     this.runAnalyzer = true,
     this.formatCode = true,
     this.runBuildRunner = false,
     this.runTests = true,
+    this.runPubGetAtMostEvery = const Duration(days: 5),
     this.rootDir,
   });
 }
@@ -54,7 +58,13 @@ class DartConfig {
 class DartleDart {
   final DartConfig config;
 
-  late final Task formatCode, runBuildRunner, analyzeCode, test, build, clean;
+  late final Task formatCode,
+      runBuildRunner,
+      analyzeCode,
+      runPubGet,
+      test,
+      build,
+      clean;
 
   /// Get the tasks that are configured as part of a build.
   Set<Task> get tasks {
@@ -63,6 +73,7 @@ class DartleDart {
       if (config.runAnalyzer) analyzeCode,
       if (config.runBuildRunner) runBuildRunner,
       if (config.runTests) test,
+      runPubGet,
       build,
       clean,
     };
@@ -94,8 +105,14 @@ class DartleDart {
 
     analyzeCode = Task(_analyzeCode,
         name: 'analyzeCode',
+        dependsOn: {'runPubGet'},
         description: 'Analyzes Dart source code',
         runCondition: RunOnChanges(inputs: allDartFiles));
+
+    runPubGet = Task(_runPubGet,
+        name: 'runPubGet',
+        description: 'Runs "pub get" in order to update dependencies',
+        runCondition: RunAtMostEvery(config.runPubGetAtMostEvery));
 
     test = Task(_test,
         name: 'test',
@@ -109,14 +126,16 @@ class DartleDart {
     clean = Task(
         (_) async => await ignoreExceptions(() => deleteOutputs(tasks)),
         name: 'clean',
-        description: 'Deletes the outputs of all other tasks in this build');
+        description: 'Deletes the outputs of all other tasks in this build.');
 
     build = Task((_) => null, // no action, just grouping other tasks
         name: 'build',
-        description: 'Runs all enabled tasks');
+        description: 'Runs all enabled tasks.');
 
-    build.dependsOn =
-        tasks.where((t) => t != build && t != clean).map((t) => t.name).toSet();
+    build.dependsOn(tasks
+        .where((t) => t != build && t != clean)
+        .map((t) => t.name)
+        .toSet());
   }
 
   Future<void> _test(List<String> platforms) async {
@@ -146,6 +165,12 @@ class DartleDart {
     final code = await execProc(Process.start('dart', const ['analyze', '.']),
         name: 'Dart Analyzer', successMode: StreamRedirectMode.stdout_stderr);
     if (code != 0) failBuild(reason: 'Dart Analyzer failed');
+  }
+
+  Future<void> _runPubGet(_) async {
+    final code = await execProc(Process.start('dart', const ['pub', 'get']),
+        name: 'Dart pub get', successMode: StreamRedirectMode.stdout_stderr);
+    if (code != 0) failBuild(reason: 'Dart "pub get"" failed');
   }
 }
 
