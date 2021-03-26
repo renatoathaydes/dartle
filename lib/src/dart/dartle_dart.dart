@@ -147,8 +147,7 @@ class DartleDart {
   }
 
   Future<void> _formatCode(_) async {
-    final code = await execProc(
-        Process.start('dart', const ['format', '-w', '.']),
+    final code = await execProc(Process.start('dart', const ['format', '.']),
         name: 'Dart Formatter');
     if (code != 0) failBuild(reason: 'Dart Formatter failed');
   }
