@@ -141,13 +141,14 @@ class DartleDart {
   Future<void> _test(List<String> platforms) async {
     final platformArgs = platforms.expand((p) => ['-p', p]);
     final code = await execProc(
-        Process.start('pub', ['run', 'test', ...platformArgs]),
+        Process.start('dart', ['test', ...platformArgs]),
         name: 'Dart Tests');
     if (code != 0) failBuild(reason: 'Tests failed');
   }
 
   Future<void> _formatCode(_) async {
-    final code = await execProc(Process.start('dartfmt', const ['-w', '.']),
+    final code = await execProc(
+        Process.start('dart', const ['format', '-w', '.']),
         name: 'Dart Formatter');
     if (code != 0) failBuild(reason: 'Dart Formatter failed');
   }
