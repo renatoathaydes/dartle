@@ -41,7 +41,7 @@ class CacheMock implements DartleCache {
   Future<bool> hasTaskInvocationChanged(TaskInvocation invocation) async {
     final changes = invocationChanges[invocation.task.name];
     if (changes == null) {
-      throw 'invocataion not mocked';
+      throw 'invocation not mocked';
     }
     return changes.removeAt(0);
   }

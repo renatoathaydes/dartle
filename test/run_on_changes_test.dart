@@ -12,7 +12,10 @@ void main() {
   group('RunOnChanges', () {
     var cache = CacheMock();
     setUp(() {
-      cache = CacheMock();
+      cache = CacheMock()
+        ..invocationChanges = {
+          _invocation.task.name: [false, false]
+        };
     });
 
     test('never runs if inputs/outputs are empty', () async {
