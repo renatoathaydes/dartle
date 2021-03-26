@@ -65,7 +65,7 @@ void showTaskGraph(List<ParallelTasks> executableTasks,
             topLevel ? '  ' : indent + (lastTask ? '     ' : '|     '),
             false);
       } else if (!topLevel) {
-        stdout.writeln(task.dependsOn.isNotEmpty ? ' ...' : '');
+        stdout.writeln(task.dependencies.isNotEmpty ? ' ...' : '');
       }
     }
   }
