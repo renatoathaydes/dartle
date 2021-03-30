@@ -1,3 +1,5 @@
+@TestOn('!windows')
+
 import 'dart:async';
 import 'dart:io';
 
