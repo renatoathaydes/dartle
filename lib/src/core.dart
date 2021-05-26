@@ -27,6 +27,7 @@ Future<void> run(List<String> args,
     {required Set<Task> tasks,
     Set<Task> defaultTasks = const {},
     bool doNotExit = false}) async {
+  await abortIfNotDartleProject();
   await runSafely(args, doNotExit, (stopWatch, options) async {
     if (options.showHelp) {
       return print(dartleUsage);
@@ -49,6 +50,16 @@ Future<void> run(List<String> args,
           '✔ Build succeeded in ${elapsedTime(stopWatch)}', LogColor.green));
     }
   });
+}
+
+Future<void> abortIfNotDartleProject() async {
+  final dartleFile = File('dartle.dart');
+  if (await dartleFile.exists()) {
+    logger.fine('Dartle file exists.');
+  } else {
+    logger.severe('dartle.dart file does not exist. Aborting!');
+    exit(4);
+  }
 }
 
 /// Run the given action in a safe try/catch block, allowing Dartle to handle
