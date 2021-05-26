@@ -46,13 +46,10 @@ Future<void> runDartlex(List<String> args, {bool onlyIfChanged = false}) async {
 }
 
 Future<bool> _runTask(TaskInvocation invocation) async {
-  final stopWatch = Stopwatch()..start();
-
   TaskResult? result;
   try {
     result = await runTask(invocation, runInIsolate: false);
     if (result.isSuccess) {
-      logger.fine("Compiled 'dartlex' in ${stopWatch.elapsed}");
       return true;
     } else {
       logger.severe('Unable to compile dartle.dart');
