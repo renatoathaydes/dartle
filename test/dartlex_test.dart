@@ -27,7 +27,7 @@ void main() {
 
       final result = await startProcess(proc, 'dartlex');
 
-      expect(result.exitCode, equals(0));
+      expect(result.exitCode, equals(0), reason: result.toString());
       expect(result.stdout, hasLength(equals(9)));
       expect(result.stdout[0],
           matches('$infoLogPrefixRegex Detected changes in dartle.dart.*'));
@@ -62,7 +62,7 @@ void main() {
 
       final result = await startProcess(proc, 'dartlex');
 
-      expect(result.exitCode, equals(0), reason: result.stdout.toString());
+      expect(result.exitCode, equals(0), reason: result.toString());
       expect(result.stdout, hasLength(equals(9)));
       expect(result.stdout[3], equals('hello'));
       expect(result.stderr, equals([]));
