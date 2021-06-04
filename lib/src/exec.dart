@@ -49,11 +49,12 @@ Future<void> _dart2exe(File dartFile, File destination) async {
   final code = await exec(
       Process.start(
           'dart', ['compile', 'exe', dartFile.path, '-o', destination.path]),
-      name: 'dart-exe');
+      name: 'dart-exe',
+      onStdoutLine: (_) {});
   if (code != 0) {
     await ignoreExceptions(destination.deleteSync);
     throw DartleException(
         message: 'Error compiling Dart source at '
-            '${dartFile.path}. Process exit code: $code');
+            '${dartFile.absolute.path}. Process exit code: $code');
   }
 }
