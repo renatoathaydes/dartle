@@ -228,6 +228,9 @@ class _DirectoryCollection implements FileCollection {
   }
 
   Stream<File> _listRecursive(Directory dir, Set<String> seenPaths) async* {
+    if (!await dir.exists()) {
+      return;
+    }
     await for (final entity in dir.list()) {
       if (entity is File) {
         if (await _fileFilter(entity) && seenPaths.add(entity.path)) {
