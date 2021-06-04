@@ -1,3 +1,4 @@
+import 'dart:io' show pid;
 import 'dart:isolate';
 
 import 'package:ansicolor/ansicolor.dart' as colors;
@@ -112,7 +113,8 @@ bool activateLogging(log.Level level, {bool colorfulLog = true}) {
         }
       }
 
-      msg ??= '${rec.time} - ${rec.loggerName}[${Isolate.current.debugName}] - '
+      msg ??=
+          '${rec.time} - ${rec.loggerName}[${Isolate.current.debugName} $pid] - '
           '${_nameByLevel[rec.level] ?? rec.level} - ${rec.message}';
 
       log(msg);
