@@ -64,7 +64,8 @@ Future<List<TaskResult>> runTasks(List<ParallelTasks> tasks,
 Future<TaskResult> runTask(TaskInvocation invocation,
     {required bool runInIsolate}) async {
   final task = invocation.task;
-  logger.info("Running task '${task.name}'");
+  logger.log(task.name.startsWith('_') ? Level.FINE : Level.INFO,
+      "Running task '${task.name}'");
 
   var useIsolate = runInIsolate && task.isParallelizable;
 
