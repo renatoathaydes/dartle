@@ -15,20 +15,28 @@ final dartlex = File('dartlex');
 ///
 /// Re-compiles dartlex if necessary, then executes it.
 ///
-/// If the [onlyIfChanged] arg is given, dartlex is executed only if changes
+/// If the [onlyIfChanged] arg is [true], dartlex is executed only if changes
 /// forced it to be re-compiled... in other words, if set to `true`, then
 /// dartlex will not be executed if dartle.dart did not change.
-Future<void> runDartlex(List<String> args, {bool onlyIfChanged = false}) async {
+///
+/// This method will normally not return as Dartle will exit with the
+/// appropriate code. To avoid that, set [doNotExit] to [true].
+Future<void> runDartlex(List<String> args,
+    {bool onlyIfChanged = false, bool doNotExit = false}) async {
   final runCompileTask = await _createDartCompileTask();
   final runCompileCondition = runCompileTask.runCondition as RunOnChanges;
-  final invocation = TaskInvocation(runCompileTask);
+  final compileDartlexInvocation = TaskInvocation(runCompileTask);
 
-  if (await runCompileCondition.shouldRun(invocation)) {
-    logger.info(
-        "Detected changes in dartle.dart, compiling 'dartlex' executable.");
-    final success = await _runTask(invocation);
+  if (await runCompileCondition.shouldRun(compileDartlexInvocation)) {
+    logger.info('Detected changes in dartle.dart or pubspec, '
+        "compiling 'dartlex' executable.");
+    final success = await _runTask(compileDartlexInvocation);
     if (!success) {
-      exit(2);
+      if (doNotExit) {
+        throw Exception('Error running task ${runCompileTask.name}');
+      } else {
+        exit(2);
+      }
     }
   } else if (onlyIfChanged) {
     return;
@@ -41,8 +49,12 @@ Future<void> runDartlex(List<String> args, {bool onlyIfChanged = false}) async {
     logger.info('\n------------------------\n'
         "Use 'dartlex' to run the build faster next time!"
         '\n------------------------');
+    if (!doNotExit) {
+      exit(exitCode);
+    }
+  } else {
+    throw Exception('dartlex exited with code $exitCode');
   }
-  exit(exitCode);
 }
 
 Future<bool> _runTask(TaskInvocation invocation) async {
@@ -77,7 +89,7 @@ Future<TaskWithDeps> _createDartCompileTask() async {
   );
 
   return TaskWithDeps(Task((_) => createDartExe(buildFile, dartlex),
-      name: '_compileDartleFile_',
+      name: '_compileDartleFile',
       runCondition: runCompileCondition,
       description: 'Internal task that compiles the Dartle project\'s '
           'build file into an executable for better performance'));

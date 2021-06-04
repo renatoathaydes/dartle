@@ -38,8 +38,8 @@ Future<void> run(List<String> args,
 
     activateLogging(options.logLevel, colorfulLog: options.colorfulLog);
 
-    if (!doNotExit && p.basename(Platform.script.path) == 'dartlex') {
-      await runDartlex(args, onlyIfChanged: true);
+    if (p.basename(Platform.script.path) == 'dartlex') {
+      await runDartlex(args, onlyIfChanged: true, doNotExit: doNotExit);
       logger.fine('dartlex did not require re-compilation, continuing...');
     }
 
@@ -66,8 +66,8 @@ Future<void> abortIfNotDartleProject() async {
 /// any errors by logging the appropriate build failure.
 ///
 /// If [doNotExit] is `true`, then this method will not call [exit] on build
-/// completion, even on failures. Otherwise, the process will exit with 0 on
-/// success, or the appropriate error code on error.
+/// completion, re-throwing Exceptions. Otherwise, the process will exit with
+/// 0 on success, or the appropriate error code on error.
 Future<void> runSafely(List<String> args, bool doNotExit,
     FutureOr<Object?> Function(Stopwatch, Options) action) async {
   final stopWatch = Stopwatch()..start();
@@ -84,7 +84,11 @@ Future<void> runSafely(List<String> args, bool doNotExit,
       logger.severe(ColoredLogMessage(
           '✗ Build failed in ${elapsedTime(stopWatch)}', LogColor.red));
     }
-    if (!doNotExit) exit(e.exitCode);
+    if (doNotExit) {
+      rethrow;
+    } else {
+      exit(e.exitCode);
+    }
   } on Exception catch (e) {
     activateLogging(log.Level.SEVERE);
     logger.severe('Unexpected error: $e');
@@ -92,7 +96,11 @@ Future<void> runSafely(List<String> args, bool doNotExit,
       logger.severe(ColoredLogMessage(
           '✗ Build failed in ${elapsedTime(stopWatch)}', LogColor.red));
     }
-    if (!doNotExit) exit(22);
+    if (doNotExit) {
+      rethrow;
+    } else {
+      exit(22);
+    }
   }
 }
 
