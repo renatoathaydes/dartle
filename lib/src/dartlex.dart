@@ -98,12 +98,30 @@ Future<TaskWithDeps> _createDartCompileTask() async {
 
   return TaskWithDeps(Task((_) async {
     await createDartExe(buildFile, _tmpDartlex);
-    try {
-      await dartlex.delete();
-    } catch (e) {
-      logger.fine('Attempt to delete dartlex failed due to $e');
+    Future<void> Function()? cleanup;
+    if (Platform.isWindows) {
+      // Windows allows an exe to rename itself, but not to delete itself.
+      // So we need to first rename it, then copy the tmp file to dartlex,
+      // then remove the tmp file.
+      final tmp = File('dartlex.tmp');
+      await dartlex.rename(tmp.path);
+      cleanup = () async => await tmp.delete();
+    } else if (Platform.isLinux) {
+      // Linux requires us to 'unlink' an exe file before modifying it.
+      try {
+        await dartlex.delete();
+      } catch (e) {
+        logger.fine(
+            'Attempt to unlink dartlex before replacing it failed due to $e');
+      }
     }
-    await _tmpDartlex.rename(dartlex.path);
+
+    // in all OSs, we finish by renaming the new exe to dartlex.
+    try {
+      await _tmpDartlex.rename(dartlex.path);
+    } finally {
+      await cleanup?.call();
+    }
   },
       name: '_compileDartleFile',
       runCondition: runCompileCondition,
