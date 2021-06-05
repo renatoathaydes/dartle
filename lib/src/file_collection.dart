@@ -245,7 +245,7 @@ class _DirectoryCollection implements FileCollection {
   }
 }
 
-final _pathSep = Platform.pathSeparator.codeUnits[0];
+final _pathSep = RegExp.escape(Platform.pathSeparator);
 
 List<F> _sortAndDistinct<F extends FileSystemEntity>(Iterable<F> files,
     {bool sortByPathLengthFirst = true}) {
@@ -254,8 +254,8 @@ List<F> _sortAndDistinct<F extends FileSystemEntity>(Iterable<F> files,
   var sortFun = sortByPathLengthFirst
       ? (F a, F b) {
           // shorter paths must come first
-          final depthA = a.path.codeUnits.where((c) => c == _pathSep).length;
-          final depthB = b.path.codeUnits.where((c) => c == _pathSep).length;
+          final depthA = _pathSep.allMatches(a.path).length;
+          final depthB = _pathSep.allMatches(b.path).length;
           final depthComparison = depthA.compareTo(depthB);
           return depthComparison == 0
               ? a.path.compareTo(b.path)
