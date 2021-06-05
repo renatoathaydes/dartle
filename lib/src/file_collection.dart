@@ -1,6 +1,8 @@
 import 'dart:async';
 import 'dart:io';
 
+import 'package:path/path.dart' as p;
+
 import '_utils.dart';
 
 /// Function that filters files, returning true to keep a file,
@@ -245,8 +247,6 @@ class _DirectoryCollection implements FileCollection {
   }
 }
 
-final _pathSep = RegExp(Platform.isWindows ? '\\\\' : '/');
-
 List<F> _sortAndDistinct<F extends FileSystemEntity>(Iterable<F> files,
     {bool sortByPathLengthFirst = true}) {
   final seenPaths = <String>{};
@@ -254,8 +254,8 @@ List<F> _sortAndDistinct<F extends FileSystemEntity>(Iterable<F> files,
   var sortFun = sortByPathLengthFirst
       ? (F a, F b) {
           // shorter paths must come first
-          final depthA = _pathSep.allMatches(a.path).length;
-          final depthB = _pathSep.allMatches(b.path).length;
+          final depthA = p.split(a.path).length;
+          final depthB = p.split(b.path).length;
           final depthComparison = depthA.compareTo(depthB);
           return depthComparison == 0
               ? a.path.compareTo(b.path)
