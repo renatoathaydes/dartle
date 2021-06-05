@@ -245,7 +245,7 @@ class _DirectoryCollection implements FileCollection {
   }
 }
 
-final _pathSep = RegExp.escape(Platform.pathSeparator);
+final _pathSep = RegExp(Platform.isWindows ? '\\\\' : '/');
 
 List<F> _sortAndDistinct<F extends FileSystemEntity>(Iterable<F> files,
     {bool sortByPathLengthFirst = true}) {

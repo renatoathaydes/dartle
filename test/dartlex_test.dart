@@ -22,7 +22,8 @@ void main() {
             main(List<String> args) async => run(args, tasks: allTasks.toSet());
             Future<void> hello(_) async => print('hello');
       ''');
-      final proc = Process.start('./dartlex', const ['hello'],
+      final proc = Process.start(
+          p.join(projectDir.absolute.path, 'dartlex'), const ['hello'],
           workingDirectory: projectDir.path, runInShell: true);
 
       final result = await startProcess(proc, 'dartlex');
@@ -55,7 +56,8 @@ void main() {
 
       final projectDir = await _createTestProjectAndCompileDartlex(
           'mini_project', helloDartle('print("hello");'));
-      final proc = Process.start('./dartlex', const ['hello'],
+      final proc = Process.start(
+          p.join(projectDir.absolute.path, 'dartlex'), const ['hello'],
           workingDirectory: projectDir.path, runInShell: true);
 
       final result = await startProcess(proc, 'dartlex');
@@ -73,7 +75,8 @@ void main() {
           mode: FileMode.writeOnly,
           flush: true);
 
-      final proc2 = Process.start('./dartlex', const ['-l', 'info', 'hello'],
+      final proc2 = Process.start(p.join(projectDir.absolute.path, 'dartlex'),
+          const ['-l', 'info', 'hello'],
           workingDirectory: projectDir.path, runInShell: true);
       final result2 = await startProcess(proc2, 'dartlex');
       expect(result2.exitCode, equals(0), reason: result2.stdout.toString());
