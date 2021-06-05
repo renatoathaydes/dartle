@@ -1,7 +1,9 @@
 import 'dart:io';
 
+import 'package:dartle/dartle_cache.dart';
 import 'package:path/path.dart' as p;
 
+import '_dartlex_win.dart';
 import '_log.dart';
 import 'exec.dart';
 import 'file_collection.dart';
@@ -11,8 +13,8 @@ import 'task.dart';
 import 'task_invocation.dart';
 import 'task_run.dart';
 
-final _tmpDartlex = File('~dartlex~');
-final dartlex = File('dartlex');
+const _tmpDartlex = '~dartlex~';
+const dartlex = 'dartlex';
 
 /// Run the 'dartlex' executable.
 ///
@@ -28,7 +30,9 @@ final dartlex = File('dartlex');
 /// If [doNotExit] is [true], returns [true] if dartlex was executed.
 Future<bool> runDartlex(List<String> args,
     {bool onlyIfChanged = false, bool doNotExit = false}) async {
-  final runCompileTask = await _createDartCompileTask();
+  final runCompileTask = Platform.isWindows
+      ? await createDartCompileTaskWin(File(dartlex), File(_tmpDartlex))
+      : await _createDartCompileTask();
   final runCompileCondition = runCompileTask.runCondition as RunOnChanges;
   final compileDartlexInvocation = TaskInvocation(runCompileTask);
 
@@ -48,10 +52,10 @@ Future<bool> runDartlex(List<String> args,
   }
 
   logger.fine('Running dartlex...');
-  final exitCode = await _runDartExecutable(dartlex, args: args);
+  final exitCode = await _runDartExecutable(args);
 
   if (exitCode == 0) {
-    if (p.basename(Platform.script.path) != 'dartlex') {
+    if (!isRunningDartlex()) {
       logger.info('\n------------------------\n'
           "Use 'dartlex' to run the build faster next time!"
           '\n------------------------');
@@ -63,6 +67,11 @@ Future<bool> runDartlex(List<String> args,
   } else {
     throw Exception('dartlex exited with code $exitCode');
   }
+}
+
+bool isRunningDartlex() {
+  final procName = p.basename(Platform.script.path);
+  return (const {dartlex, _tmpDartlex}).contains(procName);
 }
 
 Future<bool> _runTask(TaskInvocation invocation) async {
@@ -83,8 +92,10 @@ Future<bool> _runTask(TaskInvocation invocation) async {
   }
 }
 
-Future<int> _runDartExecutable(File dartExec, {List<String> args = const []}) {
-  return exec(runDartExe(dartExec, args: args), name: 'dartle build');
+Future<int> _runDartExecutable(List<String> args) {
+  // on Windows, we must run the tmp dartlex, see _dartlex_win.dart
+  final dartExec = Platform.isWindows ? _tmpDartlex : dartlex;
+  return exec(runDartExe(File(dartExec), args: args), name: 'dartle build');
 }
 
 Future<TaskWithDeps> _createDartCompileTask() async {
@@ -93,32 +104,23 @@ Future<TaskWithDeps> _createDartCompileTask() async {
 
   final runCompileCondition = RunOnChanges(
     inputs: files(buildSetupFiles),
-    outputs: FileCollection([dartlex]),
+    outputs: FileCollection([File(dartlex)]),
   );
 
   return TaskWithDeps(Task((_) async {
-    await createDartExe(buildFile, _tmpDartlex);
+    await createDartExe(buildFile, File(_tmpDartlex));
     Future<void> Function()? cleanup;
-    if (Platform.isWindows) {
-      // Windows allows an exe to rename itself, but not to delete itself.
-      // So we need to first rename it, then copy the tmp file to dartlex,
-      // then remove the tmp file.
-      final tmp = File('dartlex.tmp');
-      await dartlex.rename(tmp.path);
-      cleanup = () async => await tmp.delete();
-    } else if (Platform.isLinux) {
+    if (Platform.isLinux) {
       // Linux requires us to 'unlink' an exe file before modifying it.
       try {
-        await dartlex.delete();
+        await File(dartlex).delete();
       } catch (e) {
         logger.fine(
             'Attempt to unlink dartlex before replacing it failed due to $e');
       }
     }
-
-    // in all OSs, we finish by renaming the new exe to dartlex.
     try {
-      await _tmpDartlex.rename(dartlex.path);
+      await File(_tmpDartlex).rename(dartlex);
     } finally {
       await cleanup?.call();
     }

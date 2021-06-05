@@ -3,7 +3,6 @@ import 'dart:io';
 import 'dart:math';
 
 import 'package:logging/logging.dart' as log;
-import 'package:path/path.dart' as p;
 
 import '_log.dart';
 import '_task_graph.dart';
@@ -38,7 +37,7 @@ Future<void> run(List<String> args,
 
     activateLogging(options.logLevel, colorfulLog: options.colorfulLog);
 
-    if (p.basename(Platform.script.path) == 'dartlex') {
+    if (isRunningDartlex()) {
       final didExecute =
           await runDartlex(args, onlyIfChanged: true, doNotExit: doNotExit);
       if (didExecute) return;
