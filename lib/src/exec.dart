@@ -20,6 +20,8 @@ File getExeLocation(File dartFile) {
 ///
 /// If [destination] is given, the executable is saved in its location,
 /// otherwise it's saved in the `.dartle_tools/executables` directory.
+///
+/// Returns the executable [File].
 Future<File> createDartExe(File dartFile, [File? destination]) async {
   await Directory(_executablesDir).create(recursive: true);
   var exeLocation = destination ?? getExeLocation(dartFile);

@@ -1,5 +1,7 @@
 import 'dart:io';
 
+import 'package:path/path.dart' as p;
+
 import '_log.dart';
 import 'exec.dart';
 import 'file_collection.dart';
@@ -9,6 +11,7 @@ import 'task.dart';
 import 'task_invocation.dart';
 import 'task_run.dart';
 
+final _tmpDartlex = File('~dartlex~');
 final dartlex = File('dartlex');
 
 /// Run the 'dartlex' executable.
@@ -21,7 +24,9 @@ final dartlex = File('dartlex');
 ///
 /// This method will normally not return as Dartle will exit with the
 /// appropriate code. To avoid that, set [doNotExit] to [true].
-Future<void> runDartlex(List<String> args,
+///
+/// If [doNotExit] is [true], returns [true] if dartlex was executed.
+Future<bool> runDartlex(List<String> args,
     {bool onlyIfChanged = false, bool doNotExit = false}) async {
   final runCompileTask = await _createDartCompileTask();
   final runCompileCondition = runCompileTask.runCondition as RunOnChanges;
@@ -39,19 +44,22 @@ Future<void> runDartlex(List<String> args,
       }
     }
   } else if (onlyIfChanged) {
-    return;
+    return false;
   }
 
   logger.fine('Running dartlex...');
   final exitCode = await _runDartExecutable(dartlex, args: args);
 
   if (exitCode == 0) {
-    logger.info('\n------------------------\n'
-        "Use 'dartlex' to run the build faster next time!"
-        '\n------------------------');
+    if (p.basename(Platform.script.path) != 'dartlex') {
+      logger.info('\n------------------------\n'
+          "Use 'dartlex' to run the build faster next time!"
+          '\n------------------------');
+    }
     if (!doNotExit) {
       exit(exitCode);
     }
+    return true;
   } else {
     throw Exception('dartlex exited with code $exitCode');
   }
@@ -88,7 +96,15 @@ Future<TaskWithDeps> _createDartCompileTask() async {
     outputs: FileCollection([dartlex]),
   );
 
-  return TaskWithDeps(Task((_) => createDartExe(buildFile, dartlex),
+  return TaskWithDeps(Task((_) async {
+    await createDartExe(buildFile, _tmpDartlex);
+    try {
+      await dartlex.delete();
+    } catch (e) {
+      logger.fine('Attempt to delete dartlex failed due to $e');
+    }
+    await _tmpDartlex.rename(dartlex.path);
+  },
       name: '_compileDartleFile',
       runCondition: runCompileCondition,
       description: 'Internal task that compiles the Dartle project\'s '

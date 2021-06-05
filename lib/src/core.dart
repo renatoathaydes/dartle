@@ -39,7 +39,9 @@ Future<void> run(List<String> args,
     activateLogging(options.logLevel, colorfulLog: options.colorfulLog);
 
     if (p.basename(Platform.script.path) == 'dartlex') {
-      await runDartlex(args, onlyIfChanged: true, doNotExit: doNotExit);
+      final didExecute =
+          await runDartlex(args, onlyIfChanged: true, doNotExit: doNotExit);
+      if (didExecute) return;
       logger.fine('dartlex did not require re-compilation, continuing...');
     }
 
