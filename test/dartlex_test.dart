@@ -91,7 +91,13 @@ Future<Directory> _createTestProjectAndCompileDartlex(
     String testProject, String dartleScript) async {
   final dir = Directory(p.join('test', 'test_builds', testProject));
   await dir.create();
-  addTearDown(() => dir.deleteSync(recursive: true));
+  addTearDown(() {
+    if (Platform.isWindows) {
+      // must wait until the replacement script ends
+      sleep(Duration(seconds: 2));
+    }
+    dir.deleteSync(recursive: true);
+  });
   final dartleFile = File(p.join(dir.path, 'dartle.dart'));
   await dartleFile.writeAsString(dartleScript, flush: true);
   await createDartExe(dartleFile, File(p.join(dir.path, 'dartlex')));
