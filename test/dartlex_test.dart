@@ -43,6 +43,7 @@ void main() {
       expect(result.stdout[3], matches('hello'));
       expect(result.stdout[4], matches('✔ Build succeeded in .*'));
       expect(result.stderr, equals([]));
+      await _expectTempDartleExecutableToBeRemoved(projectDir);
     });
 
     test('can re-compile itself after changes', () async {
@@ -83,8 +84,16 @@ void main() {
       expect(result2.stdout, hasLength(equals(5)));
       expect(result2.stdout[3], equals('bye'));
       expect(result2.stderr, equals([]));
+      await _expectTempDartleExecutableToBeRemoved(projectDir);
     });
   });
+}
+
+Future<void> _expectTempDartleExecutableToBeRemoved(
+    Directory projectDir) async {
+  final tmpDartlex = File(p.join(projectDir.absolute.path, '~dartlex~'));
+  await _waitForOrTimeout(() async => !await tmpDartlex.exists(),
+      'tmpDartlex was not removed in time');
 }
 
 Future<Directory> _createTestProjectAndCompileDartlex(
@@ -92,20 +101,28 @@ Future<Directory> _createTestProjectAndCompileDartlex(
   final dir = Directory(p.join('test', 'test_builds', testProject));
   await dir.create();
   addTearDown(() async {
-    var tries = 10;
-    while (tries > 0) {
+    await _waitForOrTimeout(() async {
       try {
         await dir.delete(recursive: true);
-        return;
+        return true;
       } on FileSystemException {
-        await Future.delayed(Duration(seconds: 1));
-        tries--;
+        // ignore
       }
-    }
-    print('WARN: Unable to delete test directory ${dir.absolute.path}');
+      return false;
+    }, 'Unable to delete test directory ${dir.absolute.path}');
   });
   final dartleFile = File(p.join(dir.path, 'dartle.dart'));
   await dartleFile.writeAsString(dartleScript, flush: true);
   await createDartExe(dartleFile, File(p.join(dir.path, 'dartlex')));
   return dir;
+}
+
+Future<void> _waitForOrTimeout(Future<bool> Function() action, String error,
+    {int tries = 10, Duration period = const Duration(seconds: 1)}) async {
+  while (tries > 0) {
+    if (await action()) return;
+    tries--;
+    await Future.delayed(period);
+  }
+  throw Exception(error);
 }
