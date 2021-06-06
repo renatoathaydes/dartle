@@ -91,12 +91,18 @@ Future<Directory> _createTestProjectAndCompileDartlex(
     String testProject, String dartleScript) async {
   final dir = Directory(p.join('test', 'test_builds', testProject));
   await dir.create();
-  addTearDown(() {
-    if (Platform.isWindows) {
-      // must wait until the replacement script ends
-      sleep(Duration(seconds: 2));
+  addTearDown(() async {
+    var tries = 10;
+    while (tries > 0) {
+      try {
+        await dir.delete(recursive: true);
+        return;
+      } on FileSystemException {
+        await Future.delayed(Duration(seconds: 1));
+        tries--;
+      }
     }
-    dir.deleteSync(recursive: true);
+    print('WARN: Unable to delete test directory ${dir.absolute.path}');
   });
   final dartleFile = File(p.join(dir.path, 'dartle.dart'));
   await dartleFile.writeAsString(dartleScript, flush: true);
