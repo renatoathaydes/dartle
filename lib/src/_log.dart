@@ -99,6 +99,7 @@ bool activateLogging(log.Level level, {bool colorfulLog = true}) {
       _Log log;
       String? msg;
       if (colorfulLog) {
+        colors.ansiColorDisabled = false;
         final obj = rec.object;
         if (obj is ColoredLogMessage) {
           log = _Log(obj.color);
