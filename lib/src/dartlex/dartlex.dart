@@ -12,7 +12,7 @@ import '../task_run.dart';
 
 final _cachedDartlex = getExeLocation(File('dartle.dart'));
 
-/// Run dartlex main.
+/// Run dartle using an executable compiled from the project's dartle.dart file.
 /// See [runDartlex] for more options running dartlex.
 Future<void> dartlexMain(List<String> args) async {
   await runSafely(args, false, (stopWatch, options) async {
@@ -33,7 +33,7 @@ Future<void> runDartlex(List<String> args, {bool doNotExit = false}) async {
 
   if (await recompileCondition.shouldRun(compileDartlexInvocation)) {
     logger.info('Detected changes in dartle.dart or pubspec, '
-        "compiling 'dartlex' executable.");
+        'compiling project executable.');
     final success = await _runTask(compileDartlexInvocation);
     if (!success) {
       if (doNotExit) {
@@ -50,7 +50,7 @@ Future<void> runDartlex(List<String> args, {bool doNotExit = false}) async {
 
   if (doNotExit) {
     if (exitCode != 0) {
-      throw Exception('dartlex exited with code $exitCode');
+      throw Exception('dartle process exited with code $exitCode');
     }
   } else {
     exit(exitCode);
