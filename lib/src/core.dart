@@ -9,7 +9,6 @@ import '_task_graph.dart';
 import '_utils.dart';
 import 'cache/cache.dart';
 import 'dartle_version.g.dart';
-import 'dartlex.dart';
 import 'error.dart';
 import 'options.dart';
 import 'run_condition.dart';
@@ -27,6 +26,7 @@ Future<void> run(List<String> args,
     Set<Task> defaultTasks = const {},
     bool doNotExit = false}) async {
   await abortIfNotDartleProject();
+
   await runSafely(args, doNotExit, (stopWatch, options) async {
     if (options.showHelp) {
       return print(dartleUsage);
@@ -36,13 +36,6 @@ Future<void> run(List<String> args,
     }
 
     activateLogging(options.logLevel, colorfulLog: options.colorfulLog);
-
-    if (isRunningDartlex()) {
-      final didExecute =
-          await runDartlex(args, onlyIfChanged: true, doNotExit: doNotExit);
-      if (didExecute) return;
-      logger.fine('dartlex did not require re-compilation, continuing...');
-    }
 
     await _runWithoutErrorHandling(args, tasks, defaultTasks, options);
     stopWatch.stop();

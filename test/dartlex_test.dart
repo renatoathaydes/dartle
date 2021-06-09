@@ -2,7 +2,6 @@
 import 'dart:async';
 import 'dart:io';
 
-import 'package:dartle/dartle.dart';
 import 'package:path/path.dart' as p;
 import 'package:test/test.dart';
 
@@ -14,19 +13,15 @@ const infoLogPrefixRegex = '$logDateRegex - dartle\\[main \\d+\\] - INFO -';
 void main() {
   group('dartlex', () {
     test('can execute simple build', () async {
-      final projectDir =
-          await _createTestProjectAndCompileDartlex('compiles_itself', '''
+      final projectDir = await _createTestProject('compiles_itself', '''
             import 'package:dartle/dartle.dart';
       
             final allTasks = [Task(hello)];
             main(List<String> args) async => run(args, tasks: allTasks.toSet());
             Future<void> hello(_) async => print('hello');
       ''');
-      final proc = Process.start(
-          p.join(projectDir.absolute.path, 'dartlex'), const ['hello'],
-          workingDirectory: projectDir.path);
 
-      final result = await startProcess(proc, 'dartlex');
+      final result = await _runDartle(const ['hello'], projectDir);
 
       expect(result.exitCode, equals(0), reason: result.toString());
       expect(result.stdout, hasLength(equals(5)));
@@ -43,7 +38,6 @@ void main() {
       expect(result.stdout[3], matches('hello'));
       expect(result.stdout[4], matches('✔ Build succeeded in .*'));
       expect(result.stderr, equals([]));
-      await _expectTempDartleExecutableToBeRemoved(projectDir);
     });
 
     test('can re-compile itself after changes', () async {
@@ -55,13 +49,10 @@ void main() {
       Future<void> hello(_) async => $helloTask
       ''';
 
-      final projectDir = await _createTestProjectAndCompileDartlex(
+      final projectDir = await _createTestProject(
           'mini_project', helloDartle('print("hello");'));
-      final proc = Process.start(
-          p.join(projectDir.absolute.path, 'dartlex'), const ['hello'],
-          workingDirectory: projectDir.path);
 
-      final result = await startProcess(proc, 'dartlex');
+      final result = await _runDartle(const ['hello'], projectDir);
 
       expect(result.exitCode, equals(0), reason: result.toString());
       expect(result.stdout, hasLength(equals(5)));
@@ -76,27 +67,17 @@ void main() {
           mode: FileMode.writeOnly,
           flush: true);
 
-      final proc2 = Process.start(p.join(projectDir.absolute.path, 'dartlex'),
-          const ['-l', 'info', 'hello'],
-          workingDirectory: projectDir.path);
-      final result2 = await startProcess(proc2, 'dartlex');
+      final result2 = await _runDartle(const ['hello'], projectDir);
+
       expect(result2.exitCode, equals(0), reason: result2.stdout.toString());
       expect(result2.stdout, hasLength(equals(5)));
       expect(result2.stdout[3], equals('bye'));
       expect(result2.stderr, equals([]));
-      await _expectTempDartleExecutableToBeRemoved(projectDir);
     });
   });
 }
 
-Future<void> _expectTempDartleExecutableToBeRemoved(
-    Directory projectDir) async {
-  final tmpDartlex = File(p.join(projectDir.absolute.path, '~dartlex~'));
-  await _waitForOrTimeout(() async => !await tmpDartlex.exists(),
-      'tmpDartlex was not removed in time');
-}
-
-Future<Directory> _createTestProjectAndCompileDartlex(
+Future<Directory> _createTestProject(
     String testProject, String dartleScript) async {
   final dir = Directory(p.join('test', 'test_builds', testProject));
   await dir.create();
@@ -113,8 +94,14 @@ Future<Directory> _createTestProjectAndCompileDartlex(
   });
   final dartleFile = File(p.join(dir.path, 'dartle.dart'));
   await dartleFile.writeAsString(dartleScript, flush: true);
-  await createDartExe(dartleFile, File(p.join(dir.path, 'dartlex')));
   return dir;
+}
+
+Future<ProcessResult> _runDartle(List<String> args, Directory wrkDir) async {
+  final dartle = File('bin/dartle.dart').absolute.path;
+  return startProcess(
+      Process.start('dart', [dartle, ...args], workingDirectory: wrkDir.path),
+      'dartle');
 }
 
 Future<void> _waitForOrTimeout(Future<bool> Function() action, String error,

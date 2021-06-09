@@ -23,4 +23,3 @@ export 'src/std_stream_consumer.dart';
 export 'src/task.dart';
 export 'src/task_invocation.dart';
 export 'src/task_run.dart';
-export 'src/dartlex.dart';

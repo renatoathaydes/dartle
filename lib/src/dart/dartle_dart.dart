@@ -81,13 +81,13 @@ class DartleDart {
 
   /// The project's root directory.
   ///
-  /// By default, this directory is the same as the one where the dartle.dart
-  /// script is located, but you can change it via [DartConfig.rootDir].
+  /// By default, this directory is the working directory, but you can change
+  /// it via [DartConfig.rootDir].
   final String rootDir;
 
   DartleDart([DartConfig config = const DartConfig()])
       : config = config,
-        rootDir = config.rootDir ?? dirname(Platform.script.toFilePath()) {
+        rootDir = config.rootDir ?? Directory.current.path {
     final allDartFiles = dir(rootDir, fileFilter: dartFileFilter);
     final testDartFiles =
         dir(join(rootDir, 'test'), fileFilter: dartFileFilter);
