@@ -1,6 +1,6 @@
 import 'dart:io';
 
-import 'package:path/path.dart' show extension, join, dirname;
+import 'package:path/path.dart' show extension, join;
 
 import '../file_collection.dart';
 import '../helpers.dart';

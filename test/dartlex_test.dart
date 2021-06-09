@@ -24,19 +24,21 @@ void main() {
       final result = await _runDartle(const ['hello'], projectDir);
 
       expect(result.exitCode, equals(0), reason: result.toString());
-      expect(result.stdout, hasLength(equals(5)));
+      expect(result.stdout, hasLength(equals(6)));
       expect(result.stdout[0],
           matches('$infoLogPrefixRegex Detected changes in dartle.dart.*'));
-      expect(
-          result.stdout[1],
-          matches(
-              '$infoLogPrefixRegex Executing 1 task out of a total of 1 task.*'));
+      expect(result.stdout[1],
+          matches('$infoLogPrefixRegex Re-compiled dartle.dart in .*'));
       expect(
           result.stdout[2],
           matches(
+              '$infoLogPrefixRegex Executing 1 task out of a total of 1 task.*'));
+      expect(
+          result.stdout[3],
+          matches(
               '$logDateRegex - dartle\\[main \\d+\\] - INFO - Running task \'hello\''));
-      expect(result.stdout[3], matches('hello'));
-      expect(result.stdout[4], matches('✔ Build succeeded in .*'));
+      expect(result.stdout[4], matches('hello'));
+      expect(result.stdout[5], matches('✔ Build succeeded in .*'));
       expect(result.stderr, equals([]));
     });
 
@@ -55,8 +57,8 @@ void main() {
       final result = await _runDartle(const ['hello'], projectDir);
 
       expect(result.exitCode, equals(0), reason: result.toString());
-      expect(result.stdout, hasLength(equals(5)));
-      expect(result.stdout[3], equals('hello'));
+      expect(result.stdout, hasLength(equals(6)));
+      expect(result.stdout[4], equals('hello'));
       expect(result.stderr, equals([]));
 
       // some OS's like to keep file change time resolution in the seconds
@@ -70,8 +72,8 @@ void main() {
       final result2 = await _runDartle(const ['hello'], projectDir);
 
       expect(result2.exitCode, equals(0), reason: result2.stdout.toString());
-      expect(result2.stdout, hasLength(equals(5)));
-      expect(result2.stdout[3], equals('bye'));
+      expect(result2.stdout, hasLength(equals(6)));
+      expect(result2.stdout[4], equals('bye'));
       expect(result2.stderr, equals([]));
     });
   });
