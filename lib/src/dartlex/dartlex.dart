@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import '../_log.dart';
+import '../_utils.dart';
 import '../core.dart';
 import '../exec.dart';
 import '../file_collection.dart';
@@ -33,9 +34,13 @@ Future<void> runDartlex(List<String> args, {bool doNotExit = false}) async {
 
   if (await recompileCondition.shouldRun(compileDartlexInvocation)) {
     logger.info('Detected changes in dartle.dart or pubspec, '
-        'compiling project executable.');
+        'compiling Dartle executable.');
+    final stopWatch = Stopwatch()..start();
     final success = await _runTask(compileDartlexInvocation);
-    if (!success) {
+    stopWatch.stop();
+    if (success) {
+      logger.info('Re-compiled dartle.dart in ${elapsedTime(stopWatch)}');
+    } else {
       if (doNotExit) {
         throw Exception('Error running task ${compileTask.name}');
       } else {
