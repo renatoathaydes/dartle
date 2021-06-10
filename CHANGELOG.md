@@ -1,10 +1,19 @@
 ## Future release
 
 - forbid tasks from accessing IO resources not declared in inputs/outputs.
+- run task only after a certain period of time has passed.
+- task must run before/after another task without hard dependency.
+
+## 0.8.0
+
+- non-null-by-default release.
+- created dartle_dart library.
+- compile dartle.dart into executable automatically when running 'dartle' executable.
+- improved log messages.
 
 ## 0.6.1
 
-- better 'debug' log level message color
+- better 'debug' log level message color.
 
 ## 0.6.0
 

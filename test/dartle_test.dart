@@ -24,11 +24,11 @@ void main() {
     final outputFile = File('example/output.txt');
 
     // create a snapshot so we can run the build quickly, several times
-    File exampleDartleBuild;
+    var exampleDartleBuild = File('');
 
     setUpAll(() async {
       exampleDartleBuild =
-          (await createDartSnapshot(File('example/dartle.dart'))).absolute;
+          (await createDartExe(File('example/dartle.dart'))).absolute;
     });
     tearDownAll(() async {
       await deleteAll(FileCollection([outputFile, exampleDartleBuild]));
@@ -36,7 +36,7 @@ void main() {
 
     Future<ProcessResult> runExampleDartBuild(List<String> args) async {
       return startProcess(
-          runDartSnapshot(exampleDartleBuild,
+          runDartExe(exampleDartleBuild,
               args: args, workingDirectory: 'example'),
           'example dart build');
     }

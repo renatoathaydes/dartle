@@ -28,12 +28,11 @@ List<String> splitWords(String text) {
   return result;
 }
 
-String findMatchingByWords(String searchText, List<String> options) {
-  if (searchText == null || searchText.isEmpty) return null;
-  var result =
-      options.firstWhere((opt) => opt == searchText, orElse: () => null);
+String? findMatchingByWords(String searchText, List<String> options) {
+  if (searchText.isEmpty) return null;
+  var result = options.firstWhere((opt) => opt == searchText, orElse: () => '');
   // if there's an exact match, return it
-  if (result != null) return result;
+  if (result.isNotEmpty) return result;
 
   // no exact match found, try to find match by words after splitting the text
   final searchTerms = splitWords(searchText);
@@ -47,7 +46,7 @@ String findMatchingByWords(String searchText, List<String> options) {
       }
     }
     // if we get here, we have a match!
-    if (result == null) {
+    if (result.isEmpty) {
       // only match so far
       result = option;
     } else {
@@ -55,7 +54,7 @@ String findMatchingByWords(String searchText, List<String> options) {
       return null;
     }
   }
-  return result;
+  return result.isEmpty ? null : result;
 }
 
 String hash(String text) => sha1.convert(utf8.encode(text)).toString();
@@ -64,9 +63,9 @@ String elapsedTime(Stopwatch stopwatch) {
   final millis = stopwatch.elapsedMilliseconds;
   if (millis > 1000) {
     final secs = (millis * 1e-3).toStringAsPrecision(4);
-    return '${secs} seconds';
+    return '$secs seconds';
   } else {
-    return '${millis} ms';
+    return '$millis ms';
   }
 }
 

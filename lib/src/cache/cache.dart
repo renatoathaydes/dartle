@@ -10,8 +10,8 @@ import '../file_collection.dart';
 import '../helpers.dart';
 import '../task_invocation.dart';
 
-const _hashesDir = '$dartleDir/hashes';
-const _tasksDir = '$dartleDir/tasks';
+final _hashesDir = path.join(dartleDir, 'hashes');
+final _tasksDir = path.join(dartleDir, 'tasks');
 
 File _getCacheLocation(FileSystemEntity entity) {
   final locationHash = _locationHash(entity);
@@ -53,17 +53,17 @@ class DartleCache {
   /// Exclusions are given as the original files that may be already cached,
   /// not the actual cache files (whose paths are a implementation detail of
   /// this cache).
-  Future<void> clean({FileCollection exclusions = FileCollection.empty}) async {
-    final cacheExclusions = await _mapToCacheLocations(exclusions);
+  Future<void> clean({FileCollection? exclusions}) async {
+    final cacheExclusions =
+        await _mapToCacheLocations(exclusions ?? FileCollection.empty);
     logger.fine('Cleaning Dartle cache');
-    await deleteAll(
-        FileCollection([Directory(_hashesDir), Directory(_tasksDir)],
-            fileFilter: (file) async {
-              final doExclude = await cacheExclusions.includes(file);
-              if (doExclude) logger.fine('Keeping excluded file: ${file}');
-              return !doExclude;
-            },
-            dirFilter: (dir) async => !await cacheExclusions.includes(dir)));
+    await deleteAll(dirs([_hashesDir, _tasksDir],
+        fileFilter: (file) async {
+          final doExclude = await cacheExclusions.includes(file);
+          if (doExclude) logger.fine('Keeping excluded file: $file');
+          return !doExclude;
+        },
+        dirFilter: (dir) async => !await cacheExclusions.includes(dir)));
     init();
     logger.fine('Dartle cache has been cleaned.');
   }
@@ -94,8 +94,20 @@ class DartleCache {
 
   /// Cache the given task invocation.
   Future<void> cacheTaskInvocation(TaskInvocation invocation) async {
-    await File('$_tasksDir/${invocation.task.name}')
+    await File(path.join(_tasksDir, invocation.task.name))
         .writeAsString(invocation.args.toString());
+  }
+
+  /// Get the [DateTime] when this task was last invoked successfully.
+  ///
+  /// This time is only known if the [TaskInvocation] was previously cached via
+  /// [cacheTaskInvocation].
+  Future<DateTime?> getLatestInvocationTime(TaskInvocation invocation) async {
+    final file = File(path.join(_tasksDir, invocation.task.name));
+    if (await file.exists()) {
+      return await file.lastModified();
+    }
+    return null;
   }
 
   /// Check if the given task had been invoked with the same arguments before.
@@ -103,11 +115,20 @@ class DartleCache {
   /// Only successful task invocations are normally cached, hence this method
   /// will normally return `true` when the previous invocation of [Task] failed.
   Future<bool> hasTaskInvocationChanged(TaskInvocation invocation) async {
-    final taskFile = File('$_tasksDir/${invocation.task.name}');
+    final taskFile = File(path.join(_tasksDir, invocation.task.name));
     if (await taskFile.exists()) {
       final taskArgs = await taskFile.readAsString();
-      return invocation.args.toString() != taskArgs;
+      final isChanged = invocation.args.toString() != taskArgs;
+      if (isChanged) {
+        logger.fine('Task "${invocation.task.name}" invocation changed '
+            'because args were $taskArgs, but is now ${invocation.args}.');
+      } else {
+        logger.fine('Task "${invocation.task.name}" invocation has not '
+            'changed, args are $taskArgs');
+      }
+      return isChanged;
     } else {
+      logger.fine('Task "${invocation.task.name}" has not been executed yet');
       return true;
     }
   }
@@ -115,16 +136,17 @@ class DartleCache {
   /// Remove any previous invocations of a task with the given name
   /// from the cache.
   Future<void> removeTaskInvocation(String taskName) async {
-    await ignoreExceptions(() => File('$_tasksDir/${taskName}').delete());
+    final file = File(path.join(_tasksDir, taskName));
+    await ignoreExceptions(() => file.delete());
   }
 
-  Future<void> _cacheFile(File file, [File hashFile]) async {
+  Future<void> _cacheFile(File file, [File? hashFile]) async {
     final hf = hashFile ?? _getCacheLocation(file);
     logger.fine('Caching file ${file.path} at ${hf.path}');
     await hf.writeAsString(await _hashContents(file));
   }
 
-  Future<void> _cacheDir(Directory dir, [File hashFile]) async {
+  Future<void> _cacheDir(Directory dir, [File? hashFile]) async {
     final hf = hashFile ?? _getCacheLocation(dir);
     logger.fine('Caching directory: ${dir.path} at ${hf.path}');
     await hf.writeAsString(await _hashDirectChildren(dir));
@@ -167,7 +189,7 @@ class DartleCache {
     final hashFile = _getCacheLocation(file);
     var hashExists = await hashFile.exists();
     if (!await file.exists()) {
-      logger.fine('File ${file.path} does not exist '
+      logger.fine("File '${file.path}' does not exist "
           "${hashExists ? 'but was cached' : 'and was not known before'}");
       return hashExists;
     }
@@ -175,23 +197,24 @@ class DartleCache {
     if (hashExists) {
       if ((await file.lastModified())
           .isAfter((await hashFile.lastModified()))) {
-        logger.fine('Detected possibly stale cache for file ${file.path}, '
+        logger.fine("Detected possibly stale cache for file '${file.path}', "
             'checking file hash');
         final hash = await _hashContents(file);
         final previousHash = await hashFile.readAsString();
         if (hash == previousHash) {
-          logger.fine('File hash is still the same: ${file.path}');
+          logger.fine("File '${file.path}' hash is still the same: '$hash'");
           changed = false;
         } else {
-          logger.fine('File hash changed: ${file.path}');
+          logger.fine(() => "File '${file.path}' hash changed - "
+              "old hash='$previousHash', new hash='$hash'");
           changed = true;
         }
       } else {
-        // cache is fresh, it must be still good
+        logger.fine("File '${file.path}' hash is fresh.");
         changed = false;
       }
     } else {
-      logger.fine('Hash does not exist for file: ${file.path}');
+      logger.fine("Hash does not exist for file: '${file.path}'");
       changed = true;
     }
     return changed;
@@ -225,5 +248,5 @@ Future<String> _hashContents(File file) async =>
 Future<String> _hashDirectChildren(Directory dir) async {
   final children = await dir.list(recursive: false).map((c) => c.path).toList();
   children.sort();
-  return await hash(children.join(';'));
+  return hash(children.join(';'));
 }

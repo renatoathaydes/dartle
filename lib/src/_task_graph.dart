@@ -31,7 +31,7 @@ void showAll(List<ParallelTasks> executableTasks, Map<String, Task> taskMap,
   for (final task in taskList) {
     final desc = task.description.isEmpty ? '' : '\n      ${task.description}';
     final isDefault = defaultSet.contains(task.name) ? ' [default]' : '';
-    print('  * ${task.name}${isDefault}${desc}');
+    print('  * ${task.name}$isDefault$desc');
   }
 }
 
@@ -48,19 +48,24 @@ void showTaskGraph(List<ParallelTasks> executableTasks,
       final lastTask = ++i == tasks.length;
       final notSeenYet = seenTasks.add(task.name);
       if (notSeenYet || !topLevel) {
-        final branch =
-            topLevel ? '-' : lastTask ? '\\---' : firstTask ? '+---' : '|---';
+        final branch = topLevel
+            ? '-'
+            : lastTask
+                ? '\\---'
+                : firstTask
+                    ? '+---'
+                    : '|---';
         stdout.write('$indent$branch ${task.name}');
       }
       if (notSeenYet) {
         stdout.writeln();
         printTasks(
-            task.directDependencies.map((t) => taskMap[t]).toList()
+            task.directDependencies.map((t) => taskMap[t]!).toList()
               ..sort((t1, t2) => t1.name.compareTo(t2.name)),
             topLevel ? '  ' : indent + (lastTask ? '     ' : '|     '),
             false);
       } else if (!topLevel) {
-        stdout.writeln(task.dependsOn.isNotEmpty ? ' ...' : '');
+        stdout.writeln(task.dependencies.isNotEmpty ? ' ...' : '');
       }
     }
   }
@@ -79,7 +84,7 @@ void showExecutableTasks(List<ParallelTasks> executableTasks) {
 
     final rowCount =
         executableTasks.map((t) => t.invocations.length).fold(0, max);
-    final rows = List<List<String>>(rowCount);
+    final rows = List<List<String>>.filled(rowCount, const []);
     for (var r = 0; r < rowCount; r++) {
       final row = executableTasks.map(
           (t) => r < t.invocations.length ? t.invocations[r].task.name : '');
@@ -87,7 +92,7 @@ void showExecutableTasks(List<ParallelTasks> executableTasks) {
     }
 
     final cols = executableTasks.length;
-    final colWidths = List<int>(cols);
+    final colWidths = List<int>.filled(cols, 0);
 
     for (var col = 0; col < cols; col++) {
       var width = 0;

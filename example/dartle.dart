@@ -1,5 +1,4 @@
 import 'dart:convert';
-import 'dart:io';
 
 import 'package:dartle/dartle.dart';
 
@@ -27,8 +26,9 @@ void hello(List<String> args) =>
 void bye(_) => print('Bye!');
 
 Future<void> encodeBase64(_) async {
-  final input = await File('input.txt').readAsBytes();
-  await File('output.txt').writeAsString(base64.encode(input));
+  final input = await (await file('input.txt').files.first).readAsBytes();
+  await (await file('output.txt').files.first)
+      .writeAsString(base64.encode(input));
 }
 
 Future<void> clean(_) => deleteOutputs(allTasks);

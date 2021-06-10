@@ -3,7 +3,6 @@ import 'dart:io';
 import 'dart:math';
 
 import 'package:logging/logging.dart' as log;
-import 'package:meta/meta.dart';
 
 import '_log.dart';
 import '_task_graph.dart';
@@ -23,20 +22,54 @@ import 'task_run.dart';
 /// This method will normally not return as Dartle will exit with the
 /// appropriate code. To avoid that, set [doNotExit] to [true].
 Future<void> run(List<String> args,
-    {@required Set<Task> tasks,
+    {required Set<Task> tasks,
     Set<Task> defaultTasks = const {},
     bool doNotExit = false}) async {
-  final stopWatch = Stopwatch()..start();
-  var options = const Options();
+  await abortIfNotDartleProject();
 
-  try {
-    options = parseOptions(args);
+  await runSafely(args, doNotExit, (stopWatch, options) async {
+    if (options.showHelp) {
+      return print(dartleUsage);
+    }
+    if (options.showVersion) {
+      return print('Dartle version $dartleVersion');
+    }
+
+    activateLogging(options.logLevel, colorfulLog: options.colorfulLog);
+
     await _runWithoutErrorHandling(args, tasks, defaultTasks, options);
     stopWatch.stop();
     if (!options.showInfoOnly && options.logBuildTime) {
       logger.info(ColoredLogMessage(
           '✔ Build succeeded in ${elapsedTime(stopWatch)}', LogColor.green));
     }
+  });
+}
+
+Future<void> abortIfNotDartleProject() async {
+  final dartleFile = File('dartle.dart');
+  if (await dartleFile.exists()) {
+    logger.fine('Dartle file exists.');
+  } else {
+    logger.severe('dartle.dart file does not exist. Aborting!');
+    exit(4);
+  }
+}
+
+/// Run the given action in a safe try/catch block, allowing Dartle to handle
+/// any errors by logging the appropriate build failure.
+///
+/// If [doNotExit] is `true`, then this method will not call [exit] on build
+/// completion, re-throwing Exceptions. Otherwise, the process will exit with
+/// 0 on success, or the appropriate error code on error.
+Future<void> runSafely(List<String> args, bool doNotExit,
+    FutureOr<Object?> Function(Stopwatch, Options) action) async {
+  final stopWatch = Stopwatch()..start();
+  var options = const Options();
+
+  try {
+    options = parseOptions(args);
+    await action(stopWatch, options);
     if (!doNotExit) exit(0);
   } on DartleException catch (e) {
     activateLogging(log.Level.SEVERE);
@@ -45,7 +78,11 @@ Future<void> run(List<String> args,
       logger.severe(ColoredLogMessage(
           '✗ Build failed in ${elapsedTime(stopWatch)}', LogColor.red));
     }
-    if (!doNotExit) exit(e.exitCode);
+    if (doNotExit) {
+      rethrow;
+    } else {
+      exit(e.exitCode);
+    }
   } on Exception catch (e) {
     activateLogging(log.Level.SEVERE);
     logger.severe('Unexpected error: $e');
@@ -53,22 +90,18 @@ Future<void> run(List<String> args,
       logger.severe(ColoredLogMessage(
           '✗ Build failed in ${elapsedTime(stopWatch)}', LogColor.red));
     }
-    if (!doNotExit) exit(22);
+    if (doNotExit) {
+      rethrow;
+    } else {
+      exit(22);
+    }
   }
 }
 
 Future<void> _runWithoutErrorHandling(List<String> args, Set<Task> tasks,
     Set<Task> defaultTasks, Options options) async {
-  if (options.showHelp) {
-    return print(dartleUsage);
-  }
-  if (options.showVersion) {
-    return print('Dartle version ${dartleVersion}');
-  }
-
-  activateLogging(options.logLevel, colorfulLog: options.colorfulLog);
-  logger.fine(() => 'Dartle version: ${dartleVersion}');
-  logger.fine(() => 'Options: ${options}');
+  logger.fine(() => 'Dartle version: $dartleVersion');
+  logger.fine(() => 'Options: $options');
 
   if (options.resetCache) {
     await DartleCache.instance.clean();
@@ -119,10 +152,9 @@ Future<void> _runAll(
 
   final results =
       await runTasks(executableTasks, parallelize: options.parallelizeTasks);
-  final failures = results.where((r) => r.isFailure).toList(growable: false);
   final postRunFailures = await runTasksPostRun(results);
 
-  allErrors.addAll(failures.map((f) => f.error));
+  allErrors.addAll(results.map((f) => f.error).whereType<Exception>());
   allErrors.addAll(postRunFailures);
 
   if (allErrors.isNotEmpty) {

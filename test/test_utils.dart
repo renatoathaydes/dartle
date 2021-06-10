@@ -31,4 +31,9 @@ class ProcessResult {
   List<String> get stdout => _stdout.lines;
 
   List<String> get stderr => _stderr.lines;
+
+  @override
+  String toString() => 'ProcessResult{stdout: $stdout, '
+      'stderr: $stderr, '
+      'exitCode: $exitCode}';
 }

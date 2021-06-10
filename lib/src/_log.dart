@@ -1,3 +1,4 @@
+import 'dart:io' show pid;
 import 'dart:isolate';
 
 import 'package:ansicolor/ansicolor.dart' as colors;
@@ -11,7 +12,7 @@ final log.Logger logger = log.Logger('dartle');
 final _pen = colors.AnsiPen();
 
 class _Log {
-  final LogColor color;
+  final LogColor? color;
 
   const _Log(this.color);
 
@@ -28,7 +29,7 @@ class ColoredLogMessage {
   const ColoredLogMessage(this.message, this.color);
 
   @override
-  String toString() => message?.toString() ?? 'null';
+  String toString() => message.toString();
 }
 
 enum LogLevel { debug, info, warn, error }
@@ -54,7 +55,7 @@ final _logByLevel = <log.Level, _Log>{
   log.Level.SEVERE: const _Log(LogColor.red),
 };
 
-void _colorized(String message, [LogColor color]) {
+void _colorized(String message, [LogColor? color]) {
   if (color == null) {
     return print(message);
   }
@@ -96,8 +97,9 @@ bool activateLogging(log.Level level, {bool colorfulLog = true}) {
     log.Logger.root.level = level;
     log.Logger.root.onRecord.listen((log.LogRecord rec) {
       _Log log;
-      String msg;
+      String? msg;
       if (colorfulLog) {
+        colors.ansiColorDisabled = false;
         final obj = rec.object;
         if (obj is ColoredLogMessage) {
           log = _Log(obj.color);
@@ -112,7 +114,8 @@ bool activateLogging(log.Level level, {bool colorfulLog = true}) {
         }
       }
 
-      msg ??= '${rec.time} - ${rec.loggerName}[${Isolate.current.debugName}] - '
+      msg ??=
+          '${rec.time} - ${rec.loggerName}[${Isolate.current.debugName} $pid] - '
           '${_nameByLevel[rec.level] ?? rec.level} - ${rec.message}';
 
       log(msg);

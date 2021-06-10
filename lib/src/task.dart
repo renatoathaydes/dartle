@@ -1,5 +1,4 @@
 import 'package:collection/collection.dart';
-import 'package:meta/meta.dart';
 
 import 'error.dart';
 import 'run_condition.dart';
@@ -23,7 +22,7 @@ _NameAction _resolveNameAction(Function(List<String>) action, String name) {
     final match =
         _functionNamePatttern.firstMatch(funName.substring(firstQuote + 1));
     if (match != null) {
-      var inferredName = match.group(0);
+      final inferredName = match.group(0) ?? '';
       // likely generated from JS lambda if it looks like 'main___closure',
       // do not accept it
       if (!inferredName.contains('___')) {
@@ -47,19 +46,28 @@ class Task {
   final String description;
   final RunCondition runCondition;
   final ArgsValidator argsValidator;
-  final Set<String> dependsOn;
+  Set<String> _dependsOn;
   final _NameAction _nameAction;
 
   Task(
     Function(List<String>) action, {
     this.description = '',
     String name = '',
-    this.dependsOn = const {},
+    Set<String> dependsOn = const {},
     this.runCondition = const AlwaysRun(),
     this.argsValidator = const DoNotAcceptArgs(),
-  }) : _nameAction = _resolveNameAction(action, name ?? '');
+  })  : _nameAction = _resolveNameAction(action, name),
+        _dependsOn = dependsOn;
 
+  /// The name of this task.
   String get name => _nameAction.name;
+
+  /// Add dependencies on other tasks.
+  ///
+  /// This method must be called before Dartle starts running a build.
+  void dependsOn(Set<String> taskNames) {
+    _dependsOn = {...taskNames, ..._dependsOn};
+  }
 
   /// The action this task performs.
   ///
@@ -88,10 +96,10 @@ class Task {
       other is Task &&
           runtimeType == other.runtimeType &&
           name == other.name &&
-          const SetEquality().equals(dependsOn, other.dependsOn);
+          const SetEquality().equals(_dependsOn, other._dependsOn);
 
   @override
-  int get hashCode => name.hashCode ^ dependsOn.hashCode;
+  int get hashCode => name.hashCode ^ _dependsOn.hashCode;
 }
 
 /// A [Task] including its transitive dependencies.
@@ -124,10 +132,10 @@ class TaskWithDeps implements Task, Comparable<TaskWithDeps> {
 
   /// All transitive dependencies of this task.
   @override
-  Set<String> get dependsOn => _allDeps;
+  Set<String> get _dependsOn => _allDeps;
 
   /// The direct dependencies of this task.
-  Set<String> get directDependencies => _task.dependsOn;
+  Set<String> get directDependencies => _task._dependsOn;
 
   @override
   String get description => _task.description;
@@ -140,15 +148,15 @@ class TaskWithDeps implements Task, Comparable<TaskWithDeps> {
 
   @override
   String toString() {
-    return 'TaskWithDeps{task: $_task, dependencies: $dependsOn}';
+    return 'TaskWithDeps{task: $_task, dependencies: $_dependsOn}';
   }
 
   @override
   int compareTo(TaskWithDeps other) {
     const thisBeforeOther = -1;
     const thisAfterOther = 1;
-    if (dependsOn.contains(other.name)) return thisAfterOther;
-    if (other.dependsOn.contains(name)) return thisBeforeOther;
+    if (_dependsOn.contains(other.name)) return thisAfterOther;
+    if (other._dependsOn.contains(name)) return thisBeforeOther;
     return 0;
   }
 
@@ -162,6 +170,18 @@ class TaskWithDeps implements Task, Comparable<TaskWithDeps> {
 
   @override
   int get hashCode => _task.hashCode ^ dependencies.hashCode;
+
+  @override
+  set _dependsOn(Set<String> __dependsOn) {
+    throw UnsupportedError(
+        'cannot modify dependencies of task after build is running');
+  }
+
+  @override
+  void dependsOn(Set<String> taskNames) {
+    throw UnsupportedError(
+        'cannot modify dependencies of task after build is running');
+  }
 }
 
 class ParallelTasks {
@@ -177,8 +197,8 @@ class ParallelTasks {
   /// the other tasks.
   bool canInclude(TaskWithDeps task) {
     for (final t in invocations.map((i) => i.task)) {
-      if (t.dependsOn.contains(task.name)) return false;
-      if (task.dependsOn.contains(t.name)) return false;
+      if (t._dependsOn.contains(task.name)) return false;
+      if (task._dependsOn.contains(t.name)) return false;
     }
     return true;
   }
@@ -225,7 +245,7 @@ class ArgsCount with ArgsValidator {
       : _min = count,
         _max = count;
 
-  const ArgsCount.range({@required int min, @required int max})
+  const ArgsCount.range({required int min, required int max})
       : _min = min,
         _max = max;
 
@@ -279,7 +299,7 @@ void _collectTransitiveDependencies(
   visited.add(taskName);
 
   final dependencies = <TaskWithDeps>[];
-  for (final dep in task.dependsOn) {
+  for (final dep in task._dependsOn) {
     _collectTransitiveDependencies(
         dep, tasksByName, result, visited, ind + '  ');
     final depTask = result[dep];
