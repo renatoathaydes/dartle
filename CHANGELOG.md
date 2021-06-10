@@ -4,12 +4,12 @@
 - run task only after a certain period of time has passed.
 - task must run before/after another task without hard dependency.
 
-## 1.0.0
+## 0.8.0
 
-- Non-null-by-default stable release.
-- Created dartle_dart library.
-- Compile dartle.dart into dartlex executable automatically.
-- Automatically re-compile dartlex on script changes.
+- non-null-by-default release.
+- created dartle_dart library.
+- compile dartle.dart into executable automatically when running 'dartle' executable.
+- improved log messages.
 
 ## 0.6.1
 
