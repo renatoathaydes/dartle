@@ -17,7 +17,7 @@ class _Log {
   const _Log(this.color);
 
   void call(String message) {
-    _colorized(message, color);
+    _printColorized(message, color);
   }
 }
 
@@ -55,10 +55,7 @@ final _logByLevel = <log.Level, _Log>{
   log.Level.SEVERE: const _Log(LogColor.red),
 };
 
-void _colorized(String message, [LogColor? color]) {
-  if (color == null) {
-    return print(message);
-  }
+String _colorize(String message, LogColor color) {
   switch (color) {
     case LogColor.red:
       _pen.red();
@@ -77,10 +74,26 @@ void _colorized(String message, [LogColor? color]) {
       break;
   }
   try {
-    print(_pen(message));
+    return _pen(message);
   } finally {
     _pen.reset();
   }
+}
+
+void _printColorized(String message, [LogColor? color]) {
+  if (color == null) {
+    return print(message);
+  }
+  print(_colorize(message, color));
+}
+
+/// Returns the given [message] with a [color] unless dartle is executed with
+/// the no-colorful-log option, in which case the message is returned unchanged.
+String colorize(String message, LogColor color) {
+  if (colors.ansiColorDisabled) {
+    return message;
+  }
+  return _colorize(message, color);
 }
 
 bool _loggingActivated = false;

@@ -1,7 +1,7 @@
 import 'dart:io';
 
 import 'package:dartle/dartle.dart';
-import 'package:io/ansi.dart' as a;
+import 'package:dartle/src/_log.dart';
 import 'package:test_report_parser/test_report_parser.dart';
 
 /// The type of outputs to use for tests.
@@ -176,27 +176,31 @@ class JsonReporter {
     _ansi.cleanLines(_threads.length + 1);
     _write('Tests finished in  ${elapsedTime(_stopWatch)}\n${_status()}\n');
     if (_failureCount > 0) {
-      _write(a.red.wrap('Failed Tests:\n'
-              '${_failedTests.map((e) => '  * ${e.description}').join('\n')}\n') ??
-          '');
+      _write(colorize(
+          'Failed Tests:\n'
+          '${_failedTests.map((e) => '  * ${e.description}').join('\n')}\n',
+          LogColor.red));
       if (_errorLines.isNotEmpty) {
-        _write(a.red.wrap('====== stderr ======\n'
-                '${_errorLines.join('\n')}\n'
-                '====================\n') ??
-            '');
+        _write(colorize(
+            '====== stderr ======\n'
+            '${_errorLines.join('\n')}\n'
+            '====================\n',
+            LogColor.red));
       }
     }
   }
 
   String? _status() {
     final color = _failureCount > 0
-        ? a.red
+        ? LogColor.red
         : _skippedCount > 0
-            ? a.yellow
-            : a.green;
-    return color.wrap('${_successCount.pad(6)} OK, '
+            ? LogColor.yellow
+            : LogColor.green;
+    return colorize(
+        '${_successCount.pad(6)} OK, '
         '${_failureCount.pad(6)} FAILED, '
-        '${_skippedCount.pad(6)} SKIPPED');
+        '${_skippedCount.pad(6)} SKIPPED',
+        color);
   }
 }
 
