@@ -39,7 +39,7 @@ Future<Process> runDartExe(File dartExec,
             'not exist: ${dartExec.path}');
   }
   final proc = Process.start(dartExec.absolute.path, args,
-      workingDirectory: workingDirectory, runInShell: true);
+      workingDirectory: workingDirectory);
 
   logger.fine('Running compiled Dartle build: ${dartExec.path}');
 
