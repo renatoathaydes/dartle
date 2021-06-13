@@ -421,6 +421,13 @@ packages:
       url: "https://pub.dartlang.org"
     source: hosted
     version: "0.3.19"
+  test_report_parser:
+    dependency: "direct main"
+    description:
+      name: test_report_parser
+      url: "https://pub.dartlang.org"
+    source: hosted
+    version: "1.0.0"
   timing:
     dependency: transitive
     description:
