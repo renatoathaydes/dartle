@@ -32,7 +32,7 @@ void main() {
       expect(
           proc.stdout[0],
           contains('Executing 9 tasks out of a total of 15 tasks:'
-              ' 3 tasks (default), 6 due to dependencies'));
+              ' 3 tasks (default), 6 dependencies'));
       expect(proc.stdout[1], contains("Running task 'd'"));
       expect(proc.stdout[2], contains("Running task 'e'"));
       expect(proc.stdout[3], contains("Running task 'm'"));
@@ -53,7 +53,7 @@ void main() {
       expect(
           proc.stdout[0],
           contains('Executing 1 task out of a total of 15 tasks:'
-              ' 1 task selected, 0 due to dependencies'));
+              ' 1 task selected'));
       expect(proc.stdout[1], contains("Running task 'l'"));
       expect(proc.stdout[2], startsWith('\x1B[38;5;2m✔ Build succeeded in '));
       // expect(proc.stdout[2], startsWith('\x1B[38;5;2m✔ Build succeeded in '));
@@ -68,7 +68,7 @@ void main() {
       expect(
           proc.stdout[0],
           contains('Executing 1 task out of a total of 15 tasks:'
-              ' 1 task selected, 0 due to dependencies'));
+              ' 1 task selected'));
       expect(proc.stdout[1], contains("Running task 'd'"));
       expect(proc.stdout[2], startsWith('✔ Build succeeded in '));
       expect(proc.stdout[2], endsWith(' ms'));

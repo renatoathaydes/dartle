@@ -123,8 +123,9 @@ Future<void> _runWithoutErrorHandling(List<String> args, Set<Task> tasks,
     showTasksInfo(executableTasks, taskMap, defaultTasks, options);
   } else {
     if (logger.isLoggable(log.Level.INFO)) {
-      String taskPhrase(int count) =>
-          count == 1 ? '$count task' : '$count tasks';
+      String taskPhrase(int count,
+              [String singular = 'task', String plural = 'tasks']) =>
+          count == 1 ? '$count $singular' : '$count $plural';
       final totalTasksPhrase = taskPhrase(tasks.length);
       final requestedTasksPhrase = directTasksCount == 0
           ? taskPhrase(defaultTasks.length) + ' (default)'
@@ -136,10 +137,18 @@ Future<void> _runWithoutErrorHandling(List<String> args, Set<Task> tasks,
           0,
           executableTasksCount -
               (directTasksCount == 0 ? defaultTasks.length : directTasksCount));
+      final dependenciesPhrase = dependentTasksCount == 0
+          ? ''
+          : ', ' +
+              taskPhrase(dependentTasksCount, 'dependency', 'dependencies');
+      final upToDateCount =
+          directTasksCount + dependentTasksCount - executableTasksCount;
+      final upToDatePhrase =
+          upToDateCount > 0 ? ', $upToDateCount up-to-date' : '';
 
       logger.info('Executing $executableTasksPhrase out of a total of '
-          '$totalTasksPhrase: $requestedTasksPhrase, '
-          '$dependentTasksCount due to dependencies');
+          '$totalTasksPhrase: $requestedTasksPhrase'
+          '$dependenciesPhrase$upToDatePhrase');
     }
 
     await _runAll(executableTasks, options);

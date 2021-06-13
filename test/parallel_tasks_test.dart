@@ -31,7 +31,7 @@ void main() {
       expect(
           proc.stdout[0],
           contains('Executing 3 tasks out of a total of 4 tasks:'
-              ' 3 tasks selected, 0 due to dependencies'));
+              ' 3 tasks selected'));
       final tasksOutput = proc.stdout.skip(1).join('\n');
       expect(tasksOutput, contains("Running task 'sayHi'"));
       expect(tasksOutput, contains("Running task 'sayHo'"));
@@ -50,7 +50,7 @@ void main() {
       expect(
           proc.stdout[0],
           contains('Executing 4 tasks out of a total of 4 tasks:'
-              ' 1 task selected, 3 due to dependencies'));
+              ' 1 task selected, 3 dependencies'));
       var tasksOutput = proc.stdout.skip(1).join();
       expect(tasksOutput, contains('Env={}'));
     });
@@ -62,7 +62,7 @@ void main() {
       expect(
           proc.stdout[0],
           contains('Executing 4 tasks out of a total of 4 tasks:'
-              ' 1 task selected, 3 due to dependencies'));
+              ' 1 task selected, 3 dependencies'));
       var tasksOutput = proc.stdout.skip(1).join();
       final pattern = RegExp('Env={(.*)}');
       final match = pattern.firstMatch(tasksOutput);
