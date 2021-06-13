@@ -4,6 +4,7 @@ import 'package:clock/clock.dart';
 import 'package:meta/meta.dart';
 
 import '_log.dart';
+import '_utils.dart';
 import 'cache/cache.dart';
 import 'error.dart';
 import 'file_collection.dart';
@@ -166,5 +167,67 @@ class RunAtMostEvery with RunCondition {
       return true;
     }
     return clock.now().isAfter(lastTime.add(period));
+  }
+}
+
+/// Base mixin for a [RunCondition] that combines other [RunCondition]s.
+mixin RunConditionCombiner implements RunCondition {
+  abstract final List<RunCondition> conditions;
+
+  @override
+  FutureOr<void> postRun(TaskResult result) async {
+    final errors = [];
+    for (var cond in conditions) {
+      try {
+        await cond.postRun(result);
+      } catch (e) {
+        errors.add(e);
+      }
+    }
+    if (errors.isNotEmpty) {
+      throw MultipleExceptions(errors);
+    }
+  }
+}
+
+/// A [RunCondition] that runs if any of its conditions runs.
+class OrCondition with RunConditionCombiner {
+  @override
+  final List<RunCondition> conditions;
+
+  OrCondition(this.conditions) {
+    if (conditions.length < 2) {
+      throw DartleException(
+          message: 'OrCondition requires at least two conditions');
+    }
+  }
+
+  @override
+  FutureOr<bool> shouldRun(TaskInvocation invocation) async {
+    for (var cond in conditions) {
+      if (await cond.shouldRun(invocation)) return true;
+    }
+    return false;
+  }
+}
+
+/// A [RunCondition] that runs if all of its conditions runs.
+class AndCondition with RunConditionCombiner {
+  @override
+  final List<RunCondition> conditions;
+
+  AndCondition(this.conditions) {
+    if (conditions.length < 2) {
+      throw DartleException(
+          message: 'AndCondition requires at least two conditions');
+    }
+  }
+
+  @override
+  FutureOr<bool> shouldRun(TaskInvocation invocation) async {
+    for (var cond in conditions) {
+      if (!await cond.shouldRun(invocation)) return false;
+    }
+    return true;
   }
 }
