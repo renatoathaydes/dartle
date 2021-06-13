@@ -28,18 +28,20 @@ Future<void> runTests(
     case DartTestOutput.dartleReporter:
       final jsonReporter = JsonReporter();
       code = await exec(
-          Process.start('dart', ['test', '--reporter', 'json', ...platformArgs],
-              runInShell: true),
+          Process.start(
+              'dart', ['test', '--reporter', 'json', ...platformArgs]),
           name: 'Dart Tests',
           onStdoutLine: jsonReporter,
           onStderrLine: jsonReporter.error);
       jsonReporter.close();
       break;
     case DartTestOutput.dart:
-      code = await execProc(Process.start('dart', ['test', ...platformArgs]),
-          name: 'Dart Tests',
-          successMode: StreamRedirectMode.stdout_stderr,
-          errorMode: StreamRedirectMode.stdout_stderr);
+      final proc = await Process.start('dart', ['test', ...platformArgs]);
+      final stdoutFuture = stdout.addStream(proc.stdout);
+      final stderrFuture = stderr.addStream(proc.stderr);
+      code = await proc.exitCode;
+      await stdoutFuture;
+      await stderrFuture;
       break;
     case DartTestOutput.printOnFailure:
       code = await execProc(Process.start('dart', ['test', ...platformArgs]),
@@ -80,6 +82,7 @@ class _TestData {
   }
 }
 
+/// Reference: https://gist.github.com/fnky/458719343aabd01cfb17a3a4f7296797
 class Ansi {
   static const clearLine = '\x1b[2K\r';
   static const moveUp = '\x1b[1A';
