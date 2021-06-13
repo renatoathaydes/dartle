@@ -5,7 +5,6 @@ import '../_utils.dart';
 import '../core.dart';
 import '../exec.dart';
 import '../file_collection.dart';
-import '../helpers.dart';
 import '../run_condition.dart';
 import '../task.dart';
 import '../task_invocation.dart';
@@ -50,8 +49,14 @@ Future<void> runDartlex(List<String> args, {bool doNotExit = false}) async {
   }
 
   logger.fine('Running cached dartlex...');
-  final exitCode =
-      await exec(runDartExe(_cachedDartlex, args: args), name: 'dartle build');
+  final proc = await runDartExe(_cachedDartlex, args: args);
+  final stdoutFuture = stdout.addStream(proc.stdout);
+  final stderrFuture = stderr.addStream(proc.stderr);
+
+  final exitCode = await proc.exitCode;
+
+  await stdoutFuture;
+  await stderrFuture;
 
   if (doNotExit) {
     if (exitCode != 0) {
