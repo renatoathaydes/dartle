@@ -11,7 +11,6 @@ import 'cache/cache.dart';
 import 'dartle_version.g.dart';
 import 'error.dart';
 import 'options.dart';
-import 'run_condition.dart';
 import 'task.dart';
 import 'task_invocation.dart';
 import 'task_run.dart';
@@ -183,64 +182,90 @@ Future<List<ParallelTasks>> _getExecutableTasks(
   }
   final invocations = parseInvocation(tasksInvocation, taskMap, options);
 
-  final mustRun = <TaskInvocation>[];
-  for (final invocation in invocations) {
-    final task = invocation.task;
-    if (options.forceTasks) {
-      logger.fine("Will force execution of task '${task.name}'");
-      mustRun.add(invocation);
-    } else if (await task.runCondition.shouldRun(invocation)) {
-      mustRun.add(invocation);
-    } else {
-      if (options.showTasks) {
-        logger.info("Task '${task.name}' is up-to-date");
-      } else {
-        logger.fine("Skipping task '${task.name}' as it is up-to-date");
-      }
-    }
-  }
-  return await getInOrderOfExecution(mustRun);
+  return await getInOrderOfExecution(
+      invocations, options.forceTasks, options.showTasks);
 }
 
 /// Get the tasks in the order that they should be executed, taking into account
-/// their dependencies.
+/// their dependencies and whether they need to run or not.
 ///
-/// All the tasks provided included in [invocations] will be returned, as
-/// the [Task]'s [RunCondition]s are not checked. However, their dependencies'
-/// [RunCondition] will be checked, and only those that should run will be
-/// included in the returned list.
+/// If [forceTasks] is [true], then the tasks included in [invocations] will be
+/// returned unconditionally, otherwise some of them may not be returned if
+/// they are up-to-date.
+///
+/// Invocation task's dependencies will be returned if they are not up-to-date.
+/// Notice that when a task is out-of-date, all of its dependents also become
+/// out-of-date.
 Future<List<ParallelTasks>> getInOrderOfExecution(
-    List<TaskInvocation> invocations) async {
+    List<TaskInvocation> invocations,
+    [bool forceTasks = false,
+    bool showTasks = false]) async {
   // first of all, re-order tasks so that dependencies are in order
   invocations.sort((a, b) => a.task.compareTo(b.task));
 
   final result = <ParallelTasks>[];
+
+  void addTaskOnce(_TaskWithStatus taskWithStatus) {
+    final invocation =
+        taskWithStatus.invocation ?? TaskInvocation(taskWithStatus.task);
+    final canRunInPreviousGroup =
+        result.isNotEmpty && result.last.canInclude(invocation.task);
+    if (canRunInPreviousGroup) {
+      result.last.invocations.add(invocation);
+    } else {
+      result.add(ParallelTasks()..invocations.add(invocation));
+    }
+  }
+
+  final taskStatuses = <String, _TaskWithStatus>{};
   final seenTasks = <String>{};
 
-  Future<void> addTaskOnce(
-      TaskInvocation invocation, bool checkShouldRun) async {
-    final task = invocation.task;
-    if (seenTasks.add(task.name)) {
-      if (!checkShouldRun || await task.runCondition.shouldRun(invocation)) {
-        final canRunInPreviousGroup =
-            result.isNotEmpty && result.last.canInclude(task);
-        if (canRunInPreviousGroup) {
-          result.last.invocations.add(invocation);
-        } else {
-          result.add(ParallelTasks()..invocations.add(invocation));
-        }
+  for (final inv in invocations) {
+    var anyDepMustRun = false;
+    for (final dep in inv.task.dependencies) {
+      if (seenTasks.add(dep.name)) {
+        final depDepsMustRun = _anyDepMustRun(dep, taskStatuses);
+        final mustRun = depDepsMustRun || await dep.runCondition.shouldRun(inv);
+        _logTaskStatus("'${dep.name}' (a dependency of '${inv.name}')",
+            anyDepMustRun, mustRun, showTasks);
+        anyDepMustRun |= mustRun;
+        final taskWithStatus = _TaskWithStatus(dep, !mustRun, null);
+        taskStatuses[dep.name] = taskWithStatus;
+        addTaskOnce(taskWithStatus);
       }
+    }
+    if (seenTasks.add(inv.name)) {
+      final mustRun =
+          anyDepMustRun || await inv.task.runCondition.shouldRun(inv);
+      _logTaskStatus("'${inv.name}'", anyDepMustRun, mustRun, showTasks);
+      final taskWithStatus = _TaskWithStatus(inv.task, !mustRun, inv);
+      taskStatuses[inv.name] = taskWithStatus;
+      addTaskOnce(taskWithStatus);
     }
   }
 
-  // de-duplicate tasks, adding their dependencies first
-  for (final invocation in invocations) {
-    for (final dep in invocation.task.dependencies) {
-      await addTaskOnce(TaskInvocation(dep), true);
-    }
-    await addTaskOnce(invocation, false);
-  }
   return result;
+}
+
+bool _anyDepMustRun(TaskWithDeps task, Map<String, _TaskWithStatus> statuses) {
+  return task.dependencies
+      .any((element) => statuses[element.name]?.mustRun ?? false);
+}
+
+void _logTaskStatus(
+    String name, bool anyDepMustRun, bool mustRun, bool showTasks) {
+  final logLevel = showTasks ? log.Level.INFO : log.Level.FINE;
+  if (logger.isLoggable(logLevel)) {
+    final reason = mustRun
+        ? anyDepMustRun
+            ? 'at least one of its dependencies is out-of-date'
+            : 'it is out-of-date'
+        : 'it is up-to-date';
+    logger.log(
+        logLevel,
+        'Task $name will${mustRun ? '' : ' not'} '
+        'run because $reason');
+  }
 }
 
 void _throwAggregateErrors(List<Exception> errors) {
@@ -252,6 +277,7 @@ void _throwAggregateErrors(List<Exception> errors) {
     exitCode = dartleException.exitCode;
     break;
   }
+  // TODO use MultipleExceptions and move this code to exception handler
   final messageBuilder = StringBuffer('Several errors have occurred:\n');
   for (final error in errors) {
     String errorMessage;
@@ -265,4 +291,14 @@ void _throwAggregateErrors(List<Exception> errors) {
       ..writeln(errorMessage);
   }
   throw DartleException(message: messageBuilder.toString(), exitCode: exitCode);
+}
+
+class _TaskWithStatus {
+  TaskWithDeps task;
+  bool isUpToDate;
+  TaskInvocation? invocation;
+
+  _TaskWithStatus(this.task, this.isUpToDate, this.invocation);
+
+  bool get mustRun => !isUpToDate;
 }
