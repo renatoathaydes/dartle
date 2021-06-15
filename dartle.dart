@@ -10,7 +10,7 @@ final libDirDartFiles =
     dir(join(dartleDart.rootDir, 'lib'), fileFilter: dartFileFilter);
 
 void main(List<String> args) {
-  dartleDart.analyzeCode.dependsOn({'generateDartSources'});
+  dartleDart.analyzeCode.dependsOn({'generateDartSources', 'checkImports'});
 
   run(args, tasks: {
     DartleImportChecker(libDirDartFiles).task,
