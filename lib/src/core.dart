@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'dart:io';
-import 'dart:math';
 
 import 'package:logging/logging.dart' as log;
 
@@ -126,29 +125,33 @@ Future<void> _runWithoutErrorHandling(List<String> args, Set<Task> tasks,
       String taskPhrase(int count,
               [String singular = 'task', String plural = 'tasks']) =>
           count == 1 ? '$count $singular' : '$count $plural';
-      final totalTasksPhrase = taskPhrase(tasks.length);
+
+      // collect counts
+      final totalTasksCount = tasks.length;
+      final runnableTasksCount = executableTasks
+          .map((t) => t.mustRunCount)
+          .fold<int>(0, (a, b) => a + b);
+      final dependentTasksCount =
+          executableTasks.map((t) => t.length).fold<int>(0, (a, b) => a + b) -
+              tasksInvocation.length;
+      final upToDateCount = executableTasks
+          .map((t) => t.upToDateCount)
+          .fold<int>(0, (a, b) => a + b);
+
+      // build log phrases
+      final totalTasksPhrase = taskPhrase(totalTasksCount);
       final requestedTasksPhrase = directTasksCount == 0
           ? taskPhrase(defaultTasks.length) + ' (default)'
           : taskPhrase(directTasksCount) + ' selected';
-      final executableTasksCount = executableTasks
-          .map((t) => t.mustRunCount)
-          .fold<int>(0, (a, b) => a + b);
-      final executableTasksPhrase = taskPhrase(executableTasksCount);
-      final dependentTasksCount = max(
-          0,
-          executableTasksCount -
-              (directTasksCount == 0 ? defaultTasks.length : directTasksCount));
+      final runnableTasksPhrase = taskPhrase(runnableTasksCount);
       final dependenciesPhrase = dependentTasksCount == 0
           ? ''
           : ', ' +
               taskPhrase(dependentTasksCount, 'dependency', 'dependencies');
-      final upToDateCount = executableTasks
-          .map((t) => t.tasks.length - t.mustRunCount)
-          .fold<int>(0, (a, b) => a + b);
       final upToDatePhrase =
           upToDateCount > 0 ? ', $upToDateCount up-to-date' : '';
 
-      logger.info('Executing $executableTasksPhrase out of a total of '
+      logger.info('Executing $runnableTasksPhrase out of a total of '
           '$totalTasksPhrase: $requestedTasksPhrase'
           '$dependenciesPhrase$upToDatePhrase');
     }

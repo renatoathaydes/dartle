@@ -195,9 +195,9 @@ enum TaskStatus {
 
 /// Task with its status, including its current invocation.
 class TaskWithStatus {
-  TaskWithDeps task;
-  TaskStatus status;
-  TaskInvocation invocation;
+  final TaskWithDeps task;
+  final TaskStatus status;
+  final TaskInvocation invocation;
 
   TaskWithStatus(this.task, this.status, this.invocation);
 
@@ -211,6 +211,10 @@ class ParallelTasks {
       tasks.map((t) => t.invocation).toList();
 
   int get mustRunCount => tasks.where((t) => t.mustRun).length;
+
+  int get upToDateCount => tasks.where((t) => !t.mustRun).length;
+
+  int get length => tasks.length;
 
   void add(TaskWithStatus taskWithStatus) {
     tasks.add(taskWithStatus);
