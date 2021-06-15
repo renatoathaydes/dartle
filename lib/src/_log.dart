@@ -2,10 +2,14 @@ import 'dart:io' show pid;
 import 'dart:isolate';
 
 import 'package:ansicolor/ansicolor.dart' as colors;
+import 'package:io/ansi.dart' as ansi;
 import 'package:logging/logging.dart' as log;
 
 /// Supported log colors.
 enum LogColor { red, green, blue, yellow, gray }
+
+/// Supported log styles.
+enum LogStyle { bold, dim, italic }
 
 final log.Logger logger = log.Logger('dartle');
 
@@ -96,7 +100,23 @@ String colorize(String message, LogColor color) {
   return _colorize(message, color);
 }
 
+/// Returns the given [message] with a [LogStyle] unless dartle is executed with
+/// the no-colorful-log option, in which case the message is returned unchanged.
+String style(String message, LogStyle style) {
+  return ansi.overrideAnsiOutput(_colorfulLog, () {
+    switch (style) {
+      case LogStyle.bold:
+        return ansi.styleBold.wrap(message) ?? '';
+      case LogStyle.dim:
+        return ansi.styleDim.wrap(message) ?? '';
+      case LogStyle.italic:
+        return ansi.styleItalic.wrap(message) ?? '';
+    }
+  });
+}
+
 bool _loggingActivated = false;
+bool _colorfulLog = false;
 
 /// Activate logging.
 ///
@@ -107,6 +127,7 @@ bool _loggingActivated = false;
 bool activateLogging(log.Level level, {bool colorfulLog = true}) {
   if (!_loggingActivated) {
     _loggingActivated = true;
+    _colorfulLog = colorfulLog;
     log.Logger.root.level = level;
     log.Logger.root.onRecord.listen((log.LogRecord rec) {
       _Log log;
