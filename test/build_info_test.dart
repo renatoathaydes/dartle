@@ -78,29 +78,29 @@ void main() {
     });
 
     test('can show all tasks', () async {
-      var proc = await runExampleDartBuild(const ['-s']);
+      var proc = await runExampleDartBuild(const ['-s', '--no-colorful-log']);
 
       final expectedOutput = r'''
 ======== Showing build information only, no tasks will be executed ========
 
 Tasks declared in this build:
 
-  * a [default]
+  * a [default] [always-runs]
       Task A
-  * b [default]
+  * b [default] [always-runs]
       Task B
-  * c [default]
-  * d
-  * e
-  * f
-  * g
+  * c [default] [always-runs]
+  * d [always-runs]
+  * e [always-runs]
+  * f [always-runs]
+  * g [always-runs]
   * h
   * i
   * j
   * k
   * l
-  * m
-  * n
+  * m [always-runs]
+  * n [always-runs]
   * o
       Task O
 

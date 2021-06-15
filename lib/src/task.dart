@@ -184,11 +184,40 @@ class TaskWithDeps implements Task, Comparable<TaskWithDeps> {
   }
 }
 
+/// Status of a task.
+enum TaskStatus {
+  upToDate,
+  alwaysRuns,
+  dependencyIsOutOfDate,
+  outOfDate,
+  forced
+}
+
+/// Task with its status, including its current invocation.
+class TaskWithStatus {
+  TaskWithDeps task;
+  TaskStatus status;
+  TaskInvocation invocation;
+
+  TaskWithStatus(this.task, this.status, this.invocation);
+
+  bool get mustRun => status != TaskStatus.upToDate;
+}
+
 class ParallelTasks {
-  final List<TaskInvocation> invocations = [];
+  final List<TaskWithStatus> tasks = [];
+
+  List<TaskInvocation> get invocations =>
+      tasks.map((t) => t.invocation).toList();
+
+  int get mustRunCount => tasks.where((t) => t.mustRun).length;
+
+  void add(TaskWithStatus taskWithStatus) {
+    tasks.add(taskWithStatus);
+  }
 
   @override
-  String toString() => 'ParallelTasks{invocations=$invocations}';
+  String toString() => 'ParallelTasks{tasks=$tasks}';
 
   /// Returns true the given task can be included in this group of tasks.
   ///

@@ -11,6 +11,7 @@ import 'cache/cache.dart';
 import 'dartle_version.g.dart';
 import 'error.dart';
 import 'options.dart';
+import 'run_condition.dart';
 import 'task.dart';
 import 'task_invocation.dart';
 import 'task_run.dart';
@@ -129,8 +130,9 @@ Future<void> _runWithoutErrorHandling(List<String> args, Set<Task> tasks,
       final requestedTasksPhrase = directTasksCount == 0
           ? taskPhrase(defaultTasks.length) + ' (default)'
           : taskPhrase(directTasksCount) + ' selected';
-      final executableTasksCount =
-          executableTasks.expand((t) => t.invocations).length;
+      final executableTasksCount = executableTasks
+          .map((t) => t.mustRunCount)
+          .fold<int>(0, (a, b) => a + b);
       final executableTasksPhrase = taskPhrase(executableTasksCount);
       final dependentTasksCount = max(
           0,
@@ -140,8 +142,9 @@ Future<void> _runWithoutErrorHandling(List<String> args, Set<Task> tasks,
           ? ''
           : ', ' +
               taskPhrase(dependentTasksCount, 'dependency', 'dependencies');
-      final upToDateCount =
-          directTasksCount + dependentTasksCount - executableTasksCount;
+      final upToDateCount = executableTasks
+          .map((t) => t.tasks.length - t.mustRunCount)
+          .fold<int>(0, (a, b) => a + b);
       final upToDatePhrase =
           upToDateCount > 0 ? ', $upToDateCount up-to-date' : '';
 
@@ -187,13 +190,11 @@ Future<List<ParallelTasks>> _getExecutableTasks(
 }
 
 /// Get the tasks in the order that they should be executed, taking into account
-/// their dependencies and whether they need to run or not.
+/// their dependencies.
 ///
-/// If [forceTasks] is [true], then the tasks included in [invocations] will be
-/// returned unconditionally, otherwise some of them may not be returned if
-/// they are up-to-date.
+/// To know which tasks must run, call [TaskWithStatus.mustRun] on each returned
+/// task.
 ///
-/// Invocation task's dependencies will be returned if they are not up-to-date.
 /// Notice that when a task is out-of-date, all of its dependents also become
 /// out-of-date.
 Future<List<ParallelTasks>> getInOrderOfExecution(
@@ -205,67 +206,64 @@ Future<List<ParallelTasks>> getInOrderOfExecution(
 
   final result = <ParallelTasks>[];
 
-  void addTaskOnce(_TaskWithStatus taskWithStatus) {
-    final invocation =
-        taskWithStatus.invocation ?? TaskInvocation(taskWithStatus.task);
+  void addTaskToParallelTasks(TaskWithStatus taskWithStatus) {
     final canRunInPreviousGroup =
-        result.isNotEmpty && result.last.canInclude(invocation.task);
+        result.isNotEmpty && result.last.canInclude(taskWithStatus.task);
     if (canRunInPreviousGroup) {
-      result.last.invocations.add(invocation);
+      result.last.add(taskWithStatus);
     } else {
-      result.add(ParallelTasks()..invocations.add(invocation));
+      result.add(ParallelTasks()..add(taskWithStatus));
     }
   }
 
-  final taskStatuses = <String, _TaskWithStatus>{};
+  final taskStatuses = <String, TaskWithStatus>{};
   final seenTasks = <String>{};
 
   for (final inv in invocations) {
-    var anyDepMustRun = false;
     for (final dep in inv.task.dependencies) {
       if (seenTasks.add(dep.name)) {
-        final depDepsMustRun = _anyDepMustRun(dep, taskStatuses);
-        final mustRun = depDepsMustRun || await dep.runCondition.shouldRun(inv);
-        _logTaskStatus("'${dep.name}' (a dependency of '${inv.name}')",
-            anyDepMustRun, mustRun, showTasks);
-        anyDepMustRun |= mustRun;
-        final taskWithStatus = _TaskWithStatus(dep, !mustRun, null);
+        final invocation = TaskInvocation(dep);
+        final taskWithStatus =
+            await _createTaskWithStatus(invocation, taskStatuses, false);
         taskStatuses[dep.name] = taskWithStatus;
-        addTaskOnce(taskWithStatus);
+        addTaskToParallelTasks(taskWithStatus);
       }
     }
     if (seenTasks.add(inv.name)) {
-      final mustRun =
-          anyDepMustRun || await inv.task.runCondition.shouldRun(inv);
-      _logTaskStatus("'${inv.name}'", anyDepMustRun, mustRun, showTasks);
-      final taskWithStatus = _TaskWithStatus(inv.task, !mustRun, inv);
+      final taskWithStatus =
+          await _createTaskWithStatus(inv, taskStatuses, forceTasks);
       taskStatuses[inv.name] = taskWithStatus;
-      addTaskOnce(taskWithStatus);
+      addTaskToParallelTasks(taskWithStatus);
     }
   }
 
   return result;
 }
 
-bool _anyDepMustRun(TaskWithDeps task, Map<String, _TaskWithStatus> statuses) {
+bool _anyDepMustRun(TaskWithDeps task, Map<String, TaskWithStatus> statuses) {
   return task.dependencies
       .any((element) => statuses[element.name]?.mustRun ?? false);
 }
 
-void _logTaskStatus(
-    String name, bool anyDepMustRun, bool mustRun, bool showTasks) {
-  final logLevel = showTasks ? log.Level.INFO : log.Level.FINE;
-  if (logger.isLoggable(logLevel)) {
-    final reason = mustRun
-        ? anyDepMustRun
-            ? 'at least one of its dependencies is out-of-date'
-            : 'it is out-of-date'
-        : 'it is up-to-date';
-    logger.log(
-        logLevel,
-        'Task $name will${mustRun ? '' : ' not'} '
-        'run because $reason');
+Future<TaskWithStatus> _createTaskWithStatus(
+  TaskInvocation invocation,
+  Map<String, TaskWithStatus> taskStatuses,
+  bool forceTask,
+) async {
+  final task = invocation.task;
+  TaskStatus status;
+  if (forceTask) {
+    status = TaskStatus.forced;
+  } else if (task.runCondition == const AlwaysRun()) {
+    status = TaskStatus.alwaysRuns;
+  } else if (_anyDepMustRun(task, taskStatuses)) {
+    status = TaskStatus.dependencyIsOutOfDate;
+  } else if (await task.runCondition.shouldRun(invocation)) {
+    status = TaskStatus.outOfDate;
+  } else {
+    status = TaskStatus.upToDate;
   }
+  return TaskWithStatus(task, status, invocation);
 }
 
 void _throwAggregateErrors(List<Exception> errors) {
@@ -291,14 +289,4 @@ void _throwAggregateErrors(List<Exception> errors) {
       ..writeln(errorMessage);
   }
   throw DartleException(message: messageBuilder.toString(), exitCode: exitCode);
-}
-
-class _TaskWithStatus {
-  TaskWithDeps task;
-  bool isUpToDate;
-  TaskInvocation? invocation;
-
-  _TaskWithStatus(this.task, this.isUpToDate, this.invocation);
-
-  bool get mustRun => !isUpToDate;
 }

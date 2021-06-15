@@ -37,6 +37,13 @@ class AlwaysRun with RunCondition {
 
   @override
   bool shouldRun(TaskInvocation invocation) => true;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) || other is AlwaysRun;
+
+  @override
+  int get hashCode => 46;
 }
 
 /// A [RunCondition] which reports that a task should run whenever its inputs
