@@ -1,8 +1,15 @@
 ## Future release
 
 - forbid tasks from accessing IO resources not declared in inputs/outputs.
-- run task only after a certain period of time has passed.
 - task must run before/after another task without hard dependency.
+
+## 0.9.0
+
+- new Dart Test reporter - shows better status of running tests and failed tests at the end.
+- improved logging of how many tasks will run or are up-to-date.
+- improved show-tasks output: includes which tasks would run and why.
+- added `RunConditionCombiner` along with `OR` and `AND` implementations.
+- `#3` Dart lib: runPubGet on pubspec.yaml and lock file changes.
 
 ## 0.8.0
 
