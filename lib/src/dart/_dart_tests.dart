@@ -65,7 +65,8 @@ class _TestData {
     return '$file${file.isEmpty ? '' : ':$_position '}${test.name}';
   }
 
-  String get description => '$location${_errorDetail(error)}';
+  String get description => '${colorize(location, LogColor.red)}'
+      '${_errorDetail(error)}';
 
   String get _position {
     if (test.column != null && test.line != null) {
@@ -181,10 +182,8 @@ class JsonReporter {
     _ansi.cleanLines(_threads.length + 1);
     _write('Tests finished in  ${elapsedTime(_stopWatch)}\n${_status()}\n');
     if (_failureCount > 0) {
-      _write(colorize(
-          'Failed Tests:\n'
-          '${_failedTests.map((e) => '  * ${e.description}').join('\n')}\n',
-          LogColor.red));
+      _write(colorize('Failed Tests:\n', LogColor.red) +
+          '${_failedTests.map((e) => '  * ${e.description}').join('\n')}\n');
       if (_errorLines.isNotEmpty) {
         _write(colorize(
             '====== stderr ======\n'
