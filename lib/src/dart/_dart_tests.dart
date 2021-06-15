@@ -1,8 +1,10 @@
 import 'dart:io';
 
-import 'package:dartle/dartle.dart';
-import 'package:dartle/src/_log.dart';
 import 'package:test_report_parser/test_report_parser.dart';
+
+import '../../src/_log.dart';
+import '../../src/_utils.dart';
+import '../../src/helpers.dart';
 
 /// The type of outputs to use for tests.
 enum DartTestOutput {
