@@ -42,9 +42,7 @@ void main() {
       expect(proc.stdout[7], contains("Running task 'f'"));
       expect(proc.stdout[8], contains("Running task 'b'"));
       expect(proc.stdout[9], contains("Running task 'a'"));
-      expect(proc.stdout[10], startsWith('\x1B[38;5;2m✔ Build succeeded in '));
-      // expect(proc.stdout[10], startsWith('\x1B[38;5;2m✔ Build succeeded in '));
-      // expect(proc.stdout[10], endsWith(' ms\x1B[0m'));
+      expect(proc.stdout[10], startsWith('\x1B[32m✔ Build succeeded in '));
       expect(proc.stdout.length, equals(11));
       expect(proc.exitCode, equals(0));
       expect(proc.stderr, isEmpty);
@@ -55,10 +53,7 @@ void main() {
           contains('Executing 1 task out of a total of 15 tasks:'
               ' 1 task selected'));
       expect(proc.stdout[1], contains("Running task 'l'"));
-      expect(proc.stdout[2], startsWith('\x1B[38;5;2m✔ Build succeeded in '));
-      // expect(proc.stdout[2], startsWith('\x1B[38;5;2m✔ Build succeeded in '));
-      // expect(proc.stdout[2], endsWith(' ms\x1B[0m'));
-      // expect(proc.stdout.length, equals(3));
+      expect(proc.stdout[2], startsWith('\x1B[32m✔ Build succeeded in '));
       expect(proc.exitCode, equals(0));
       expect(proc.stderr, isEmpty);
     });

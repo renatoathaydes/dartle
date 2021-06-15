@@ -1,7 +1,6 @@
 import 'dart:io' show pid;
 import 'dart:isolate';
 
-import 'package:ansicolor/ansicolor.dart' as colors;
 import 'package:io/ansi.dart' as ansi;
 import 'package:logging/logging.dart' as log;
 
@@ -12,8 +11,6 @@ enum LogColor { red, green, blue, yellow, gray }
 enum LogStyle { bold, dim, italic }
 
 final log.Logger logger = log.Logger('dartle');
-
-final _pen = colors.AnsiPen();
 
 class _Log {
   final LogColor? color;
@@ -59,28 +56,18 @@ final _logByLevel = <log.Level, _Log>{
   log.Level.SEVERE: const _Log(LogColor.red),
 };
 
-String _colorize(String message, LogColor color) {
+ansi.AnsiCode _ansiCode(LogColor color) {
   switch (color) {
     case LogColor.red:
-      _pen.red();
-      break;
+      return ansi.red;
     case LogColor.green:
-      _pen.green();
-      break;
+      return ansi.green;
     case LogColor.blue:
-      _pen.blue();
-      break;
+      return ansi.blue;
     case LogColor.yellow:
-      _pen.yellow();
-      break;
+      return ansi.yellow;
     case LogColor.gray:
-      _pen.gray();
-      break;
-  }
-  try {
-    return _pen(message);
-  } finally {
-    _pen.reset();
+      return ansi.darkGray;
   }
 }
 
@@ -88,16 +75,15 @@ void _printColorized(String message, [LogColor? color]) {
   if (color == null) {
     return print(message);
   }
-  print(_colorize(message, color));
+  print(colorize(message, color));
 }
 
 /// Returns the given [message] with a [color] unless dartle is executed with
 /// the no-colorful-log option, in which case the message is returned unchanged.
 String colorize(String message, LogColor color) {
-  if (colors.ansiColorDisabled) {
-    return message;
-  }
-  return _colorize(message, color);
+  return ansi.overrideAnsiOutput(_colorfulLog, () {
+    return _ansiCode(color).wrap(message) ?? '';
+  });
 }
 
 /// Returns the given [message] with a [LogStyle] unless dartle is executed with
@@ -116,7 +102,7 @@ String style(String message, LogStyle style) {
 }
 
 bool _loggingActivated = false;
-bool _colorfulLog = false;
+bool _colorfulLog = true;
 
 /// Activate logging.
 ///
@@ -129,32 +115,34 @@ bool activateLogging(log.Level level, {bool colorfulLog = true}) {
     _loggingActivated = true;
     _colorfulLog = colorfulLog;
     log.Logger.root.level = level;
-    log.Logger.root.onRecord.listen((log.LogRecord rec) {
-      _Log log;
-      String? msg;
-      if (colorfulLog) {
-        colors.ansiColorDisabled = false;
-        final obj = rec.object;
-        if (obj is ColoredLogMessage) {
-          log = _Log(obj.color);
-          msg = rec.message;
-        } else {
-          log = _logByLevel[rec.level] ?? const _Log(null);
-        }
-      } else {
-        log = const _Log(null);
-        if (rec.object is ColoredLogMessage) {
-          msg = rec.message;
-        }
-      }
-
-      msg ??=
-          '${rec.time} - ${rec.loggerName}[${Isolate.current.debugName} $pid] - '
-          '${_nameByLevel[rec.level] ?? rec.level} - ${rec.message}';
-
-      log(msg);
-    });
+    log.Logger.root.onRecord
+        .listen((log.LogRecord rec) => _log(rec, colorfulLog));
     return true;
   }
   return false;
+}
+
+void _log(log.LogRecord rec, bool colorfulLog) {
+  _Log log;
+  String? msg;
+  if (colorfulLog) {
+    final obj = rec.object;
+    if (obj is ColoredLogMessage) {
+      log = _Log(obj.color);
+      msg = rec.message;
+    } else {
+      log = _logByLevel[rec.level] ?? const _Log(null);
+    }
+  } else {
+    log = const _Log(null);
+    if (rec.object is ColoredLogMessage) {
+      msg = rec.message;
+    }
+  }
+
+  msg ??=
+      '${rec.time} - ${rec.loggerName}[${Isolate.current.debugName} $pid] - '
+      '${_nameByLevel[rec.level] ?? rec.level} - ${rec.message}';
+
+  log(msg);
 }

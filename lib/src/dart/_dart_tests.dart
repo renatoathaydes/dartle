@@ -62,7 +62,8 @@ class _TestData {
 
   String get location {
     final file = suite?.path ?? test.url ?? '';
-    return '$file${file.isEmpty ? '' : ':$_position '}${test.name}';
+    return '$file${file.isEmpty ? '' : ':$_position '}'
+        '${style(test.name, LogStyle.bold)}';
   }
 
   String get description => '${colorize(location, LogColor.red)}'
