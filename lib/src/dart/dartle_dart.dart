@@ -117,7 +117,10 @@ class DartleDart {
     runPubGet = Task(_runPubGet,
         name: 'runPubGet',
         description: 'Runs "pub get" in order to update dependencies',
-        runCondition: RunAtMostEvery(config.runPubGetAtMostEvery));
+        runCondition: OrCondition([
+          RunAtMostEvery(config.runPubGetAtMostEvery),
+          RunOnChanges(inputs: files(const ['pubspec.yaml', 'pubspec.lock']))
+        ]));
 
     test = Task(_test,
         name: 'test',
