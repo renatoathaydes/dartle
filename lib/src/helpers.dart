@@ -74,7 +74,7 @@ enum StreamRedirectMode { stdout, stderr, stdout_stderr, none }
 /// This method is similar to [exec], but simpler to use for cases where
 /// it is desirable to redirect the process' streams.
 ///
-/// A [StreamRedirectMode] can be provided so to configure whether the process'
+/// A [StreamRedirectMode] can be provided to configure whether the process'
 /// output should be redirected to the calling process's streams in case of
 /// success or failure.
 ///

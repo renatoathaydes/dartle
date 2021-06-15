@@ -32,7 +32,7 @@ void main() {
       expect(
           proc.stdout[0],
           contains('Executing 9 tasks out of a total of 15 tasks:'
-              ' 3 tasks (default), 6 due to dependencies'));
+              ' 3 tasks (default), 6 dependencies'));
       expect(proc.stdout[1], contains("Running task 'd'"));
       expect(proc.stdout[2], contains("Running task 'e'"));
       expect(proc.stdout[3], contains("Running task 'm'"));
@@ -42,9 +42,7 @@ void main() {
       expect(proc.stdout[7], contains("Running task 'f'"));
       expect(proc.stdout[8], contains("Running task 'b'"));
       expect(proc.stdout[9], contains("Running task 'a'"));
-      expect(proc.stdout[10], startsWith('\x1B[38;5;2m✔ Build succeeded in '));
-      // expect(proc.stdout[10], startsWith('\x1B[38;5;2m✔ Build succeeded in '));
-      // expect(proc.stdout[10], endsWith(' ms\x1B[0m'));
+      expect(proc.stdout[10], startsWith('\x1B[32m✔ Build succeeded in '));
       expect(proc.stdout.length, equals(11));
       expect(proc.exitCode, equals(0));
       expect(proc.stderr, isEmpty);
@@ -53,12 +51,9 @@ void main() {
       expect(
           proc.stdout[0],
           contains('Executing 1 task out of a total of 15 tasks:'
-              ' 1 task selected, 0 due to dependencies'));
+              ' 1 task selected'));
       expect(proc.stdout[1], contains("Running task 'l'"));
-      expect(proc.stdout[2], startsWith('\x1B[38;5;2m✔ Build succeeded in '));
-      // expect(proc.stdout[2], startsWith('\x1B[38;5;2m✔ Build succeeded in '));
-      // expect(proc.stdout[2], endsWith(' ms\x1B[0m'));
-      // expect(proc.stdout.length, equals(3));
+      expect(proc.stdout[2], startsWith('\x1B[32m✔ Build succeeded in '));
       expect(proc.exitCode, equals(0));
       expect(proc.stderr, isEmpty);
     });
@@ -68,7 +63,7 @@ void main() {
       expect(
           proc.stdout[0],
           contains('Executing 1 task out of a total of 15 tasks:'
-              ' 1 task selected, 0 due to dependencies'));
+              ' 1 task selected'));
       expect(proc.stdout[1], contains("Running task 'd'"));
       expect(proc.stdout[2], startsWith('✔ Build succeeded in '));
       expect(proc.stdout[2], endsWith(' ms'));
@@ -78,29 +73,29 @@ void main() {
     });
 
     test('can show all tasks', () async {
-      var proc = await runExampleDartBuild(const ['-s']);
+      var proc = await runExampleDartBuild(const ['-s', '--no-colorful-log']);
 
       final expectedOutput = r'''
 ======== Showing build information only, no tasks will be executed ========
 
 Tasks declared in this build:
 
-  * a [default]
+  * a [default] [always-runs]
       Task A
-  * b [default]
+  * b [default] [always-runs]
       Task B
-  * c [default]
-  * d
-  * e
-  * f
-  * g
+  * c [default] [always-runs]
+  * d [always-runs]
+  * e [always-runs]
+  * f [always-runs]
+  * g [always-runs]
   * h
   * i
   * j
   * k
   * l
-  * m
-  * n
+  * m [always-runs]
+  * n [always-runs]
   * o
       Task O
 

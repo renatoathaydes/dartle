@@ -20,7 +20,7 @@ class TaskResult {
   bool get isFailure => !isSuccess;
 }
 
-/// Calls [runTask] with each given task.
+/// Calls [runTask] with each given task that must run.
 ///
 /// Returns the result of each executed task. If a task fails, execution
 /// stops and only the results thus far accumulated are returned.
@@ -42,9 +42,16 @@ Future<List<TaskResult>> runTasks(List<ParallelTasks> tasks,
   }
   final results = <TaskResult>[];
   for (final parTasks in tasks) {
-    final useIsolate = parallelize && parTasks.invocations.length > 1;
-    final futureResults = parTasks.invocations
-        .map((invocation) => runTask(invocation, runInIsolate: useIsolate))
+    final useIsolate = parallelize && parTasks.mustRunCount > 1;
+    final futureResults = parTasks.tasks
+        .where((pTask) {
+          final willRun = pTask.mustRun;
+          logger.fine(() => "Task '${pTask.task.name}' will "
+              "${willRun ? 'run' : 'be skipped'} because it has status "
+              '${pTask.status}');
+          return willRun;
+        })
+        .map((pTask) => runTask(pTask.invocation, runInIsolate: useIsolate))
         .toList(growable: false);
     for (final futureResult in futureResults) {
       results.add(await futureResult);

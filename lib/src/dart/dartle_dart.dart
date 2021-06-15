@@ -6,6 +6,7 @@ import '../file_collection.dart';
 import '../helpers.dart';
 import '../run_condition.dart';
 import '../task.dart';
+import '_dart_tests.dart';
 
 /// Configuration for the [DartleDart] class.
 class DartConfig {
@@ -27,6 +28,9 @@ class DartConfig {
   /// Period of time after which `pub get` should be run.
   final Duration runPubGetAtMostEvery;
 
+  /// The type of outputs to use for tests.
+  final DartTestOutput testOutput;
+
   const DartConfig({
     this.runAnalyzer = true,
     this.formatCode = true,
@@ -34,6 +38,7 @@ class DartConfig {
     this.runTests = true,
     this.runPubGetAtMostEvery = const Duration(days: 5),
     this.rootDir,
+    this.testOutput = DartTestOutput.dartleReporter,
   });
 }
 
@@ -112,7 +117,10 @@ class DartleDart {
     runPubGet = Task(_runPubGet,
         name: 'runPubGet',
         description: 'Runs "pub get" in order to update dependencies',
-        runCondition: RunAtMostEvery(config.runPubGetAtMostEvery));
+        runCondition: OrCondition([
+          RunAtMostEvery(config.runPubGetAtMostEvery),
+          RunOnChanges(inputs: files(const ['pubspec.yaml', 'pubspec.lock']))
+        ]));
 
     test = Task(_test,
         name: 'test',
@@ -140,10 +148,7 @@ class DartleDart {
 
   Future<void> _test(List<String> platforms) async {
     final platformArgs = platforms.expand((p) => ['-p', p]);
-    final code = await execProc(
-        Process.start('dart', ['test', ...platformArgs]),
-        name: 'Dart Tests');
-    if (code != 0) failBuild(reason: 'Tests failed');
+    await runTests(platformArgs, config.testOutput);
   }
 
   Future<void> _formatCode(_) async {

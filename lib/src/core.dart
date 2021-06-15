@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'dart:io';
-import 'dart:math';
 
 import 'package:logging/logging.dart' as log;
 
@@ -123,23 +122,38 @@ Future<void> _runWithoutErrorHandling(List<String> args, Set<Task> tasks,
     showTasksInfo(executableTasks, taskMap, defaultTasks, options);
   } else {
     if (logger.isLoggable(log.Level.INFO)) {
-      String taskPhrase(int count) =>
-          count == 1 ? '$count task' : '$count tasks';
-      final totalTasksPhrase = taskPhrase(tasks.length);
+      String taskPhrase(int count,
+              [String singular = 'task', String plural = 'tasks']) =>
+          count == 1 ? '$count $singular' : '$count $plural';
+
+      // collect counts
+      final totalTasksCount = tasks.length;
+      final runnableTasksCount = executableTasks
+          .map((t) => t.mustRunCount)
+          .fold<int>(0, (a, b) => a + b);
+      final dependentTasksCount =
+          executableTasks.map((t) => t.length).fold<int>(0, (a, b) => a + b) -
+              tasksInvocation.length;
+      final upToDateCount = executableTasks
+          .map((t) => t.upToDateCount)
+          .fold<int>(0, (a, b) => a + b);
+
+      // build log phrases
+      final totalTasksPhrase = taskPhrase(totalTasksCount);
       final requestedTasksPhrase = directTasksCount == 0
           ? taskPhrase(defaultTasks.length) + ' (default)'
           : taskPhrase(directTasksCount) + ' selected';
-      final executableTasksCount =
-          executableTasks.expand((t) => t.invocations).length;
-      final executableTasksPhrase = taskPhrase(executableTasksCount);
-      final dependentTasksCount = max(
-          0,
-          executableTasksCount -
-              (directTasksCount == 0 ? defaultTasks.length : directTasksCount));
+      final runnableTasksPhrase = taskPhrase(runnableTasksCount);
+      final dependenciesPhrase = dependentTasksCount == 0
+          ? ''
+          : ', ' +
+              taskPhrase(dependentTasksCount, 'dependency', 'dependencies');
+      final upToDatePhrase =
+          upToDateCount > 0 ? ', $upToDateCount up-to-date' : '';
 
-      logger.info('Executing $executableTasksPhrase out of a total of '
-          '$totalTasksPhrase: $requestedTasksPhrase, '
-          '$dependentTasksCount due to dependencies');
+      logger.info('Executing $runnableTasksPhrase out of a total of '
+          '$totalTasksPhrase: $requestedTasksPhrase'
+          '$dependenciesPhrase$upToDatePhrase');
     }
 
     await _runAll(executableTasks, options);
@@ -174,64 +188,85 @@ Future<List<ParallelTasks>> _getExecutableTasks(
   }
   final invocations = parseInvocation(tasksInvocation, taskMap, options);
 
-  final mustRun = <TaskInvocation>[];
-  for (final invocation in invocations) {
-    final task = invocation.task;
-    if (options.forceTasks) {
-      logger.fine("Will force execution of task '${task.name}'");
-      mustRun.add(invocation);
-    } else if (await task.runCondition.shouldRun(invocation)) {
-      mustRun.add(invocation);
-    } else {
-      if (options.showTasks) {
-        logger.info("Task '${task.name}' is up-to-date");
-      } else {
-        logger.fine("Skipping task '${task.name}' as it is up-to-date");
-      }
-    }
-  }
-  return await getInOrderOfExecution(mustRun);
+  return await getInOrderOfExecution(
+      invocations, options.forceTasks, options.showTasks);
 }
 
 /// Get the tasks in the order that they should be executed, taking into account
 /// their dependencies.
 ///
-/// All the tasks provided included in [invocations] will be returned, as
-/// the [Task]'s [RunCondition]s are not checked. However, their dependencies'
-/// [RunCondition] will be checked, and only those that should run will be
-/// included in the returned list.
+/// To know which tasks must run, call [TaskWithStatus.mustRun] on each returned
+/// task.
+///
+/// Notice that when a task is out-of-date, all of its dependents also become
+/// out-of-date.
 Future<List<ParallelTasks>> getInOrderOfExecution(
-    List<TaskInvocation> invocations) async {
+    List<TaskInvocation> invocations,
+    [bool forceTasks = false,
+    bool showTasks = false]) async {
   // first of all, re-order tasks so that dependencies are in order
   invocations.sort((a, b) => a.task.compareTo(b.task));
 
   final result = <ParallelTasks>[];
+
+  void addTaskToParallelTasks(TaskWithStatus taskWithStatus) {
+    final canRunInPreviousGroup =
+        result.isNotEmpty && result.last.canInclude(taskWithStatus.task);
+    if (canRunInPreviousGroup) {
+      result.last.add(taskWithStatus);
+    } else {
+      result.add(ParallelTasks()..add(taskWithStatus));
+    }
+  }
+
+  final taskStatuses = <String, TaskWithStatus>{};
   final seenTasks = <String>{};
 
-  Future<void> addTaskOnce(
-      TaskInvocation invocation, bool checkShouldRun) async {
-    final task = invocation.task;
-    if (seenTasks.add(task.name)) {
-      if (!checkShouldRun || await task.runCondition.shouldRun(invocation)) {
-        final canRunInPreviousGroup =
-            result.isNotEmpty && result.last.canInclude(task);
-        if (canRunInPreviousGroup) {
-          result.last.invocations.add(invocation);
-        } else {
-          result.add(ParallelTasks()..invocations.add(invocation));
-        }
+  for (final inv in invocations) {
+    for (final dep in inv.task.dependencies) {
+      if (seenTasks.add(dep.name)) {
+        final invocation = TaskInvocation(dep);
+        final taskWithStatus =
+            await _createTaskWithStatus(invocation, taskStatuses, false);
+        taskStatuses[dep.name] = taskWithStatus;
+        addTaskToParallelTasks(taskWithStatus);
       }
+    }
+    if (seenTasks.add(inv.name)) {
+      final taskWithStatus =
+          await _createTaskWithStatus(inv, taskStatuses, forceTasks);
+      taskStatuses[inv.name] = taskWithStatus;
+      addTaskToParallelTasks(taskWithStatus);
     }
   }
 
-  // de-duplicate tasks, adding their dependencies first
-  for (final invocation in invocations) {
-    for (final dep in invocation.task.dependencies) {
-      await addTaskOnce(TaskInvocation(dep), true);
-    }
-    await addTaskOnce(invocation, false);
-  }
   return result;
+}
+
+bool _anyDepMustRun(TaskWithDeps task, Map<String, TaskWithStatus> statuses) {
+  return task.dependencies
+      .any((element) => statuses[element.name]?.mustRun ?? false);
+}
+
+Future<TaskWithStatus> _createTaskWithStatus(
+  TaskInvocation invocation,
+  Map<String, TaskWithStatus> taskStatuses,
+  bool forceTask,
+) async {
+  final task = invocation.task;
+  TaskStatus status;
+  if (forceTask) {
+    status = TaskStatus.forced;
+  } else if (task.runCondition == const AlwaysRun()) {
+    status = TaskStatus.alwaysRuns;
+  } else if (_anyDepMustRun(task, taskStatuses)) {
+    status = TaskStatus.dependencyIsOutOfDate;
+  } else if (await task.runCondition.shouldRun(invocation)) {
+    status = TaskStatus.outOfDate;
+  } else {
+    status = TaskStatus.upToDate;
+  }
+  return TaskWithStatus(task, status, invocation);
 }
 
 void _throwAggregateErrors(List<Exception> errors) {
@@ -243,6 +278,7 @@ void _throwAggregateErrors(List<Exception> errors) {
     exitCode = dartleException.exitCode;
     break;
   }
+  // TODO use MultipleExceptions and move this code to exception handler
   final messageBuilder = StringBuffer('Several errors have occurred:\n');
   for (final error in errors) {
     String errorMessage;

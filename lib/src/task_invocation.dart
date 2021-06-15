@@ -12,6 +12,8 @@ class TaskInvocation {
 
   TaskInvocation(this.task, [this.args = const <String>[]]);
 
+  String get name => task.name;
+
   @override
   String toString() {
     return 'TaskInvocation{task: ${task.name}, args: $args}';

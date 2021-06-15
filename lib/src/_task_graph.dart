@@ -1,8 +1,11 @@
 import 'dart:io';
 import 'dart:math' show max;
 
+import 'package:collection/collection.dart';
+
 import 'options.dart';
 import 'task.dart';
+import '_log.dart';
 
 void showTasksInfo(
     List<ParallelTasks> executableTasks,
@@ -27,11 +30,34 @@ void showAll(List<ParallelTasks> executableTasks, Map<String, Task> taskMap,
   final defaultSet = defaultTasks.map((t) => t.name).toSet();
   final taskList = taskMap.values.toList()
     ..sort((t1, t2) => t1.name.compareTo(t2.name));
+  final tasksByName = groupBy(executableTasks.expand((t) => t.tasks),
+      (TaskWithStatus t) => t.task.name);
   print('Tasks declared in this build:\n');
   for (final task in taskList) {
     final desc = task.description.isEmpty ? '' : '\n      ${task.description}';
-    final isDefault = defaultSet.contains(task.name) ? ' [default]' : '';
-    print('  * ${task.name}$isDefault$desc');
+    final isDefault =
+        defaultSet.contains(task.name) ? style(' [default]', LogStyle.dim) : '';
+    final status = (tasksByName[task.name]?.first.status).describe();
+    print('  * ${style(task.name, LogStyle.bold)}$isDefault$status$desc');
+  }
+}
+
+extension StatusDescribe on TaskStatus? {
+  String describe() {
+    switch (this) {
+      case null:
+        return '';
+      case TaskStatus.upToDate:
+        return colorize(' [up-to-date]', LogColor.green);
+      case TaskStatus.alwaysRuns:
+        return style(' [always-runs]', LogStyle.dim);
+      case TaskStatus.dependencyIsOutOfDate:
+        return colorize(' [dependency-out-of-date]', LogColor.yellow);
+      case TaskStatus.outOfDate:
+        return colorize(' [out-of-date]', LogColor.yellow);
+      case TaskStatus.forced:
+        return colorize(' [forced]', LogColor.yellow);
+    }
   }
 }
 

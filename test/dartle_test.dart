@@ -46,7 +46,7 @@ void main() {
       expect(
           proc.stdout[0],
           contains('Executing 1 task out of a total of 4 tasks:'
-              ' 1 task selected, 0 due to dependencies'));
+              ' 1 task selected'));
       expect(proc.stdout[1], contains("Running task 'hello'"));
       expect(proc.stdout[2], equals('Hello World!'));
       expect(proc.stdout[3], contains('Build succeeded'));
@@ -59,7 +59,7 @@ void main() {
       expect(
           proc.stdout[0],
           contains('Executing 1 task out of a total of 4 tasks:'
-              ' 1 task selected, 0 due to dependencies'));
+              ' 1 task selected'));
       expect(proc.stdout[1], contains("Running task 'hello'"));
       expect(proc.stdout[2], equals('Hello Elvis!'));
       expect(proc.stdout[3], contains('Build succeeded'));
@@ -71,7 +71,7 @@ void main() {
       expect(
           proc.stdout[0],
           contains('Executing 2 tasks out of a total of 4 tasks:'
-              ' 1 task selected, 1 due to dependencies'));
+              ' 1 task selected, 1 dependency'));
       expect(proc.stdout[1], contains("Running task 'hello'"));
       expect(proc.stdout[2], equals('Hello World!'));
       expect(proc.stdout[3], contains("Running task 'bye'"));
@@ -90,7 +90,7 @@ void main() {
       expect(
           proc.stdout[0],
           contains('Executing 1 task out of a total of 4 tasks:'
-              ' 1 task selected, 0 due to dependencies'));
+              ' 1 task selected'));
       expect(proc.stdout[1], contains("Running task 'encodeBase64'"));
       expect(proc.stdout[2], contains('Build succeeded'));
       expect(proc.stdout.length, equals(3));
@@ -106,7 +106,7 @@ void main() {
       expect(
           proc.stdout[0],
           contains('Executing 0 tasks out of a total of 4 tasks:'
-              ' 1 task selected, 0 due to dependencies'));
+              ' 1 task selected, 1 up-to-date'));
       expect(proc.stdout[1], contains('Build succeeded'));
       expect(proc.stdout.length, equals(2));
       expect(proc.exitCode, equals(0));
@@ -117,7 +117,7 @@ void main() {
       expect(
           proc.stdout[0],
           contains('Executing 1 task out of a total of 4 tasks:'
-              ' 1 task selected, 0 due to dependencies'));
+              ' 1 task selected'));
       expect(proc.stdout[1], contains("Running task 'encodeBase64'"));
       expect(proc.stdout[2], contains('Build succeeded'));
       expect(proc.stdout.length, equals(3));
