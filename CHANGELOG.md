@@ -3,6 +3,10 @@
 - forbid tasks from accessing IO resources not declared in inputs/outputs.
 - task must run before/after another task without hard dependency.
 
+## 0.9.1
+
+- updated Dart test model library.
+
 ## 0.9.0
 
 - new Dart Test reporter - shows better status of running tests and failed tests at the end.
