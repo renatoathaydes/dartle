@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:logging/logging.dart' as log;
 
 import '_log.dart';
+import '_new_project.dart';
 import '_task_graph.dart';
 import '_utils.dart';
 import 'cache/cache.dart';
@@ -50,8 +51,15 @@ Future<void> abortIfNotDartleProject() async {
   if (await dartleFile.exists()) {
     logger.fine('Dartle file exists.');
   } else {
-    logger.severe('dartle.dart file does not exist. Aborting!');
-    exit(4);
+    stdout.write('There is no dartle.dart file in the current directory.\n'
+        'Would you like to create one [y/N]? ');
+    final answer = stdin.readLineSync()?.toLowerCase();
+    if (answer == 'y' || answer == 'yes') {
+      await createNewProject();
+    } else {
+      logger.severe('dartle.dart file does not exist. Aborting!');
+      exit(4);
+    }
   }
 }
 
