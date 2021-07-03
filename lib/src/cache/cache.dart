@@ -50,10 +50,10 @@ class DartleCache {
       ...(await exclusions.files.toList())
           .map((f) => _getCacheLocation(f, key: key)),
     ]);
-    await deleteAll(dirs([_hashesDir, _tasksDir],
+    await deleteAll(dirs([path.join(_hashesDir, key), _tasksDir],
         fileFilter: (file) async {
           final doExclude = await cacheExclusions.includes(file);
-          if (doExclude) logger.fine('Keeping excluded file: $file');
+          if (doExclude) logger.fine(() => 'Keeping excluded file: $file');
           return !doExclude;
         },
         dirFilter: (dir) async => !await cacheExclusions.includes(dir)));

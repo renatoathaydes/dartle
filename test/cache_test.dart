@@ -1,6 +1,5 @@
 // FIXME test fails on Windows due to https://github.com/google/file.dart/issues/182
 @TestOn('!windows')
-
 import 'dart:async';
 import 'dart:io';
 
@@ -74,6 +73,87 @@ void main([List<String> args = const []]) {
             'hasChangedAfterCaching': false,
             'hasChangedAfterActualChange': true,
             'hasChangedAfterRedundantChange': false,
+          }));
+    });
+
+    test('caches files and detects changes under different keys', () async {
+      final interactions = <String, Object>{};
+      final testKey = 'my-key';
+      await withFileSystem(fs, () async {
+        final dartleFile = File('dartle.dart');
+        final dartleFileCollection = FileCollection([dartleFile]);
+
+        await cache(dartleFileCollection, key: testKey);
+        await Future.delayed(const Duration(milliseconds: 100));
+
+        interactions['hasChangedAfterCaching (no key)'] =
+            await cache.hasChanged(dartleFileCollection);
+        interactions['hasChangedAfterCaching (key)'] =
+            await cache.hasChanged(dartleFileCollection, key: testKey);
+        interactions['hasChangedAfterCaching (wrong key)'] =
+            await cache.hasChanged(dartleFileCollection, key: 'wrong');
+
+        final someContent = 'different contents';
+
+        await dartleFile.writeAsString(someContent);
+        interactions['hasChangedAfterActualChange (no key)'] =
+            await cache.hasChanged(dartleFileCollection);
+        interactions['hasChangedAfterActualChange (key)'] =
+            await cache.hasChanged(dartleFileCollection, key: testKey);
+        interactions['hasChangedAfterActualChange (wrong key)'] =
+            await cache.hasChanged(dartleFileCollection, key: 'wrong');
+
+        await cache(dartleFileCollection, key: testKey);
+        await Future.delayed(const Duration(milliseconds: 100));
+        await dartleFile.writeAsString(someContent);
+        await Future.delayed(const Duration(milliseconds: 100));
+        interactions['hasChangedAfterRedundantChange (no key)'] =
+            await cache.hasChanged(dartleFileCollection);
+        interactions['hasChangedAfterRedundantChange (key)'] =
+            await cache.hasChanged(dartleFileCollection, key: testKey);
+        interactions['hasChangedAfterRedundantChange (wrong key)'] =
+            await cache.hasChanged(dartleFileCollection, key: 'wrong');
+
+        // this time, we cache with no key
+        await cache(dartleFileCollection);
+
+        await dartleFile.writeAsString(someContent);
+
+        interactions['hasChangedAfterRedundantChangeNoKey (no key)'] =
+            await cache.hasChanged(dartleFileCollection);
+        interactions['hasChangedAfterRedundantChangeNoKey (key)'] =
+            await cache.hasChanged(dartleFileCollection, key: testKey);
+        interactions['hasChangedAfterRedundantChangeNoKey (wrong key)'] =
+            await cache.hasChanged(dartleFileCollection, key: 'wrong');
+      });
+
+      // check that the expected cache files have been created
+      expect(fs.directory('.dartle_tool').existsSync(), isTrue);
+      expect(fs.directory(join('.dartle_tool', 'hashes', testKey)).existsSync(),
+          isTrue);
+      expect(
+          fs
+              .directory(join('.dartle_tool', 'hashes', testKey))
+              .listSync()
+              .length,
+          equals(1));
+
+      // verify interactions
+      expect(
+          interactions,
+          equals({
+            'hasChangedAfterCaching (no key)': true,
+            'hasChangedAfterCaching (key)': false,
+            'hasChangedAfterCaching (wrong key)': true,
+            'hasChangedAfterActualChange (no key)': true,
+            'hasChangedAfterActualChange (key)': true,
+            'hasChangedAfterActualChange (wrong key)': true,
+            'hasChangedAfterRedundantChange (no key)': true,
+            'hasChangedAfterRedundantChange (key)': false,
+            'hasChangedAfterRedundantChange (wrong key)': true,
+            'hasChangedAfterRedundantChangeNoKey (no key)': false,
+            'hasChangedAfterRedundantChangeNoKey (key)': false,
+            'hasChangedAfterRedundantChangeNoKey (wrong key)': true,
           }));
     });
 
@@ -323,6 +403,66 @@ void main([List<String> args = const []]) {
             'myDir is cached (after)': true,
             'myDirFooFile is cached (after)': true,
             'dartleFile is cached (after)': true,
+          }));
+    });
+
+    test('can cache files and dirs under a specific key', () async {
+      final testKey = 'testing';
+      final interactions = <String, bool>{};
+      await withFileSystem(fs, () async {
+        final fooFile = await File('foo.txt').writeAsString('hello');
+        final myDir = await Directory('my-dir').create();
+        final myDirFooFile =
+            await File(join('my-dir', 'foo.json')).writeAsString('"bar"');
+
+        await cache(FileCollection([fooFile, myDir]), key: testKey);
+        await Future.delayed(const Duration(milliseconds: 100));
+
+        interactions['fooFile is cached (key)'] =
+            cache.contains(fooFile, key: testKey);
+        interactions['fooFile is cached (no key)'] = cache.contains(fooFile);
+        interactions['fooFile is cached (other key)'] =
+            cache.contains(fooFile, key: 'foo');
+
+        interactions['myDir is cached (key)'] =
+            cache.contains(myDir, key: testKey);
+        interactions['myDir is cached (no key)'] = cache.contains(myDir);
+        interactions['myDir is cached (other key)'] =
+            cache.contains(myDir, key: 'foo');
+
+        interactions['myDirFooFile is cached (key)'] =
+            cache.contains(myDirFooFile, key: testKey);
+        interactions['myDirFooFile is cached (no key)'] =
+            cache.contains(myDirFooFile);
+        interactions['myDirFooFile is cached (other key)'] =
+            cache.contains(myDirFooFile, key: 'foo');
+
+        await cache.clean(exclusions: FileCollection([myDir]), key: testKey);
+        await Future.delayed(const Duration(milliseconds: 100));
+
+        interactions['fooFile is cached (after) (key)'] =
+            cache.contains(fooFile, key: testKey);
+        interactions['myDir is cached (after) (key)'] =
+            cache.contains(myDir, key: testKey);
+        interactions['myDirFooFile is cached (after) (key)'] =
+            cache.contains(myDirFooFile, key: testKey);
+      });
+
+      expect(
+          interactions,
+          equals({
+            'fooFile is cached (key)': true,
+            'fooFile is cached (no key)': false,
+            'fooFile is cached (other key)': false,
+            'myDir is cached (key)': true,
+            'myDir is cached (no key)': false,
+            'myDir is cached (other key)': false,
+            'myDirFooFile is cached (key)': true,
+            'myDirFooFile is cached (no key)': false,
+            'myDirFooFile is cached (other key)': false,
+            'fooFile is cached (after) (key)': false,
+            'myDir is cached (after) (key)': true,
+            'myDirFooFile is cached (after) (key)': true,
           }));
     });
 
