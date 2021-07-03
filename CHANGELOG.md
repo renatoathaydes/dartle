@@ -3,6 +3,12 @@
 - forbid tasks from accessing IO resources not declared in inputs/outputs.
 - task must run before/after another task without hard dependency.
 
+## 0.10.0
+
+- ask user whether to create a new Dartle project if executed in directory not containing dartle.dart.
+- Dart test task does not bomb when faced with unexpected output.
+- fixed #6 - file inputs/outputs are cached separately per task.
+
 ## 0.9.1
 
 - updated Dart test model library.

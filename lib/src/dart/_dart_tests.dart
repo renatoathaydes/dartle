@@ -126,8 +126,13 @@ class JsonReporter {
   }
 
   void call(String line) {
+    if (!line.startsWith('{')) {
+      logger.fine(() => 'Test report parser ignoring line: $line');
+      return;
+    }
     final prevThreadCount = _threads.length;
-    final event = parseJsonToEvent(line);
+    final event = _parseEvent(line);
+    if (event == null) return;
     if (event is SuiteEvent) {
       _suiteById[event.suite.id] = event.suite;
     } else if (event is ErrorEvent) {
@@ -151,6 +156,15 @@ class JsonReporter {
 
   void error(String line) {
     _errorLines.add(line);
+  }
+
+  Event? _parseEvent(String line) {
+    try {
+      return parseJsonToEvent(line);
+    } on FormatException catch (e) {
+      logger.severe('Unable to parse test event JSON due to: $e');
+      return null;
+    }
   }
 
   void _push(_TestData data) {

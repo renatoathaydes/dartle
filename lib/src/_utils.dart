@@ -57,7 +57,9 @@ String? findMatchingByWords(String searchText, List<String> options) {
   return result.isEmpty ? null : result;
 }
 
-String hash(String text) => sha1.convert(utf8.encode(text)).toString();
+String hash(String text) => hashBytes(utf8.encode(text));
+
+String hashBytes(List<int> bytes) => sha1.convert(bytes).toString();
 
 String elapsedTime(Stopwatch stopwatch) {
   final millis = stopwatch.elapsedMilliseconds;

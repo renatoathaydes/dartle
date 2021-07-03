@@ -14,22 +14,23 @@ class CacheMock implements DartleCache {
   }
 
   @override
-  Future<void> call(FileCollection collection) {
+  Future<void> call(FileCollection collection, {String key = ''}) {
     throw UnimplementedError();
   }
 
   @override
-  Future<void> clean({FileCollection? exclusions}) {
+  Future<void> clean({FileCollection? exclusions, String key = ''}) {
     throw UnimplementedError();
   }
 
   @override
-  bool contains(FileSystemEntity entity) {
+  bool contains(FileSystemEntity entity, {String key = ''}) {
     throw UnimplementedError();
   }
 
   @override
-  Future<bool> hasChanged(FileCollection fileCollection) async {
+  Future<bool> hasChanged(FileCollection fileCollection,
+      {String key = ''}) async {
     final value = hasChangedInvocations[fileCollection];
     if (value == null) {
       throw 'invocation not mocked';
@@ -50,7 +51,7 @@ class CacheMock implements DartleCache {
   void init() {}
 
   @override
-  Future<void> remove(FileCollection collection) {
+  Future<void> remove(FileCollection collection, {String key = ''}) {
     throw UnimplementedError();
   }
 
