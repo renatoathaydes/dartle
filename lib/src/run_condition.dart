@@ -74,12 +74,13 @@ class RunOnChanges with RunCondition {
   @override
   FutureOr<bool> shouldRun(TaskInvocation invocation) async {
     if (await cache.hasTaskInvocationChanged(invocation)) return true;
-    final inputsChanged = await cache.hasChanged(inputs);
+    final inputsChanged = await cache.hasChanged(inputs, key: invocation.name);
     if (inputsChanged) {
       logger.fine('Changes detected on task inputs: $inputs');
       return true;
     }
-    final outputsChanged = await cache.hasChanged(outputs);
+    final outputsChanged =
+        await cache.hasChanged(outputs, key: invocation.name);
     if (outputsChanged) {
       logger.fine('Changes detected on task outputs: $outputs');
       return true;
@@ -110,21 +111,22 @@ class RunOnChanges with RunCondition {
       }
     }
 
+    final taskName = result.invocation.name;
     if (success) {
-      await cache(inputs);
-      await cache(outputs);
+      await cache(inputs, key: taskName);
+      await cache(outputs, key: taskName);
       await cache.cacheTaskInvocation(result.invocation);
     } else {
       if (await outputs.isEmpty) {
         // the task failed without any outputs, so for it to run again next
         // time we need to remove its inputs
-        await cache.remove(inputs);
+        await cache.remove(inputs, key: taskName);
       } else {
         // just forget the outputs of the failed task as they
         // may not be correct anymore
-        await cache.remove(outputs);
+        await cache.remove(outputs, key: taskName);
       }
-      await cache.removeTaskInvocation(result.invocation.task.name);
+      await cache.removeTaskInvocation(taskName);
       if (error != null) throw error;
     }
   }
