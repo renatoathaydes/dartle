@@ -130,42 +130,54 @@ Future<void> _runWithoutErrorHandling(List<String> args, Set<Task> tasks,
     showTasksInfo(executableTasks, taskMap, defaultTasks, options);
   } else {
     if (logger.isLoggable(log.Level.INFO)) {
-      String taskPhrase(int count,
-              [String singular = 'task', String plural = 'tasks']) =>
-          count == 1 ? '$count $singular' : '$count $plural';
-
-      // collect counts
-      final totalTasksCount = tasks.length;
-      final runnableTasksCount = executableTasks
-          .map((t) => t.mustRunCount)
-          .fold<int>(0, (a, b) => a + b);
-      final dependentTasksCount =
-          executableTasks.map((t) => t.length).fold<int>(0, (a, b) => a + b) -
-              tasksInvocation.length;
-      final upToDateCount = executableTasks
-          .map((t) => t.upToDateCount)
-          .fold<int>(0, (a, b) => a + b);
-
-      // build log phrases
-      final totalTasksPhrase = taskPhrase(totalTasksCount);
-      final requestedTasksPhrase = directTasksCount == 0
-          ? taskPhrase(defaultTasks.length) + ' (default)'
-          : taskPhrase(directTasksCount) + ' selected';
-      final runnableTasksPhrase = taskPhrase(runnableTasksCount);
-      final dependenciesPhrase = dependentTasksCount == 0
-          ? ''
-          : ', ' +
-              taskPhrase(dependentTasksCount, 'dependency', 'dependencies');
-      final upToDatePhrase =
-          upToDateCount > 0 ? ', $upToDateCount up-to-date' : '';
-
-      logger.info('Executing $runnableTasksPhrase out of a total of '
-          '$totalTasksPhrase: $requestedTasksPhrase'
-          '$dependenciesPhrase$upToDatePhrase');
+      _logTasksInfo(tasks, executableTasks, tasksInvocation, directTasksCount,
+          defaultTasks);
     }
 
     await _runAll(executableTasks, options);
   }
+}
+
+void _logTasksInfo(
+    Set<Task> tasks,
+    List<ParallelTasks> executableTasks,
+    List<String> tasksInvocation,
+    int directTasksCount,
+    Set<Task> defaultTasks) {
+  String taskPhrase(int count,
+          [String singular = 'task', String plural = 'tasks']) =>
+      count == 1 ? '$count $singular' : '$count $plural';
+
+  // collect counts
+  final totalTasksCount = tasks.length;
+
+  if (directTasksCount == 0 && defaultTasks.isEmpty) {
+    return logger.info('Executing 0 tasks out of a total of $totalTasksCount '
+        '${taskPhrase(totalTasksCount)}.');
+  }
+
+  final runnableTasksCount =
+      executableTasks.map((t) => t.mustRunCount).fold<int>(0, (a, b) => a + b);
+  final dependentTasksCount =
+      executableTasks.map((t) => t.length).fold<int>(0, (a, b) => a + b) -
+          tasksInvocation.length;
+  final upToDateCount =
+      executableTasks.map((t) => t.upToDateCount).fold<int>(0, (a, b) => a + b);
+
+  // build log phrases
+  final totalTasksPhrase = taskPhrase(totalTasksCount);
+  final requestedTasksPhrase = directTasksCount == 0
+      ? taskPhrase(defaultTasks.length) + ' (default)'
+      : taskPhrase(directTasksCount) + ' selected';
+  final runnableTasksPhrase = taskPhrase(runnableTasksCount);
+  final dependenciesPhrase = dependentTasksCount == 0
+      ? ''
+      : ', ' + taskPhrase(dependentTasksCount, 'dependency', 'dependencies');
+  final upToDatePhrase = upToDateCount > 0 ? ', $upToDateCount up-to-date' : '';
+
+  logger.info('Executing $runnableTasksPhrase out of a total of '
+      '$totalTasksPhrase: $requestedTasksPhrase'
+      '$dependenciesPhrase$upToDatePhrase');
 }
 
 Future<void> _runAll(
