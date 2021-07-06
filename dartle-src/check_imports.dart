@@ -8,6 +8,7 @@ class DartleImportChecker {
   DartleImportChecker(FileCollection libDirDartFiles) {
     task = Task((_) => _checkImports(libDirDartFiles),
         name: 'checkImports',
+        dependsOn: {'generateDartSources'},
         description: 'Checks dart file imports are allowed',
         runCondition: RunOnChanges(inputs: libDirDartFiles));
   }

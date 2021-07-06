@@ -90,6 +90,13 @@ abstract class FileCollection {
     }
   }
 
+  /// The included file-system entities.
+  ///
+  /// The difference from [files] and [directories] is that this method does not
+  /// actually resolve anything, it simply lists the entities that were
+  /// explicitly included in this collection on creation.
+  List<FileSystemEntity> get inclusions;
+
   /// All files in this collection.
   ///
   /// If this is a directory-based collection, all files in all sub-directories
@@ -123,6 +130,9 @@ class _SingleFileCollection implements FileCollection {
   const _SingleFileCollection(this.file);
 
   @override
+  List<FileSystemEntity> get inclusions => [file];
+
+  @override
   Stream<File> get files => Stream.fromIterable([file]);
 
   @override
@@ -148,6 +158,9 @@ class _FileCollection implements FileCollection {
   ///
   /// The caller must make sure to pass the argument through _sortAndDistinct.
   const _FileCollection(List<File> files) : _files = files;
+
+  @override
+  List<FileSystemEntity> get inclusions => List.unmodifiable(_files);
 
   @override
   Stream<File> get files => Stream.fromIterable(_files);
@@ -180,6 +193,9 @@ class _DirectoryCollection implements FileCollection {
       List<Directory> dirs, List<File> files, this._fileFilter, this._dirFilter)
       : _dirs = dirs,
         _extraFiles = files;
+
+  @override
+  List<FileSystemEntity> get inclusions => [..._dirs, ..._extraFiles];
 
   @override
   Stream<File> get files async* {

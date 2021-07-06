@@ -135,4 +135,36 @@ void main() {
           ]));
     });
   });
+
+  group('Task Verification', () {
+    Task? fooTask, barTask;
+
+    setUp(() {
+      fooTask = Task(noop,
+          name: 'foo',
+          runCondition:
+              RunOnChanges(inputs: file('in.txt'), outputs: file('out.txt')));
+      barTask = Task(noop,
+          name: 'bar',
+          runCondition:
+              RunOnChanges(inputs: file('out.txt'), outputs: file('out2.txt')));
+    });
+
+    test(
+        'if a task outputs are used as inputs for other task, '
+        'the other task must depend on it', () {
+      expect(
+          () => verifyTaskInputsAndOutputsConsistency({
+                'foo': TaskWithDeps(fooTask!),
+                'bar': TaskWithDeps(barTask!),
+              }),
+          throwsA(isA<DartleException>().having(
+              (e) => e.message,
+              'message',
+              equals(
+                  "The following tasks have implicit dependencies due to their inputs depending on other tasks' outputs:\n"
+                  "  * Task 'bar' must dependOn 'foo'.\n\n"
+                  'Please add the dependencies explicitly.'))));
+    });
+  });
 }
