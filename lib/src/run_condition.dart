@@ -25,6 +25,14 @@ mixin RunCondition {
   FutureOr<void> postRun(TaskResult result);
 }
 
+/// A [RunCondition] that uses file-system inputs and outputs.
+///
+/// Dartle considers these when verifying implicit dependencies between tasks.
+mixin FilesCondition on RunCondition {
+  abstract final FileCollection inputs;
+  abstract final FileCollection outputs;
+}
+
 /// A [RunCondition] which is always fullfilled.
 ///
 /// This ensures a [Task] runs unconditionally.
@@ -52,8 +60,10 @@ class AlwaysRun with RunCondition {
 /// If an empty [FileCollection] is given as both inputs and outputs,
 /// because an empty collection will never change, [shouldRun] will never
 /// return true, hence using this class in this way is likely a mistake.
-class RunOnChanges with RunCondition {
+class RunOnChanges with RunCondition, FilesCondition {
+  @override
   final FileCollection inputs;
+  @override
   final FileCollection outputs;
   final DartleCache cache;
 
