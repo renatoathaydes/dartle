@@ -36,7 +36,7 @@ FileCollection files(Iterable<String> paths) =>
 FileCollection dir(String directory,
         {FileFilter fileFilter = _noFileFilter,
         DirectoryFilter dirFilter = _noDirFilter}) =>
-    _DirectoryCollection(
+    _FileSystemEntityCollection(
         [Directory(directory)], const [], fileFilter, dirFilter);
 
 /// Create a [FileCollection] consisting of multiple directories, possibly
@@ -53,7 +53,7 @@ FileCollection dir(String directory,
 FileCollection dirs(Iterable<String> directories,
         {FileFilter fileFilter = _noFileFilter,
         DirectoryFilter dirFilter = _noDirFilter}) =>
-    _DirectoryCollection(
+    _FileSystemEntityCollection(
         directories.map((d) => Directory(d)).toList(growable: false),
         const [],
         fileFilter,
@@ -86,9 +86,15 @@ abstract class FileCollection {
     } else if (dirs.isEmpty) {
       return _FileCollection(_sortAndDistinct(files));
     } else {
-      return _DirectoryCollection(dirs, files, fileFilter, dirFilter);
+      return _FileSystemEntityCollection(dirs, files, fileFilter, dirFilter);
     }
   }
+
+  /// The [FileFilter] associated with this collection.
+  FileFilter get fileFilter;
+
+  /// The [DirectoryFilter] associated with this collection.
+  DirectoryFilter get dirFilter;
 
   /// The included file-system entities.
   ///
@@ -99,11 +105,13 @@ abstract class FileCollection {
 
   /// All files in this collection.
   ///
+  /// Explicitly included [File]s are always returned, even when they do not
+  /// exist.
   /// If this is a directory-based collection, all files in all sub-directories
   /// of the included directories are returned, subject to the provided filters.
   Stream<File> get files;
 
-  /// All directories in this collection (non-recursive).
+  /// All directories included in this collection (non-recursive).
   Stream<Directory> get directories;
 
   /// Returns true if this collection does not contain any files,
@@ -121,7 +129,15 @@ abstract class FileCollection {
   FutureOr<bool> get isNotEmpty;
 
   /// Check if the given [FileSystemEntity] is included in this collection.
+  ///
+  /// Directories include files under its tree even if the files do not (yet)
+  /// exist.
   FutureOr<bool> includes(FileSystemEntity entity);
+
+  /// Returns the intersection between this and the given [FileCollection].
+  ///
+  /// Exclusions are added together.
+  FileCollection intersection(FileCollection collection);
 }
 
 class _SingleFileCollection implements FileCollection {
@@ -149,6 +165,27 @@ class _SingleFileCollection implements FileCollection {
 
   @override
   bool includes(FileSystemEntity entity) => filesEqual(file, entity);
+
+  @override
+  FileCollection intersection(FileCollection collection) {
+    for (final entity in collection.inclusions) {
+      if (entity is File && includes(entity)) {
+        return this;
+      }
+      if (entity is Directory) {
+        if (entity.includes(file)) {
+          return this;
+        }
+      }
+    }
+    return FileCollection.empty;
+  }
+
+  @override
+  DirectoryFilter get dirFilter => _noDirFilter;
+
+  @override
+  FileFilter get fileFilter => _noFileFilter;
 }
 
 class _FileCollection implements FileCollection {
@@ -181,16 +218,33 @@ class _FileCollection implements FileCollection {
   @override
   bool includes(FileSystemEntity entity) =>
       _files.any((f) => filesEqual(f, entity));
+
+  @override
+  FileCollection intersection(FileCollection collection) {
+    final commonFiles = _filesIntersection(collection, _files);
+    if (commonFiles.isNotEmpty) {
+      return _FileCollection(commonFiles.map((p) => File(p)).toList());
+    }
+    return FileCollection.empty;
+  }
+
+  @override
+  DirectoryFilter get dirFilter => _noDirFilter;
+
+  @override
+  FileFilter get fileFilter => _noFileFilter;
 }
 
-class _DirectoryCollection implements FileCollection {
+class _FileSystemEntityCollection implements FileCollection {
   final List<File> _extraFiles;
   final List<Directory> _dirs;
-  final FileFilter _fileFilter;
-  final DirectoryFilter _dirFilter;
+  @override
+  final FileFilter fileFilter;
+  @override
+  final DirectoryFilter dirFilter;
 
-  const _DirectoryCollection(
-      List<Directory> dirs, List<File> files, this._fileFilter, this._dirFilter)
+  const _FileSystemEntityCollection(
+      List<Directory> dirs, List<File> files, this.fileFilter, this.dirFilter)
       : _dirs = dirs,
         _extraFiles = files;
 
@@ -202,7 +256,7 @@ class _DirectoryCollection implements FileCollection {
     final seenPaths = <String>{};
     final result = <File>[];
     for (final file in _extraFiles) {
-      if (await _fileFilter(file) && seenPaths.add(file.path)) {
+      if (await fileFilter(file) && seenPaths.add(file.path)) {
         result.add(file);
       }
     }
@@ -234,33 +288,100 @@ class _DirectoryCollection implements FileCollection {
   @override
   Future<bool> includes(FileSystemEntity entity) async {
     if (entity is Directory) {
-      for (final dir in _dirs) {
-        if (filesEqual(dir, entity)) return true;
+      if (!await dirFilter(entity)) {
+        return false;
       }
-    } else {
-      await for (final file in files) {
+      for (final dir in _dirs) {
+        if (dir.includes(entity)) return true;
+      }
+    } else if (entity is File) {
+      if (!await fileFilter(entity) || !await dirFilter(entity.parent)) {
+        return false;
+      }
+      for (final dir in _dirs) {
+        if (dir.includes(entity)) return true;
+      }
+      for (final file in _extraFiles) {
         if (filesEqual(file, entity)) return true;
       }
     }
     return false;
   }
 
+  @override
+  FileCollection intersection(FileCollection collection) {
+    final commonFiles = _filesIntersection(collection, _extraFiles, _dirs)
+        .map<FileSystemEntity>((path) => File(path));
+    final dirs = inclusions.dirSet();
+    final collectionDirs = collection.inclusions.dirSet();
+    final commonDirs = _dirsIntersecting(dirs, collectionDirs);
+    if (commonFiles.isEmpty && commonDirs.isEmpty) {
+      return FileCollection.empty;
+    }
+    final otherFileFilter = collection.fileFilter;
+    final otherDirFilter = collection.dirFilter;
+    return FileCollection(commonFiles.followedBy(commonDirs),
+        fileFilter: (f) async =>
+            await fileFilter(f) && await otherFileFilter(f),
+        dirFilter: (d) async => await dirFilter(d) && await otherDirFilter(d));
+  }
+
+  Iterable<Directory> _dirsIntersecting(
+      Set<String> dirs, Set<String> otherDirs) {
+    final commonDirs = <String>{};
+    for (final dir in dirs) {
+      for (final otherDir in otherDirs) {
+        if (dir.length > otherDir.length &&
+            dir.startsWith(otherDir + Platform.pathSeparator)) {
+          commonDirs.add(dir);
+        } else if (dir.length < otherDir.length &&
+            otherDir.startsWith(dir + Platform.pathSeparator)) {
+          commonDirs.add(otherDir);
+        } else if (dir == otherDir) {
+          commonDirs.add(dir);
+        }
+      }
+    }
+    return commonDirs.map((path) => Directory(path));
+  }
+
   Stream<File> _listRecursive(Directory dir, Set<String> seenPaths) async* {
-    if (!await dir.exists()) {
+    if (!await dir.exists() || !await dirFilter(dir)) {
       return;
     }
     await for (final entity in dir.list()) {
       if (entity is File) {
-        if (await _fileFilter(entity) && seenPaths.add(entity.path)) {
+        if (await fileFilter(entity) && seenPaths.add(entity.path)) {
           yield entity;
         }
       } else if (entity is Directory) {
-        if (await _dirFilter(entity) && seenPaths.add(entity.path)) {
+        if (await dirFilter(entity) && seenPaths.add(entity.path)) {
           yield* _listRecursive(entity, seenPaths);
         }
       }
     }
   }
+}
+
+Set<String> _filesIntersection(FileCollection collection, Iterable<File> files,
+    [Iterable<Directory> dirs = const []]) {
+  final commonFiles = <String>{};
+  for (final entity in collection.inclusions) {
+    if (entity is File &&
+        (files.any((f) => filesEqual(f, entity)) ||
+            dirs.any((d) => d.includes(entity)))) {
+      commonFiles.add(entity.path);
+    }
+    if (entity is Directory) {
+      final dirName = entity.path + Platform.pathSeparator;
+      files.map((e) => e.path).forEach((path) {
+        if (path.startsWith(dirName)) {
+          commonFiles.add(path);
+        }
+      });
+    }
+  }
+  return commonFiles;
 }
 
 List<F> _sortAndDistinct<F extends FileSystemEntity>(Iterable<F> files,
@@ -280,4 +401,15 @@ List<F> _sortAndDistinct<F extends FileSystemEntity>(Iterable<F> files,
       : (F a, F b) => a.path.compareTo(b.path);
   list.sort(sortFun);
   return list;
+}
+
+extension _FileCollectionExt on Directory {
+  bool includes(FileSystemEntity other) {
+    final dirName = path + Platform.pathSeparator;
+    return other.path.startsWith(dirName);
+  }
+}
+
+extension _FileSystemEntityListExt on List<FileSystemEntity> {
+  Set<String> dirSet() => whereType<Directory>().map((d) => d.path).toSet();
 }
