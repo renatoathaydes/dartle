@@ -100,7 +100,8 @@ abstract class FileCollection {
   ///
   /// The difference from [files] and [directories] is that this method does not
   /// actually resolve anything, it simply lists the entities that were
-  /// explicitly included in this collection on creation.
+  /// explicitly included in this collection on creation, ignoring
+  /// [fileFilter] and [dirFilter].
   List<FileSystemEntity> get inclusions;
 
   /// All files in this collection.
@@ -405,6 +406,7 @@ List<F> _sortAndDistinct<F extends FileSystemEntity>(Iterable<F> files,
 
 extension _FileCollectionExt on Directory {
   bool includes(FileSystemEntity other) {
+    if (path == other.path) return true;
     final dirName = path + Platform.pathSeparator;
     return other.path.startsWith(dirName);
   }

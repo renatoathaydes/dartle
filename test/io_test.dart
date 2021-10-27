@@ -69,7 +69,9 @@ void main() {
       await withFileSystem(fs, () async {
         final files = dirs(const ['dartle', 'b', 'c', 'A'],
             fileFilter: (file) => file.path != 'b/b.txt',
-            dirFilter: (dir) => dir.path.contains('A/B'));
+            dirFilter: (dir) =>
+                dir.path.contains('A/B') ||
+                (const {'A', 'dartle', 'b'}).contains(dir.path));
         await _expectFileCollection(files, files: [
           'dartle/some.txt',
           'A/B/C/c.txt',
