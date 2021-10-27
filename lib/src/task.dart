@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:collection/collection.dart';
 
 import 'error.dart';
+import 'file_collection.dart';
 import 'run_condition.dart';
 import 'task_invocation.dart';
 
@@ -358,39 +359,26 @@ void _taskWithTransitiveDeps(TaskWithDeps task, List<TaskWithDeps> result) {
 
 Future<void> verifyTaskInputsAndOutputsConsistency(
     Map<String, TaskWithDeps> taskMap) async {
-  final inputsByTask = <TaskWithDeps, Set<String>>{};
-  final outputsByTask = <TaskWithDeps, Set<String>>{};
+  final inputsByTask = <TaskWithDeps, FileCollection>{};
+  final outputsByTask = <TaskWithDeps, FileCollection>{};
   taskMap.values.forEach((task) {
     final rc = task.runCondition;
     if (rc is FilesCondition) {
-      inputsByTask[task] = rc.inputs.inclusions.map((e) => e.path).toSet();
-      outputsByTask[task] = rc.outputs.inclusions.map((e) => e.path).toSet();
+      inputsByTask[task] = rc.inputs;
+      outputsByTask[task] = rc.outputs;
     }
   });
 
   final errors = <String>{};
 
   // a task's inputs may only include another's outputs if it depends on it
-  await inputsByTask.forEachAsync((task, ins) async {
-    await outputsByTask.forEachAsync((otherTask, otherOuts) async {
-      if (ins.mayInclude(otherOuts)) {
-        // ins MAY include otherOuts, to be sure we need to list the files
-        final insFiles =
-            await (taskMap[task.name]!.runCondition as FilesCondition)
-                .inputs
-                .files
-                .map((f) => f.path)
-                .toSet();
-        final outsFiles =
-            await (taskMap[otherTask.name]!.runCondition as FilesCondition)
-                .outputs
-                .files
-                .map((f) => f.path)
-                .toSet();
-        if (insFiles.intersection(outsFiles).isNotEmpty &&
-            !task.dependencies.contains(otherTask)) {
-          errors.add("Task '${task.name}' must dependOn '${otherTask.name}'");
-        }
+  inputsByTask.forEach((task, ins) {
+    outputsByTask.forEach((otherTask, otherOuts) {
+      if (task.dependencies.contains(otherTask)) return;
+      final intersectInsOuts = ins.intersection(otherOuts);
+      if (intersectInsOuts.inclusions.isNotEmpty) {
+        errors.add("Task '${task.name}' must dependOn '${otherTask.name}' "
+            '(clashing outputs: ${intersectInsOuts.inclusions})');
       }
     });
   });
@@ -401,21 +389,5 @@ Future<void> verifyTaskInputsAndOutputsConsistency(
             "The following tasks have implicit dependencies due to their inputs depending on other tasks' outputs:\n"
             '${errors.map((e) => '  * $e.').join('\n')}\n\n'
             'Please add the dependencies explicitly.');
-  }
-}
-
-extension _ChecksTasksInsOutsPaths on Set<String> {
-  bool mayInclude(Set<String> others) {
-    return any((path) => others.any((o) => o.startsWith(path)));
-  }
-}
-
-extension AsyncMap<K, V> on Map<K, V> {
-  Future<void> forEachAsync(FutureOr<void> Function(K, V) fun) async {
-    for (var value in entries) {
-      final k = value.key;
-      final v = value.value;
-      await fun(k, v);
-    }
   }
 }

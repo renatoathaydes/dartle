@@ -137,34 +137,55 @@ void main() {
   });
 
   group('Task Verification', () {
-    Task? fooTask, barTask;
-
-    setUp(() {
-      fooTask = Task(noop,
-          name: 'foo',
-          runCondition:
-              RunOnChanges(inputs: file('in.txt'), outputs: file('out.txt')));
-      barTask = Task(noop,
-          name: 'bar',
-          runCondition:
-              RunOnChanges(inputs: file('out.txt'), outputs: file('out2.txt')));
-    });
+    final fooTask = Task(noop,
+        name: 'foo',
+        runCondition:
+            RunOnChanges(inputs: file('in.txt'), outputs: file('out.txt')));
+    final barTask = Task(noop,
+        name: 'bar',
+        runCondition:
+            RunOnChanges(inputs: file('out.txt'), outputs: file('out2.txt')));
+    final zortTask = Task(noop,
+        name: 'zort',
+        runCondition: RunOnChanges(inputs: dir('in'), outputs: dir('out')));
+    final blahTask = Task(noop,
+        name: 'blah',
+        runCondition: RunOnChanges(inputs: dir('out'), outputs: dir('out2')));
 
     test(
         'if a task outputs are used as inputs for other task, '
-        'the other task must depend on it', () {
+        'the other task must depend on it (files and dirs)', () {
       expect(
-          () => verifyTaskInputsAndOutputsConsistency({
-                'foo': TaskWithDeps(fooTask!),
-                'bar': TaskWithDeps(barTask!),
+          () async => await verifyTaskInputsAndOutputsConsistency({
+                'foo': TaskWithDeps(fooTask),
+                'bar': TaskWithDeps(barTask),
+                'zort': TaskWithDeps(zortTask),
+                'blah': TaskWithDeps(blahTask),
               }),
           throwsA(isA<DartleException>().having(
               (e) => e.message,
               'message',
               equals(
-                  "The following tasks have implicit dependencies due to their inputs depending on other tasks' outputs:\n"
-                  "  * Task 'bar' must dependOn 'foo'.\n\n"
+                  'The following tasks have implicit dependencies due to their'
+                  " inputs depending on other tasks' outputs:\n"
+                  "  * Task 'bar' must dependOn 'foo' (clashing outputs: [File: 'out.txt']).\n"
+                  "  * Task 'blah' must dependOn 'zort' (clashing outputs: [Directory: 'out']).\n\n"
                   'Please add the dependencies explicitly.'))));
+    });
+
+    test('no error occurs if tasks ins/outs are unrelated', () async {
+      await verifyTaskInputsAndOutputsConsistency({
+        'foo': TaskWithDeps(fooTask),
+        'blah': TaskWithDeps(blahTask),
+      });
+    });
+
+    test('no error occurs if tasks have common ins/outs but dependency exists',
+        () async {
+      await verifyTaskInputsAndOutputsConsistency({
+        'foo': TaskWithDeps(fooTask),
+        'bar': TaskWithDeps(barTask, [TaskWithDeps(fooTask)]),
+      });
     });
   });
 }
