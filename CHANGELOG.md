@@ -3,6 +3,10 @@
 - forbid tasks from accessing IO resources not declared in inputs/outputs.
 - task must run before/after another task without hard dependency.
 
+- better error message when no default tasks exist and no tasks are selected.
+- new `intersection` method added to `FileCollection`.
+- auto-detect dependencies between tasks due to inputs/outputs - error if not explicitly dependency exists. 
+
 ## 0.10.0
 
 - ask user whether to create a new Dartle project if executed in directory not containing dartle.dart.
