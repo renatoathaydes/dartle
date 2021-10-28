@@ -107,8 +107,7 @@ Future<void> runSafely(List<String> args, bool doNotExit,
 
 Future<void> _runWithoutErrorHandling(List<String> args, Set<Task> tasks,
     Set<Task> defaultTasks, Options options) async {
-  logger.fine(() => 'Dartle version: $dartleVersion');
-  logger.fine(() => 'Options: $options');
+  logger.fine(() => 'Dartle version: $dartleVersion\nOptions: $options');
 
   if (options.resetCache) {
     await DartleCache.instance.clean();
