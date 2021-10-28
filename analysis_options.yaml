@@ -1,5 +1,5 @@
-# see https://github.com/dart-lang/pedantic#enabled-lints.
-include: package:pedantic/analysis_options.yaml
+# see https://github.com/dart-lang/lints
+include: package:lints/recommended.yaml
 
 analyzer:
   strong-mode:

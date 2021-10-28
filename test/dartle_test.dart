@@ -6,7 +6,7 @@ import 'package:test/test.dart';
 
 import 'test_utils.dart';
 
-void helloTask(_) => null;
+void helloTask(_) {}
 
 void main() {
   group('Task name', () {
