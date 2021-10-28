@@ -71,10 +71,6 @@ String elapsedTime(Stopwatch stopwatch) {
   }
 }
 
-bool filesEqual(FileSystemEntity e1, FileSystemEntity e2) =>
-    e1.runtimeType.toString() == e2.runtimeType.toString() &&
-    e1.path == e2.path;
-
 class MultipleExceptions with Exception {
   final List exceptions;
 
