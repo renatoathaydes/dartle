@@ -67,7 +67,7 @@ Future<int> exec(Future<Process> process,
 
 /// Defines which stream(s) should be redirected to the calling process' streams
 /// from another running [Process] when using the [execProc] function.
-enum StreamRedirectMode { stdout, stderr, stdout_stderr, none }
+enum StreamRedirectMode { stdout, stderr, stdoutAndStderr, none }
 
 /// Executes the given process, returning its exit code.
 ///
@@ -84,7 +84,7 @@ Future<int> execProc(Future<Process> process,
     {String name = '',
     Set<int> successCodes = const {0},
     StreamRedirectMode successMode = StreamRedirectMode.none,
-    StreamRedirectMode errorMode = StreamRedirectMode.stdout_stderr}) async {
+    StreamRedirectMode errorMode = StreamRedirectMode.stdoutAndStderr}) async {
   final allDisabled = successMode == StreamRedirectMode.none &&
       errorMode == StreamRedirectMode.none;
   final stdoutConsumer = StdStreamConsumer(keepLines: !allDisabled);
@@ -92,7 +92,7 @@ Future<int> execProc(Future<Process> process,
   final code = await exec(process,
       name: name, onStdoutLine: stdoutConsumer, onStderrLine: stderrConsumer);
   if (allDisabled) return code;
-  final redirect = (StreamRedirectMode mode) async {
+  Future<void> redirect(StreamRedirectMode mode) async {
     switch (mode) {
       case StreamRedirectMode.none:
         break;
@@ -106,7 +106,7 @@ Future<int> execProc(Future<Process> process,
           ..writeAll(stdoutConsumer.lines, '\n')
           ..writeln();
         break;
-      case StreamRedirectMode.stdout_stderr:
+      case StreamRedirectMode.stdoutAndStderr:
         stdout
           ..writeAll(stdoutConsumer.lines, '\n')
           ..writeln();
@@ -114,7 +114,8 @@ Future<int> execProc(Future<Process> process,
           ..writeAll(stderrConsumer.lines, '\n')
           ..writeln();
     }
-  };
+  }
+
   await redirect(successCodes.contains(code) ? successMode : errorMode);
   return code;
 }

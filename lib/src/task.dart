@@ -361,13 +361,13 @@ Future<void> verifyTaskInputsAndOutputsConsistency(
     Map<String, TaskWithDeps> taskMap) async {
   final inputsByTask = <TaskWithDeps, FileCollection>{};
   final outputsByTask = <TaskWithDeps, FileCollection>{};
-  taskMap.values.forEach((task) {
+  for (var task in taskMap.values) {
     final rc = task.runCondition;
     if (rc is FilesCondition) {
       inputsByTask[task] = rc.inputs;
       outputsByTask[task] = rc.outputs;
     }
-  });
+  }
 
   final errors = <String>{};
 

@@ -43,7 +43,7 @@ void main() {
     });
 
     test('can re-compile itself after changes', () async {
-      final helloDartle = (String helloTask) => '''
+      String helloDartle(String helloTask) => '''
       import 'package:dartle/dartle.dart';
       
       final allTasks = [Task(hello)];

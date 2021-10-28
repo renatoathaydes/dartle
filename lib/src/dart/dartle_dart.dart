@@ -90,9 +90,8 @@ class DartleDart {
   /// it via [DartConfig.rootDir].
   final String rootDir;
 
-  DartleDart([DartConfig config = const DartConfig()])
-      : config = config,
-        rootDir = config.rootDir ?? Directory.current.path {
+  DartleDart([this.config = const DartConfig()])
+      : rootDir = config.rootDir ?? Directory.current.path {
     final allDartFiles = dir(rootDir, fileFilter: dartFileFilter);
     final testDartFiles =
         dir(join(rootDir, 'test'), fileFilter: dartFileFilter);
@@ -161,23 +160,23 @@ class DartleDart {
     final code = await execProc(
       Process.start('dart', const ['run', 'build_runner', 'build']),
       name: 'Dart Analyzer',
-      successMode: StreamRedirectMode.stdout_stderr,
+      successMode: StreamRedirectMode.stdoutAndStderr,
     );
     if (code != 0) failBuild(reason: 'Dart Analyzer failed');
   }
 
   Future<void> _analyzeCode(_) async {
     final code = await execProc(Process.start('dart', const ['analyze', '.']),
-        name: 'Dart Analyzer', successMode: StreamRedirectMode.stdout_stderr);
+        name: 'Dart Analyzer', successMode: StreamRedirectMode.stdoutAndStderr);
     if (code != 0) failBuild(reason: 'Dart Analyzer failed');
   }
 
   Future<void> _runPubGet(_) async {
     final code = await execProc(Process.start('dart', const ['pub', 'get']),
-        name: 'Dart pub get', successMode: StreamRedirectMode.stdout_stderr);
+        name: 'Dart pub get', successMode: StreamRedirectMode.stdoutAndStderr);
     if (code != 0) failBuild(reason: 'Dart "pub get"" failed');
   }
 }
 
 /// Return true for files with the `.dart` extension, false otherwise.
-FileFilter dartFileFilter = (f) => extension(f.path) == '.dart';
+bool dartFileFilter(File f) => extension(f.path) == '.dart';
