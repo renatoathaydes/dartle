@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:dartle/dartle.dart';
 
+/// Task declarations.
 final allTasks = [
   Task(hello, argsValidator: const ArgsCount.range(min: 0, max: 1)),
   Task(bye, dependsOn: const {'hello'}),
@@ -14,8 +15,16 @@ final allTasks = [
       )),
 ];
 
+/// main - always delegate to Dartle's `run` function to execute a build
 void main(List<String> args) async =>
     run(args, tasks: allTasks.toSet(), defaultTasks: {allTasks[0]});
+
+/////////////////////////////////////////////////////////////////////
+
+// Task actions. On larger projects, it's a good idea to move these
+// to their own files, under "dartle-src" by convention.
+
+/////////////////////////////////////////////////////////////////////
 
 /// To pass an argument to a task, use a ':' prefix, e.g.:
 /// dartle hello :joe
