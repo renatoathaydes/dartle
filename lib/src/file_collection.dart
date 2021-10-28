@@ -3,8 +3,6 @@ import 'dart:io';
 
 import 'package:path/path.dart' as p;
 
-import '_utils.dart';
-
 /// Function that filters files, returning true to keep a file,
 /// false to exclude it.
 typedef FileFilter = FutureOr<bool> Function(File);
@@ -162,7 +160,7 @@ class _SingleFileCollection implements FileCollection {
   bool get isNotEmpty => true;
 
   @override
-  String toString() => 'FileCollection{file=${file.path}}';
+  String toString() => 'FileCollection{file=${file.path.posix()}}';
 
   @override
   bool includes(FileSystemEntity entity) => filesEqual(file, entity);
@@ -214,7 +212,7 @@ class _FileCollection implements FileCollection {
 
   @override
   String toString() =>
-      'FileCollection{files=${_files.map((f) => f.path).join(', ')}}';
+      'FileCollection{files=${_files.map((f) => f.path.posix()).join(', ')}}';
 
   @override
   bool includes(FileSystemEntity entity) =>
@@ -283,8 +281,8 @@ class _FileSystemEntityCollection implements FileCollection {
 
   @override
   String toString() =>
-      'FileCollection{directories=${_dirs.map((d) => d.path)}, '
-      'files=${_extraFiles.map((f) => f.path)}}';
+      'FileCollection{directories=${_dirs.map((d) => d.path.posix())}, '
+      'files=${_extraFiles.map((f) => f.path.posix())}}';
 
   @override
   Future<bool> includes(FileSystemEntity entity) async {
@@ -332,13 +330,9 @@ class _FileSystemEntityCollection implements FileCollection {
     final commonDirs = <String>{};
     for (final dir in dirs) {
       for (final otherDir in otherDirs) {
-        if (dir.length > otherDir.length &&
-            dir.startsWith(otherDir + Platform.pathSeparator)) {
-          commonDirs.add(dir);
-        } else if (dir.length < otherDir.length &&
-            otherDir.startsWith(dir + Platform.pathSeparator)) {
+        if (p.isWithin(dir, otherDir)) {
           commonDirs.add(otherDir);
-        } else if (dir == otherDir) {
+        } else if (p.isWithin(otherDir, dir) || p.equals(dir, otherDir)) {
           commonDirs.add(dir);
         }
       }
@@ -371,11 +365,11 @@ Set<String> _filesIntersection(FileCollection collection, Iterable<File> files,
     if (entity is File &&
         (files.any((f) => filesEqual(f, entity)) ||
             dirs.any((d) => d.includes(entity)))) {
-      commonFiles.add(entity.path);
+      commonFiles.add(entity.path.posix());
     }
     if (entity is Directory) {
-      final dirName = entity.path + Platform.pathSeparator;
-      files.map((e) => e.path).forEach((path) {
+      final dirName = entity.path.posix() + '/';
+      files.map((e) => e.path.posix()).forEach((path) {
         if (path.startsWith(dirName)) {
           commonFiles.add(path);
         }
@@ -384,6 +378,10 @@ Set<String> _filesIntersection(FileCollection collection, Iterable<File> files,
   }
   return commonFiles;
 }
+
+bool filesEqual(FileSystemEntity e1, FileSystemEntity e2) =>
+    e1.runtimeType.toString() == e2.runtimeType.toString() &&
+    p.equals(e1.path, e2.path);
 
 List<F> _sortAndDistinct<F extends FileSystemEntity>(Iterable<F> files,
     {bool sortByPathLengthFirst = true}) {
@@ -396,22 +394,29 @@ List<F> _sortAndDistinct<F extends FileSystemEntity>(Iterable<F> files,
           final depthB = p.split(b.path).length;
           final depthComparison = depthA.compareTo(depthB);
           return depthComparison == 0
-              ? a.path.compareTo(b.path)
+              ? a.path.posix().compareTo(b.path.posix())
               : depthComparison;
         }
-      : (F a, F b) => a.path.compareTo(b.path);
+      : (F a, F b) => a.path.posix().compareTo(b.path.posix());
   list.sort(sortFun);
   return list;
 }
 
 extension _FileCollectionExt on Directory {
   bool includes(FileSystemEntity other) {
-    if (path == other.path) return true;
-    final dirName = path + Platform.pathSeparator;
-    return other.path.startsWith(dirName);
+    final posixPath = path.posix();
+    final otherPath = other.path.posix();
+    return posixPath == otherPath || p.isWithin(posixPath, otherPath);
   }
 }
 
 extension _FileSystemEntityListExt on List<FileSystemEntity> {
-  Set<String> dirSet() => whereType<Directory>().map((d) => d.path).toSet();
+  Set<String> dirSet() =>
+      whereType<Directory>().map((d) => d.path.posix()).toSet();
+}
+
+extension PlatformIndependentPaths on String {
+  String posix() {
+    return replaceAll("\\", "/");
+  }
 }
