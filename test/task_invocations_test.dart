@@ -78,6 +78,25 @@ void main() {
                 ]));
   });
 
+  group('tasks can be sorted in execution order', () {
+    test('no dependencies', () {
+      expect([_bw, _cw].sorted((a, b) => a.compareTo(b)), equals([_bw, _cw]));
+      expect([_cw, _bw].sorted((a, b) => a.compareTo(b)), equals([_cw, _bw]));
+    });
+    test('with dependencies', () {
+      expect([_aw, _bw, _cw].sorted((a, b) => a.compareTo(b)),
+          equals([_bw, _cw, _aw]));
+      expect([_cw, _bw, _aw].sorted((a, b) => a.compareTo(b)),
+          equals([_cw, _bw, _aw]));
+      expect([_bw, _cw, _aw].sorted((a, b) => a.compareTo(b)),
+          equals([_bw, _cw, _aw]));
+      expect([_aw, _bw, _cw, _dw].sorted((a, b) => a.compareTo(b)),
+          equals([_bw, _cw, _aw, _dw]));
+      expect([_bw, _dw, _cw, _aw].sorted((a, b) => a.compareTo(b)),
+          equals([_bw, _cw, _aw, _dw]));
+    });
+  });
+
   group('task invocation errors', () {
     test('arg without task', () {
       expect(
