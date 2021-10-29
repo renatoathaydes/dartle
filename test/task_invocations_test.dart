@@ -95,6 +95,21 @@ void main() {
       expect([_bw, _dw, _cw, _aw].sorted((a, b) => a.compareTo(b)),
           equals([_bw, _cw, _aw, _dw]));
     });
+    test('task phases are considered', () {
+      final t1w = TaskWithDeps(Task((_) {}, name: '1', phase: TaskPhase.setup));
+      final t2w = TaskWithDeps(Task((_) {}, name: '2', phase: TaskPhase.build));
+      final t3w = TaskWithDeps(Task((_) {}, name: '3', phase: TaskPhase.build));
+      final t4w =
+          TaskWithDeps(Task((_) {}, name: '4', phase: TaskPhase.tearDown));
+      expect([t1w, t2w, t3w, t4w].sorted((a, b) => a.compareTo(b)),
+          equals([t1w, t2w, t3w, t4w]));
+      expect([t2w, t1w, t4w, t3w].sorted((a, b) => a.compareTo(b)),
+          equals([t1w, t2w, t3w, t4w]));
+      expect([t4w, t2w, t1w, t3w].sorted((a, b) => a.compareTo(b)),
+          equals([t1w, t2w, t3w, t4w]));
+      expect([t4w, t3w, t2w, t1w].sorted((a, b) => a.compareTo(b)),
+          equals([t1w, t3w, t2w, t4w]));
+    });
   });
 
   group('task invocation errors', () {

@@ -43,12 +43,27 @@ _NameAction _resolveNameAction(Function(List<String>) action, String name) {
   return _NameAction(name, action, isTopLevelFunction);
 }
 
+/// Coarse-grained phases of [Task]s.
+///
+/// Tasks in each phase always run before any tasks from the next phase.
+///
+/// The order of phases is:
+/// 1. setup
+/// 2. build (default)
+/// 3. tearDown
+enum TaskPhase {
+  setup,
+  build,
+  tearDown,
+}
+
 /// A Dartle task whose action is provided by user code in order to execute
 /// some logic during a build run.
 class Task {
   final String description;
   final RunCondition runCondition;
   final ArgsValidator argsValidator;
+  final TaskPhase phase;
   Set<String> _dependsOn;
   final _NameAction _nameAction;
 
@@ -59,6 +74,7 @@ class Task {
     Set<String> dependsOn = const {},
     this.runCondition = const AlwaysRun(),
     this.argsValidator = const DoNotAcceptArgs(),
+    this.phase = TaskPhase.build,
   })  : _nameAction = _resolveNameAction(action, name),
         _dependsOn = dependsOn;
 
@@ -128,6 +144,9 @@ class TaskWithDeps implements Task, Comparable<TaskWithDeps> {
   String get name => _task.name;
 
   @override
+  TaskPhase get phase => _task.phase;
+
+  @override
   Function(List<String>) get action => _task.action;
 
   @override
@@ -158,6 +177,8 @@ class TaskWithDeps implements Task, Comparable<TaskWithDeps> {
   int compareTo(TaskWithDeps other) {
     const thisBeforeOther = -1;
     const thisAfterOther = 1;
+    if (phase.index < other.phase.index) return thisBeforeOther;
+    if (phase.index > other.phase.index) return thisAfterOther;
     if (_dependsOn.contains(other.name)) return thisAfterOther;
     if (other._dependsOn.contains(name)) return thisBeforeOther;
     return 0;
