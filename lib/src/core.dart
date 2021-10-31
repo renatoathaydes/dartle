@@ -214,7 +214,7 @@ Future<List<ParallelTasks>> _getExecutableTasks(
 }
 
 /// Get the tasks in the order that they should be executed, taking into account
-/// their dependencies.
+/// their dependencies and phases.
 ///
 /// To know which tasks must run, call [TaskWithStatus.mustRun] on each returned
 /// task.
@@ -232,7 +232,7 @@ Future<List<ParallelTasks>> getInOrderOfExecution(
 
   void addTaskToParallelTasks(TaskWithStatus taskWithStatus) {
     final canRunInPreviousGroup =
-        result.isNotEmpty && result.last.canInclude(taskWithStatus.task);
+        result.isNotEmpty &&  result.last.canInclude(taskWithStatus.task);
     if (canRunInPreviousGroup) {
       result.last.add(taskWithStatus);
     } else {
