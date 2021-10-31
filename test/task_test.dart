@@ -138,24 +138,24 @@ void main() {
     test('task in different phases are not executed in parallel', () async {
       final t1 = TaskWithDeps(Task(noop, name: 't1', phase: TaskPhase.setup));
       final t2 = TaskWithDeps(Task(noop, name: 't2', phase: TaskPhase.build));
-      final t3 = TaskWithDeps(Task(noop, name: 't3', phase: TaskPhase.build), [t1]);
-      final t4 = TaskWithDeps(Task(noop, name: 't4', phase: TaskPhase.build), [t1, t2, t3]);
-      final t5 = TaskWithDeps(Task(noop, name: 't5', phase: TaskPhase.tearDown));
+      final t3 =
+          TaskWithDeps(Task(noop, name: 't3', phase: TaskPhase.build), [t1]);
+      final t4 = TaskWithDeps(
+          Task(noop, name: 't4', phase: TaskPhase.build), [t1, t2, t3]);
+      final t5 =
+          TaskWithDeps(Task(noop, name: 't5', phase: TaskPhase.tearDown));
       var tasksInOrder = await getInOrderOfExecution(
-          [t1,t2,t3,t4,t5].map((t) => TaskInvocation(t)).toList());
+          [t1, t2, t3, t4, t5].map((t) => TaskInvocation(t)).toList());
       expect(tasksInOrder, hasLength(4));
       // setup phase: all tasks run in parallel due to no deps between them
-      expect(tasksInOrder[0].tasks.map((e) => e.task).toList(),
-          equals([t1]));
+      expect(tasksInOrder[0].tasks.map((e) => e.task).toList(), equals([t1]));
       // build phase: first runs tasks without deps in same phase
-      expect(tasksInOrder[1].tasks.map((e) => e.task).toList(),
-          equals([t2, t3]));
+      expect(
+          tasksInOrder[1].tasks.map((e) => e.task).toList(), equals([t2, t3]));
       // build phase: next tasks due to deps
-      expect(tasksInOrder[2].tasks.map((e) => e.task).toList(),
-          equals([t4]));
+      expect(tasksInOrder[2].tasks.map((e) => e.task).toList(), equals([t4]));
       // teardown phase:
-      expect(tasksInOrder[3].tasks.map((e) => e.task).toList(),
-          equals([t5]));
+      expect(tasksInOrder[3].tasks.map((e) => e.task).toList(), equals([t5]));
     });
   });
 
@@ -231,7 +231,7 @@ void main() {
     final phasesTaskMap =
         createTaskMap([setup1, setup2, build1, build2, teardown1, teardown2]);
 
-    test('tasks can depend on other tasks in the same or earlier phases', (){
+    test('tasks can depend on other tasks in the same or earlier phases', () {
       verifyTaskPhasesConsistency(phasesTaskMap);
     });
 
@@ -252,8 +252,7 @@ void main() {
               equals(
                   'The following tasks have dependency on tasks which are in an incompatible build phase:\n'
                   "  * Task 'foo' in phase 'setup' cannot depend on 'build1' in phase 'build'.\n"
-                  "  * Task 'bar' in phase 'build' cannot depend on 'teardown1' in phase 'tearDown'.\n"
-              ))));
+                  "  * Task 'bar' in phase 'build' cannot depend on 'teardown1' in phase 'tearDown'.\n"))));
     });
   });
 }
