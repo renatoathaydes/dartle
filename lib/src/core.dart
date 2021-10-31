@@ -122,6 +122,7 @@ Future<void> _runWithoutErrorHandling(List<String> args, Set<Task> tasks,
   }
   final taskMap = createTaskMap(tasks);
   await verifyTaskInputsAndOutputsConsistency(taskMap);
+  await verifyTaskPhasesConsistency(taskMap);
   final executableTasks =
       await _getExecutableTasks(taskMap, tasksInvocation, options);
   if (options.showInfoOnly) {

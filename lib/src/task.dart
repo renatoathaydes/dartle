@@ -57,6 +57,10 @@ enum TaskPhase {
   tearDown,
 }
 
+extension TaskPhaseString on TaskPhase {
+  String name() => toString().substring('TaskPhase.'.length);
+}
+
 /// A Dartle task whose action is provided by user code in order to execute
 /// some logic during a build run.
 class Task {
@@ -410,5 +414,26 @@ Future<void> verifyTaskInputsAndOutputsConsistency(
             "The following tasks have implicit dependencies due to their inputs depending on other tasks' outputs:\n"
             '${errors.map((e) => '  * $e.').join('\n')}\n\n'
             'Please add the dependencies explicitly.');
+  }
+}
+
+Future<void> verifyTaskPhasesConsistency(
+    Map<String, TaskWithDeps> taskMap) async {
+  final errors = <String>{};
+
+  // a task's dependencies must be in the same or earlier phases
+  for (final task in taskMap.values) {
+    task.dependencies
+        .where((dep) => dep.phase.index > task.phase.index)
+        .forEach((t) =>
+            errors.add("Task '${task.name}' in phase '${task.phase.name()}' "
+                "cannot depend on '${t.name}' in phase '${t.phase.name()}'"));
+  }
+
+  if (errors.isNotEmpty) {
+    throw DartleException(
+        message: "The following tasks have dependency on tasks which are in an "
+            "incompatible build phase:\n"
+            '${errors.map((e) => '  * $e.').join('\n')}\n');
   }
 }
