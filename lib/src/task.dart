@@ -43,18 +43,86 @@ _NameAction _resolveNameAction(Function(List<String>) action, String name) {
   return _NameAction(name, action, isTopLevelFunction);
 }
 
-/// Coarse-grained phases of [Task]s.
+/// Phases of [Task]s.
 ///
 /// Tasks in each phase always run before any tasks from the next phase.
 ///
-/// The order of phases is:
+/// The order of built-in phases is:
 /// 1. setup
 /// 2. build (default)
 /// 3. tearDown
-enum TaskPhase {
-  setup,
-  build,
-  tearDown,
+///
+/// Custom phases can be created as long as they use unique [index] and [name].
+class TaskPhase implements Comparable<TaskPhase> {
+  /// The index of this phase, used for sorting phases.
+  final int index;
+
+  /// The name of this phase.
+  final String name;
+
+  const TaskPhase._(this.index, this.name);
+
+  /// Create or return the phase with the given parameters.
+  ///
+  /// It's an error to attempt to get a phase with an existing index but
+  /// different name, or with an existing name but different index.
+  ///
+  /// To find all existing phases, use [TaskPhase.allPhases].
+  factory TaskPhase(int index, String name) {
+    final existingPhaseByIndex = _all.firstWhereOrNull((p) => p.index == index);
+    final existingPhaseByName = _all.firstWhereOrNull((p) => p.name == name);
+    if (existingPhaseByIndex != null &&
+        existingPhaseByIndex == existingPhaseByName) {
+      return existingPhaseByIndex;
+    }
+    if (existingPhaseByIndex != null) {
+      throw DartleException(
+          message: "Attempting to create new phase '$name' "
+              "with existing index $index, which is used for phase "
+              "'${existingPhaseByIndex.name}'");
+    }
+    if (existingPhaseByName != null) {
+      throw DartleException(
+          message: "Attempting to create new phase '$name' "
+              "with existing name '$name'");
+    }
+    final phase = TaskPhase._(index, name);
+    _all.add(phase);
+    return phase;
+  }
+
+  /// Whether this phase comes before another phase.
+  bool isBefore(TaskPhase other) => index < other.index;
+
+  /// Whether this phase comes after another phase.
+  bool isAfter(TaskPhase other) => index > other.index;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is TaskPhase && index == other.index && name == other.name;
+
+  @override
+  int get hashCode => index.hashCode ^ name.hashCode;
+
+  @override
+  int compareTo(TaskPhase other) {
+    return index.compareTo(other.index);
+  }
+
+  /// The 'setup' built-in task phase.
+  static const TaskPhase setup = TaskPhase._(100, 'setup');
+
+  /// The 'build' built-in task phase.
+  static const TaskPhase build = TaskPhase._(500, 'build');
+
+  /// The 'tearDown' built-in task phase.
+  static const TaskPhase tearDown = TaskPhase._(1000, 'tearDown');
+
+  static final List<TaskPhase> _all = [setup, build, tearDown];
+
+  /// Get the current list of phases.
+  static List<TaskPhase> get allPhases => _all.sorted();
 }
 
 extension TaskPhaseString on TaskPhase {
@@ -181,8 +249,8 @@ class TaskWithDeps implements Task, Comparable<TaskWithDeps> {
   int compareTo(TaskWithDeps other) {
     const thisBeforeOther = -1;
     const thisAfterOther = 1;
-    if (phase.index < other.phase.index) return thisBeforeOther;
-    if (phase.index > other.phase.index) return thisAfterOther;
+    if (phase.isBefore(other.phase)) return thisBeforeOther;
+    if (phase.isAfter(other.phase)) return thisAfterOther;
     if (_dependsOn.contains(other.name)) return thisAfterOther;
     if (other._dependsOn.contains(name)) return thisBeforeOther;
     return 0;
@@ -434,11 +502,9 @@ Future<void> verifyTaskPhasesConsistency(
 
   // a task's dependencies must be in the same or earlier phases
   for (final task in taskMap.values) {
-    task.dependencies
-        .where((dep) => dep.phase.index > task.phase.index)
-        .forEach((t) =>
-            errors.add("Task '${task.name}' in phase '${task.phase.name()}' "
-                "cannot depend on '${t.name}' in phase '${t.phase.name()}'"));
+    task.dependencies.where((dep) => dep.phase.isAfter(task.phase)).forEach(
+        (t) => errors.add("Task '${task.name}' in phase '${task.phase.name}' "
+            "cannot depend on '${t.name}' in phase '${t.phase.name}'"));
   }
 
   if (errors.isNotEmpty) {
