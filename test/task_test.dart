@@ -188,4 +188,49 @@ void main() {
       });
     });
   });
+
+  group('Task Phase Verification', () {
+    final setup1 =
+        TaskWithDeps(Task(noop, name: 'setup1', phase: TaskPhase.setup));
+    final setup2 = TaskWithDeps(
+        Task(noop, name: 'setup2', phase: TaskPhase.setup), [setup1]);
+    final build1 =
+        TaskWithDeps(Task(noop, name: 'build1', phase: TaskPhase.build));
+    final build2 = TaskWithDeps(
+        Task(noop, name: 'build2', phase: TaskPhase.build),
+        [setup1, setup2, build1]);
+    final teardown1 =
+        TaskWithDeps(Task(noop, name: 'teardown1', phase: TaskPhase.tearDown));
+    final teardown2 = TaskWithDeps(
+        Task(noop, name: 'teardown2', phase: TaskPhase.tearDown),
+        [setup1, build1, teardown1]);
+
+    final phasesTaskMap =
+        createTaskMap([setup1, setup2, build1, build2, teardown1, teardown2]);
+
+    test('tasks can depend on other tasks in the same or earlier phases', (){
+      verifyTaskPhasesConsistency(phasesTaskMap);
+    });
+
+    test('tasks cannot depend on other tasks in a later phase than themselves',
+        () {
+      expect(
+          () => verifyTaskPhasesConsistency({
+                ...phasesTaskMap,
+                'foo': TaskWithDeps(
+                    Task(noop, name: 'foo', phase: TaskPhase.setup), [build1]),
+                'bar': TaskWithDeps(
+                    Task(noop, name: 'bar', phase: TaskPhase.build),
+                    [teardown1]),
+              }),
+          throwsA(isA<DartleException>().having(
+              (e) => e.message,
+              'error message',
+              equals(
+                  'The following tasks have dependency on tasks which are in an incompatible build phase:\n'
+                  "  * Task 'foo' in phase 'setup' cannot depend on 'build1' in phase 'build'.\n"
+                  "  * Task 'bar' in phase 'build' cannot depend on 'teardown1' in phase 'tearDown'.\n"
+              ))));
+    });
+  });
 }
