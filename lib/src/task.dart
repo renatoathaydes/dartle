@@ -62,15 +62,25 @@ class TaskPhase implements Comparable<TaskPhase> {
 
   const TaskPhase._(this.index, this.name);
 
-  /// Create or return the phase with the given parameters.
+  /// Create or return a custom phase with the given parameters.
   ///
   /// It's an error to attempt to get a phase with an existing index but
-  /// different name, or with an existing name but different index.
+  /// different name, or with an existing name but different index, but calling
+  /// this method with the same name and index as an existing phase will return
+  /// the existing phase.
   ///
-  /// To find all existing phases, use [TaskPhase.allPhases].
-  factory TaskPhase(int index, String name) {
-    final existingPhaseByIndex = _all.firstWhereOrNull((p) => p.index == index);
-    final existingPhaseByName = _all.firstWhereOrNull((p) => p.name == name);
+  /// To get all the existing phases, use [TaskPhase.builtInPhases] for the
+  /// immutable, built-in phases, or [TaskPhase.currentZoneTaskPhases] for
+  /// the current [Zone]'s custom phases.
+  ///
+  /// See [TaskPhase.zonePhasesKey] for information on isolating task phases
+  /// modifications to Dart [Zone]s.
+  ///
+  factory TaskPhase.custom(int index, String name) {
+    final phases = currentZoneTaskPhases;
+    final existingPhaseByIndex =
+        phases.firstWhereOrNull((p) => p.index == index);
+    final existingPhaseByName = phases.firstWhereOrNull((p) => p.name == name);
     if (existingPhaseByIndex != null &&
         existingPhaseByIndex == existingPhaseByName) {
       return existingPhaseByIndex;
@@ -87,7 +97,8 @@ class TaskPhase implements Comparable<TaskPhase> {
               "with existing name '$name'");
     }
     final phase = TaskPhase._(index, name);
-    _all.add(phase);
+    phases.add(phase);
+    phases.sort();
     return phase;
   }
 
@@ -110,6 +121,34 @@ class TaskPhase implements Comparable<TaskPhase> {
     return index.compareTo(other.index);
   }
 
+  @override
+  String toString() {
+    return 'TaskPhase{index: $index, name: $name}';
+  }
+
+  /// Key used to register custom phases inside a Dart [Zone].
+  ///
+  /// It can be used to query and override the [TaskPhase]s being used in the
+  /// current Zone.
+  ///
+  /// When registering a List, it must be mutable to allow new custom tasks
+  /// being created.
+  ///
+  /// Use [currentZoneTaskPhases] to access the [Zone]'s phases.
+  static const Symbol zonePhasesKey = #zonePhases;
+
+  /// Get the task phases in the current [Zone], if it has been set,
+  /// or the root task phases otherwise.
+  ///
+  /// See also [TaskPhase.zonePhasesKey].
+  static List<TaskPhase> get currentZoneTaskPhases {
+    final phases = Zone.current[zonePhasesKey];
+    if (phases != null) {
+      return phases as List<TaskPhase>;
+    }
+    return _rootTaskPhases;
+  }
+
   /// The 'setup' built-in task phase.
   static const TaskPhase setup = TaskPhase._(100, 'setup');
 
@@ -119,10 +158,13 @@ class TaskPhase implements Comparable<TaskPhase> {
   /// The 'tearDown' built-in task phase.
   static const TaskPhase tearDown = TaskPhase._(1000, 'tearDown');
 
-  static final List<TaskPhase> _all = [setup, build, tearDown];
+  /// Get the built-in phases. The returned List is immutable.
+  /// To access custom phases, use [currentZoneTaskPhases] instead.
+  static final List<TaskPhase> builtInPhases = const [setup, build, tearDown];
 
-  /// Get the current list of phases.
-  static List<TaskPhase> get allPhases => _all.sorted();
+  /// mutable task phases list at root Zone. Can be overridden with a
+  /// Zone-specific List.
+  static final List<TaskPhase> _rootTaskPhases = [...builtInPhases];
 }
 
 extension TaskPhaseString on TaskPhase {
