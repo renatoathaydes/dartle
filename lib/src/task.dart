@@ -503,6 +503,14 @@ void _taskWithTransitiveDeps(TaskWithDeps task, List<TaskWithDeps> result) {
   result.add(task);
 }
 
+/// Verify that all tasks in [taskMap] have inputs/outputs that are mutually
+/// consistent.
+///
+/// If a task uses the outputs of another task as its inputs, then it must have
+/// an explicit dependency on the other task.
+///
+/// Any inconsistencies will cause a [DartleException] to be thrown by
+/// this method.
 Future<void> verifyTaskInputsAndOutputsConsistency(
     Map<String, TaskWithDeps> taskMap) async {
   final inputsByTask = <TaskWithDeps, FileCollection>{};
@@ -538,6 +546,16 @@ Future<void> verifyTaskInputsAndOutputsConsistency(
   }
 }
 
+/// Verify that all tasks in [taskMap] lie in phases that are consistent with
+/// their dependencies.
+///
+/// No task can depend on another task that belongs to a build phase that runs
+/// after its own.
+///
+/// Tasks cannot be executed on a [Zone] that does not include its phase.
+///
+/// Any inconsistencies will cause a [DartleException] to be thrown by
+/// this method.
 Future<void> verifyTaskPhasesConsistency(
     Map<String, TaskWithDeps> taskMap) async {
   final errors = <String>{};
@@ -553,6 +571,21 @@ Future<void> verifyTaskPhasesConsistency(
     throw DartleException(
         message: "The following tasks have dependency on tasks which are in an "
             "incompatible build phase:\n"
+            '${errors.map((e) => '  * $e.').join('\n')}\n');
+  }
+
+  final phases = TaskPhase.currentZoneTaskPhases;
+  for (final task in taskMap.values) {
+    if (!phases.contains(task.phase)) {
+      errors.add("Task '${task.name}' belongs to phase '${task.phase.name}'.");
+    }
+  }
+
+  if (errors.isNotEmpty) {
+    final phaseNames = phases.map((p) => p.name).join(', ');
+    throw DartleException(
+        message: "The following tasks do not belong to any of the phases in "
+            "the current Dart Zone, which are $phaseNames}:\n"
             '${errors.map((e) => '  * $e.').join('\n')}\n');
   }
 }
