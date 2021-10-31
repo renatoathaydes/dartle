@@ -221,6 +221,10 @@ enum TaskStatus {
   forced
 }
 
+extension TaskStatusString on TaskStatus {
+  String name() => toString().substring('TaskStatus.'.length);
+}
+
 /// Task with its status, including its current invocation.
 class TaskWithStatus {
   final TaskWithDeps task;
@@ -230,6 +234,11 @@ class TaskWithStatus {
   TaskWithStatus(this.task, this.status, this.invocation);
 
   bool get mustRun => status != TaskStatus.upToDate;
+
+  @override
+  String toString() {
+    return 'TaskWithStatus{task: $task, status: ${status.name()}}';
+  }
 }
 
 class ParallelTasks {
@@ -254,10 +263,12 @@ class ParallelTasks {
   /// Returns true the given task can be included in this group of tasks.
   ///
   /// If a task can be included, it means that it does not have any
-  /// dependency on tasks in this group, hence it can run in parallel with
+  /// dependency on tasks in this group and that it belongs to the same phase
+  /// as other tasks in this group, hence it can run in parallel with
   /// the other tasks.
   bool canInclude(TaskWithDeps task) {
     for (final t in invocations.map((i) => i.task)) {
+      if (t.phase.index != task.phase.index) return false;
       if (t._dependsOn.contains(task.name)) return false;
       if (task._dependsOn.contains(t.name)) return false;
     }
