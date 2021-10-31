@@ -232,7 +232,7 @@ Future<List<ParallelTasks>> getInOrderOfExecution(
 
   void addTaskToParallelTasks(TaskWithStatus taskWithStatus) {
     final canRunInPreviousGroup =
-        result.isNotEmpty &&  result.last.canInclude(taskWithStatus.task);
+        result.isNotEmpty && result.last.canInclude(taskWithStatus.task);
     if (canRunInPreviousGroup) {
       result.last.add(taskWithStatus);
     } else {

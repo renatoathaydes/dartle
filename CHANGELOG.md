@@ -3,6 +3,8 @@
 - forbid tasks from accessing IO resources not declared in inputs/outputs.
 - task must run before/after another task without hard dependency.
 
+- added build phases to ensure ordering between tasks without dependencies: `setup`, `build`, `teardown`.
+
 ## 0.11.0
 
 - better error message when no default tasks exist and no tasks are selected.
