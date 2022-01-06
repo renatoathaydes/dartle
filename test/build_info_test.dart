@@ -80,6 +80,9 @@ void main() {
 
 Tasks declared in this build:
 
+==> Setup Phase:
+  No tasks in this phase.
+==> Build Phase:
   * a [default] [always-runs]
       Task A
   * b [default] [always-runs]
@@ -89,7 +92,6 @@ Tasks declared in this build:
   * e [always-runs]
   * f [always-runs]
   * g [always-runs]
-  * h
   * i
   * j
   * k
@@ -98,6 +100,8 @@ Tasks declared in this build:
   * n [always-runs]
   * o
       Task O
+==> Tear-down Phase:
+  * h
 
 The following tasks were selected to run, in order:
 
