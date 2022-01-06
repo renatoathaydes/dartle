@@ -3,9 +3,9 @@ import 'dart:math' show max;
 
 import 'package:collection/collection.dart';
 
+import '_log.dart';
 import 'options.dart';
 import 'task.dart';
-import '_log.dart';
 
 void showTasksInfo(
     List<ParallelTasks> executableTasks,
@@ -32,14 +32,34 @@ void showAll(List<ParallelTasks> executableTasks, Map<String, Task> taskMap,
     ..sort((t1, t2) => t1.name.compareTo(t2.name));
   final tasksByName = groupBy(executableTasks.expand((t) => t.tasks),
       (TaskWithStatus t) => t.task.name);
-  print('Tasks declared in this build:\n');
-  for (final task in taskList) {
-    final desc = task.description.isEmpty ? '' : '\n      ${task.description}';
-    final isDefault =
-        defaultSet.contains(task.name) ? style(' [default]', LogStyle.dim) : '';
-    final status = (tasksByName[task.name]?.first.status).describe();
-    print('  * ${style(task.name, LogStyle.bold)}$isDefault$status$desc');
+
+  void show(String header, Iterable<Task> taskList) {
+    print(style('==> $header', LogStyle.italic));
+    if (taskList.isEmpty) {
+      print('  No tasks in this phase.');
+    } else {
+      for (final task in taskList) {
+        final desc =
+            task.description.isEmpty ? '' : '\n      ${task.description}';
+        final isDefault = defaultSet.contains(task.name)
+            ? style(' [default]', LogStyle.dim)
+            : '';
+        final status = (tasksByName[task.name]?.first.status).describe();
+        print('  * ${style(task.name, LogStyle.bold)}$isDefault$status$desc');
+      }
+    }
   }
+
+  print('Tasks declared in this build:\n');
+
+  final setupTasks = taskList.where((task) => task.phase == TaskPhase.setup);
+  final buildTasks = taskList.where((task) => task.phase == TaskPhase.build);
+  final tearDownTasks =
+      taskList.where((task) => task.phase == TaskPhase.tearDown);
+
+  show('Setup Phase:', setupTasks);
+  show('Build Phase:', buildTasks);
+  show('Tear-down Phase:', tearDownTasks);
 }
 
 extension StatusDescribe on TaskStatus? {
