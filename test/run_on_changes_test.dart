@@ -1,5 +1,4 @@
 import 'package:dartle/dartle.dart';
-import 'package:dartle/dartle_cache.dart';
 import 'package:test/test.dart';
 
 import 'cache_mock.dart';
