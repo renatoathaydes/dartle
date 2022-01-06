@@ -10,7 +10,7 @@ final tasks = [
   Task(noop, name: 'e'),
   Task(noop, name: 'f', dependsOn: {'g', 'n'}),
   Task(noop, name: 'g', dependsOn: {'c'}),
-  Task(noop, name: 'h'),
+  Task(noop, name: 'h', phase: TaskPhase.tearDown),
   Task(noop, name: 'i', dependsOn: {'d'}),
   Task(noop, name: 'j'),
   Task(noop, name: 'k', dependsOn: {'a'}),
