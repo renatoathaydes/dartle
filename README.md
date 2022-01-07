@@ -1,8 +1,7 @@
 # Dartle
 
 ![Dartle CI](https://github.com/renatoathaydes/dartle/workflows/Dartle%20CI/badge.svg)
-
-[Dartle on pub.dev](https://pub.dev/packages/dartle)
+[![pub package](https://img.shields.io/pub/v/dartle.svg)](https://pub.dev/packages/dartle)
 
 A simple build system (or task runner, really) written in Dart.
  
