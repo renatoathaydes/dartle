@@ -55,9 +55,9 @@ void main() {
       expect(tasksOutput, contains('Env={}'));
     });
 
-    test('run in the same Isolate without the -p flag', () async {
+    test('run in the same Isolate with the --no-parallel flag', () async {
       // without the -p flag, all tasks run in the main Isolate
-      var proc = await runBuild(const ['showEnv']);
+      var proc = await runBuild(const ['showEnv', '--no-parallel-tasks']);
 
       expect(
           proc.stdout[0],

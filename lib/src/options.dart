@@ -26,7 +26,7 @@ class Options {
       this.showTasks = false,
       this.showTaskGraph = false,
       this.forceTasks = false,
-      this.parallelizeTasks = false,
+      this.parallelizeTasks = true,
       this.resetCache = false,
       this.logBuildTime = true,
       this.tasksInvocation = const []});
@@ -69,6 +69,7 @@ final _parser = ArgParser()
     'parallel-tasks',
     abbr: 'p',
     negatable: true,
+    defaultsTo: true,
     help: 'Allow tasks to run in parallel using Isolates.',
   )
   ..addFlag(
