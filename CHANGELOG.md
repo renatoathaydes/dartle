@@ -1,9 +1,8 @@
 ## Future release
 
 - forbid tasks from accessing IO resources not declared in inputs/outputs.
-- task must run before/after another task without hard dependency.
-
 - added build phases to ensure ordering between tasks without dependencies: `setup`, `build`, `teardown`.
+- enabled parallelization of tasks by default.
 
 ## 0.11.0
 
