@@ -100,7 +100,7 @@ Tasks declared in this build:
   * n [always-runs]
   * o
       Task O
-==> Tear-down Phase:
+==> TearDown Phase:
   * h
 
 The following tasks were selected to run, in order:

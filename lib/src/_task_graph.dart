@@ -33,8 +33,8 @@ void showAll(List<ParallelTasks> executableTasks, Map<String, Task> taskMap,
   final tasksByName = groupBy(executableTasks.expand((t) => t.tasks),
       (TaskWithStatus t) => t.task.name);
 
-  void show(String header, Iterable<Task> taskList) {
-    print(style('==> $header', LogStyle.italic));
+  void show(TaskPhase phase, Iterable<Task> taskList) {
+    print(style('==> ${phase.name.capitalized} Phase:', LogStyle.italic));
     if (taskList.isEmpty) {
       print('  No tasks in this phase.');
     } else {
@@ -52,14 +52,9 @@ void showAll(List<ParallelTasks> executableTasks, Map<String, Task> taskMap,
 
   print('Tasks declared in this build:\n');
 
-  final setupTasks = taskList.where((task) => task.phase == TaskPhase.setup);
-  final buildTasks = taskList.where((task) => task.phase == TaskPhase.build);
-  final tearDownTasks =
-      taskList.where((task) => task.phase == TaskPhase.tearDown);
-
-  show('Setup Phase:', setupTasks);
-  show('Build Phase:', buildTasks);
-  show('Tear-down Phase:', tearDownTasks);
+  for (final phase in TaskPhase.currentZoneTaskPhases) {
+    show(phase, taskList.where((task) => task.phase == phase));
+  }
 }
 
 extension StatusDescribe on TaskStatus? {
@@ -165,5 +160,13 @@ void showExecutableTasks(List<ParallelTasks> executableTasks) {
       }
       stdout.writeln();
     }
+  }
+}
+
+extension _CapitalString on String {
+  String get capitalized {
+    if (isEmpty) return '';
+    final c = this[0];
+    return '${c.toUpperCase()}${substring(1)}';
   }
 }
