@@ -2,6 +2,10 @@
 
 - forbid tasks from accessing IO resources not declared in inputs/outputs.
 
+## 0.12.1
+
+- include custom task phases in information about tasks.
+
 ## 0.12.0
 
 - added build phases to ensure ordering between tasks without dependencies: `setup`, `build`, `teardown`.
