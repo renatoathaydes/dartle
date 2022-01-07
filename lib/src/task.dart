@@ -12,13 +12,11 @@ final _functionNamePatttern = RegExp('[a-zA-Z_0-9]+');
 class _NameAction {
   final String name;
   final Function(List<String>) action;
-  final bool isActionTopLevelFunction;
 
-  _NameAction(this.name, this.action, this.isActionTopLevelFunction);
+  _NameAction(this.name, this.action);
 }
 
 _NameAction _resolveNameAction(Function(List<String>) action, String name) {
-  var isTopLevelFunction = false;
   final funName = '$action';
   final firstQuote = funName.indexOf("'");
   if (firstQuote > 0) {
@@ -30,7 +28,6 @@ _NameAction _resolveNameAction(Function(List<String>) action, String name) {
       // do not accept it
       if (!inferredName.contains('___')) {
         if (name.isEmpty) name = inferredName;
-        isTopLevelFunction = true;
       }
     }
   }
@@ -40,7 +37,7 @@ _NameAction _resolveNameAction(Function(List<String>) action, String name) {
         'a name explicitly or use a top-level function as its action');
   }
 
-  return _NameAction(name, action, isTopLevelFunction);
+  return _NameAction(name, action);
 }
 
 /// Phases of [Task]s.
@@ -214,11 +211,8 @@ class Task {
   /// with other tasks on the same Isolate... to avoid that, impose dependencies
   /// between tasks.
   ///
-  /// By default, this method only returns true if this Task's [action] is a
-  /// top-level function. If [action] is not a top-level function, this method
-  /// must return false as in that case, the [action] cannot be run in
-  /// an [Isolate].
-  bool get isParallelizable => _nameAction.isActionTopLevelFunction;
+  /// Returns true by default.
+  bool get isParallelizable => true;
 
   @override
   String toString() => 'Task{name: $name}';

@@ -71,15 +71,11 @@ Future<List<TaskResult>> runTasks(List<ParallelTasks> tasks,
 Future<TaskResult> runTask(TaskInvocation invocation,
     {required bool runInIsolate}) async {
   final task = invocation.task;
+  final action = _createTaskAction(task, runInIsolate && task.isParallelizable);
+
   logger.log(task.name.startsWith('_') ? Level.FINE : Level.INFO,
       "Running task '${task.name}'");
 
-  var useIsolate = runInIsolate && task.isParallelizable;
-
-  logger.fine("Using ${useIsolate ? 'separate' : 'main'} "
-      "Isolate to run task '${task.name}'");
-
-  final action = useIsolate ? actorAction(task.action) : task.action;
   final stopwatch = Stopwatch()..start();
   TaskResult result;
   try {
@@ -95,6 +91,13 @@ Future<TaskResult> runTask(TaskInvocation invocation,
       "${result.isSuccess ? 'successfully' : 'with errors'}"
       ' in ${elapsedTime(stopwatch)}');
   return result;
+}
+
+Function(List<String>) _createTaskAction(Task task, bool runInIsolate) {
+  logger.fine("Scheduling task '${task.name}'" +
+      (runInIsolate ? ' to run in parallel' : ''));
+
+  return runInIsolate ? actorAction(task.action) : task.action;
 }
 
 Future<List<Exception>> runTasksPostRun(List<TaskResult> results) async {
