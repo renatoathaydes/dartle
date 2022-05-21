@@ -123,11 +123,11 @@ Future<int> execProc(Future<Process> process,
 /// Deletes the outputs of all [tasks].
 ///
 /// This method only works if the task's [RunCondition]s are instances of
-/// [RunOnChanges].
+/// [FilesCondition].
 Future<void> deleteOutputs(Iterable<Task> tasks) async {
   for (final task in tasks) {
     final cond = task.runCondition;
-    if (cond is RunOnChanges) {
+    if (cond is FilesCondition) {
       await deleteAll(cond.outputs);
     }
   }
