@@ -70,6 +70,26 @@ String elapsedTime(Stopwatch stopwatch) {
   }
 }
 
+extension AsyncUtil<T> on Stream<T> {
+  Future<bool> asyncAny(Future<bool> Function(T) predicate) async {
+    await for (final element in this) {
+      if (await predicate(element)) return true;
+    }
+    return false;
+  }
+}
+
+extension MultiMapUtils<K, V> on Map<K, Set<V>> {
+  void accumulate(K key, V value) {
+    var current = this[key];
+    if (current == null) {
+      current = <V>{};
+      this[key] = current;
+    }
+    current.add(value);
+  }
+}
+
 class MultipleExceptions with Exception {
   final List exceptions;
 

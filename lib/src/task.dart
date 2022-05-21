@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:collection/collection.dart';
 
+import '_utils.dart';
 import 'error.dart';
 import 'file_collection.dart';
 import 'run_condition.dart';
@@ -240,10 +241,11 @@ class TaskWithDeps implements Task, Comparable<TaskWithDeps> {
   /// execute.
   final List<TaskWithDeps> dependencies;
 
-  final Set<String> _allDeps;
+  /// Set of dependency names.
+  final Set<String> dependencySet;
 
   TaskWithDeps(this._task, [this.dependencies = const <TaskWithDeps>[]])
-      : _allDeps = dependencies.map((t) => t.name).toSet();
+      : dependencySet = dependencies.map((t) => t.name).toSet();
 
   @override
   _NameAction get _nameAction => _task._nameAction;
@@ -262,7 +264,7 @@ class TaskWithDeps implements Task, Comparable<TaskWithDeps> {
 
   /// All transitive dependencies of this task.
   @override
-  Set<String> get _dependsOn => _allDeps;
+  Set<String> get _dependsOn => dependencySet;
 
   /// The direct dependencies of this task.
   Set<String> get directDependencies => _task._dependsOn;
@@ -321,6 +323,7 @@ enum TaskStatus {
   upToDate,
   alwaysRuns,
   dependencyIsOutOfDate,
+  affectedByDeletionTask,
   outOfDate,
   forced
 }
@@ -447,7 +450,7 @@ Map<String, TaskWithDeps> createTaskMap(Iterable<Task> tasks) {
       .map((_, task) => MapEntry(task.name, task));
   final result = <String, TaskWithDeps>{};
   tasksByName.forEach((name, _) {
-    _collectTransitiveDependencies(name, tasksByName, result, [], '');
+    _collectTransitiveDependencies(name, tasksByName, result, {}, '');
   });
   return result;
 }
@@ -456,7 +459,7 @@ void _collectTransitiveDependencies(
     String taskName,
     Map<String, Task> tasksByName,
     Map<String, TaskWithDeps> result,
-    List<String> visited,
+    Set<String> visited,
     String ind) {
   if (result.containsKey(taskName)) return;
 
@@ -467,12 +470,11 @@ void _collectTransitiveDependencies(
         message: "Task with name '$taskName' does not exist "
             "(dependency path: [${visited.join(' -> ')}])");
   }
-  if (visited.contains(taskName)) {
-    visited.add(taskName);
+  if (!visited.add(taskName)) {
     throw DartleException(
-        message: "Task dependency cycle detected: [${visited.join(' -> ')}]");
+        message: "Task dependency cycle detected: "
+            "[${[...visited, taskName].join(' -> ')}]");
   }
-  visited.add(taskName);
 
   final dependencies = <TaskWithDeps>[];
   for (final dep in task._dependsOn) {
@@ -497,47 +499,103 @@ void _taskWithTransitiveDeps(TaskWithDeps task, List<TaskWithDeps> result) {
   result.add(task);
 }
 
+typedef DeletionTasksByTask = Map<String, Set<String>>;
+
 /// Verify that all tasks in [taskMap] have inputs/outputs that are mutually
 /// consistent.
 ///
 /// If a task uses the outputs of another task as its inputs, then it must have
 /// an explicit dependency on the other task.
 ///
+/// If a deletion task affects inputs or outputs of another task, then it must
+/// execute on a phase that precedes those other tasks.
+///
 /// Any inconsistencies will cause a [DartleException] to be thrown by
 /// this method.
-Future<void> verifyTaskInputsAndOutputsConsistency(
+///
+/// Returns the tasks affected by deletion tasks, so that the engine can
+/// detect when it must run a task due to deletions.
+Future<DeletionTasksByTask> verifyTaskInputsAndOutputsConsistency(
     Map<String, TaskWithDeps> taskMap) async {
   final inputsByTask = <TaskWithDeps, FileCollection>{};
   final outputsByTask = <TaskWithDeps, FileCollection>{};
+  final deletionsByTask = <TaskWithDeps, FileCollection>{};
+
+  // will return relationship between deletion tasks and others
+  final tasksAffectedByDeletion = <String, Set<String>>{};
+
   for (var task in taskMap.values) {
     final rc = task.runCondition;
     if (rc is FilesCondition) {
       inputsByTask[task] = rc.inputs;
       outputsByTask[task] = rc.outputs;
+      deletionsByTask[task] = rc.deletions;
     }
   }
 
-  final errors = <String>{};
+  final dependencyErrors = <String>{};
+  final phaseErrors = <String>{};
 
-  // a task's inputs may only include another's outputs if it depends on it
+  // 1. a task's inputs may only include another's outputs if it depends on it
   inputsByTask.forEach((task, ins) {
     outputsByTask.forEach((otherTask, otherOuts) {
-      if (task.dependencies.contains(otherTask)) return;
+      if (task.dependencySet.contains(otherTask.name)) return;
       final intersectInsOuts = ins.intersection(otherOuts);
       if (intersectInsOuts.inclusions.isNotEmpty) {
-        errors.add("Task '${task.name}' must dependOn '${otherTask.name}' "
-            '(clashing outputs: ${intersectInsOuts.inclusions})');
+        dependencyErrors
+            .add("Task '${task.name}' must dependOn '${otherTask.name}' "
+                '(clashing outputs: ${intersectInsOuts.inclusions})');
       }
     });
   });
 
-  if (errors.isNotEmpty) {
-    throw DartleException(
-        message:
-            "The following tasks have implicit dependencies due to their inputs depending on other tasks' outputs:\n"
-            '${errors.map((e) => '  * $e.').join('\n')}\n\n'
-            'Please add the dependencies explicitly.');
+  // 2. deletion tasks must be in a phase that precedes tasks whose
+  //    inputs/outputs are deleted by them
+  inputsByTask.forEach((task, ins) {
+    deletionsByTask.forEach((deletionTask, deletedFiles) {
+      final outs = outputsByTask[task]!;
+
+      bool addErrorIfNotEmpty(FileCollection fc, String io) {
+        if (fc.inclusions.isNotEmpty) {
+          tasksAffectedByDeletion.accumulate(task.name, deletionTask.name);
+          if (!task.phase.isAfter(deletionTask.phase)) {
+            phaseErrors.add("Task '${deletionTask.name}' "
+                "(phase '${deletionTask.phase.name}') deletes $io of "
+                "'${task.name}' (phase '${task.phase.name}'): ${fc.inclusions}");
+            return true;
+          }
+        }
+        return false;
+      }
+
+      if (!addErrorIfNotEmpty(ins.intersection(deletedFiles), 'inputs')) {
+        addErrorIfNotEmpty(outs.intersection(deletedFiles), 'outputs');
+      }
+    });
+  });
+
+  if (dependencyErrors.isNotEmpty || phaseErrors.isNotEmpty) {
+    final error = StringBuffer();
+    if (dependencyErrors.isNotEmpty) {
+      error.writeln("The following tasks have implicit dependencies due to "
+          "their inputs depending on other tasks' outputs:");
+      error.writeln(dependencyErrors.map((e) => '  * $e.').join('\n'));
+      error.writeln('\nPlease add the dependencies explicitly.');
+    }
+    if (phaseErrors.isNotEmpty) {
+      if (error.isNotEmpty) {
+        error.writeln();
+      }
+      error.writeln("The following tasks delete inputs or outputs of another "
+          "task that does not run on a later phase, hence could corrupt those "
+          "tasks execution:");
+      error.writeln(phaseErrors.map((e) => '  * $e.').join('\n'));
+      error.writeln('\nPlease change the task phases so that deletion tasks '
+          "run on earlier phases (typically 'setup') than other tasks.");
+    }
+    throw DartleException(message: error.toString());
   }
+  return tasksAffectedByDeletion;
 }
 
 /// Verify that all tasks in [taskMap] lie in phases that are consistent with

@@ -193,7 +193,7 @@ void main() {
                   " inputs depending on other tasks' outputs:\n"
                   "  * Task 'bar' must dependOn 'foo' (clashing outputs: [File: 'out.txt']).\n"
                   "  * Task 'blah' must dependOn 'zort' (clashing outputs: [Directory: 'out']).\n\n"
-                  'Please add the dependencies explicitly.'))));
+                  'Please add the dependencies explicitly.\n'))));
     });
 
     test('no error occurs if tasks ins/outs are unrelated', () async {

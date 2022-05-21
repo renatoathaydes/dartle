@@ -29,8 +29,9 @@ mixin RunCondition {
 ///
 /// Dartle considers these when verifying implicit dependencies between tasks.
 mixin FilesCondition on RunCondition {
-  abstract final FileCollection inputs;
-  abstract final FileCollection outputs;
+  FileCollection get inputs => FileCollection.empty;
+  FileCollection get outputs => FileCollection.empty;
+  FileCollection get deletions => FileCollection.empty;
 }
 
 /// A [RunCondition] which is always fullfilled.
@@ -162,6 +163,7 @@ class RunOnChanges with RunCondition, FilesCondition {
 ///
 /// The [period] is computed at the time of checking if the task should run and
 /// starts counting from the last time the task was executed successfully.
+@sealed
 class RunAtMostEvery with RunCondition {
   final Duration period;
   final DartleCache cache;
@@ -187,6 +189,37 @@ class RunAtMostEvery with RunCondition {
     }
     return clock.now().isAfter(lastTime.add(period));
   }
+}
+
+/// A [RunCondition] that indicates that a [Task] will delete certain files
+/// and directories if they exist.
+///
+/// Build cleaning tasks should use this condition so that Dartle will know how
+/// to enforce the correct execution of tasks whose inputs/outputs may be
+/// affected by deletion tasks.
+@sealed
+class RunToDelete with RunCondition, FilesCondition {
+  @override
+  final FileCollection deletions;
+  final DartleCache cache;
+
+  RunToDelete(this.deletions, [DartleCache? cache])
+      : cache = cache ?? DartleCache.instance;
+
+  @override
+  FileCollection get inputs => FileCollection.empty;
+
+  @override
+  FileCollection get outputs => FileCollection.empty;
+
+  @override
+  FutureOr<bool> shouldRun(TaskInvocation invocation) async {
+    return await deletions.files.asyncAny((f) => f.exists()) ||
+        await deletions.directories.asyncAny((d) => d.exists());
+  }
+
+  @override
+  FutureOr<void> postRun(TaskResult result) async {}
 }
 
 /// Base mixin for a [RunCondition] that combines other [RunCondition]s.

@@ -121,10 +121,11 @@ Future<void> _runWithoutErrorHandling(List<String> args, Set<Task> tasks,
     tasksInvocation = defaultTasks.map((t) => t.name).toList();
   }
   final taskMap = createTaskMap(tasks);
-  await verifyTaskInputsAndOutputsConsistency(taskMap);
+  final tasksAffectedByDeletion =
+      await verifyTaskInputsAndOutputsConsistency(taskMap);
   await verifyTaskPhasesConsistency(taskMap);
-  final executableTasks =
-      await _getExecutableTasks(taskMap, tasksInvocation, options);
+  final executableTasks = await _getExecutableTasks(
+      taskMap, tasksInvocation, options, tasksAffectedByDeletion);
   if (options.showInfoOnly) {
     print('======== Showing build information only, no tasks will '
         'be executed ========\n');
@@ -200,7 +201,8 @@ Future<void> _runAll(
 Future<List<ParallelTasks>> _getExecutableTasks(
     Map<String, TaskWithDeps> taskMap,
     List<String> tasksInvocation,
-    Options options) async {
+    Options options,
+    DeletionTasksByTask tasksAffectedByDeletion) async {
   if (tasksInvocation.isEmpty) {
     if (!options.showInfoOnly) {
       logger.warning('No tasks were requested and no default tasks exist.');
@@ -209,8 +211,8 @@ Future<List<ParallelTasks>> _getExecutableTasks(
   }
   final invocations = parseInvocation(tasksInvocation, taskMap, options);
 
-  return await getInOrderOfExecution(
-      invocations, options.forceTasks, options.showTasks);
+  return await getInOrderOfExecution(invocations, options.forceTasks,
+      options.showTasks, tasksAffectedByDeletion);
 }
 
 /// Get the tasks in the order that they should be executed, taking into account
@@ -224,7 +226,8 @@ Future<List<ParallelTasks>> _getExecutableTasks(
 Future<List<ParallelTasks>> getInOrderOfExecution(
     List<TaskInvocation> invocations,
     [bool forceTasks = false,
-    bool showTasks = false]) async {
+    bool showTasks = false,
+    DeletionTasksByTask tasksAffectedByDeletion = const {}]) async {
   // first of all, re-order tasks so that dependencies are in order
   invocations.sort((a, b) => a.task.compareTo(b.task));
 
@@ -247,15 +250,15 @@ Future<List<ParallelTasks>> getInOrderOfExecution(
     for (final dep in inv.task.dependencies) {
       if (seenTasks.add(dep.name)) {
         final invocation = TaskInvocation(dep);
-        final taskWithStatus =
-            await _createTaskWithStatus(invocation, taskStatuses, false);
+        final taskWithStatus = await _createTaskWithStatus(
+            invocation, taskStatuses, false, tasksAffectedByDeletion);
         taskStatuses[dep.name] = taskWithStatus;
         addTaskToParallelTasks(taskWithStatus);
       }
     }
     if (seenTasks.add(inv.name)) {
-      final taskWithStatus =
-          await _createTaskWithStatus(inv, taskStatuses, forceTasks);
+      final taskWithStatus = await _createTaskWithStatus(
+          inv, taskStatuses, forceTasks, tasksAffectedByDeletion);
       taskStatuses[inv.name] = taskWithStatus;
       addTaskToParallelTasks(taskWithStatus);
     }
@@ -273,6 +276,7 @@ Future<TaskWithStatus> _createTaskWithStatus(
   TaskInvocation invocation,
   Map<String, TaskWithStatus> taskStatuses,
   bool forceTask,
+  DeletionTasksByTask tasksAffectedByDeletion,
 ) async {
   final task = invocation.task;
   TaskStatus status;
@@ -280,6 +284,9 @@ Future<TaskWithStatus> _createTaskWithStatus(
     status = TaskStatus.forced;
   } else if (task.runCondition == const AlwaysRun()) {
     status = TaskStatus.alwaysRuns;
+  } else if (_isAffectedByDeletionTask(
+      task, taskStatuses, tasksAffectedByDeletion)) {
+    status = TaskStatus.affectedByDeletionTask;
   } else if (_anyDepMustRun(task, taskStatuses)) {
     status = TaskStatus.dependencyIsOutOfDate;
   } else if (await task.runCondition.shouldRun(invocation)) {
@@ -288,6 +295,18 @@ Future<TaskWithStatus> _createTaskWithStatus(
     status = TaskStatus.upToDate;
   }
   return TaskWithStatus(task, status, invocation);
+}
+
+bool _isAffectedByDeletionTask(
+    TaskWithDeps task,
+    Map<String, TaskWithStatus> taskStatuses,
+    DeletionTasksByTask tasksAffectedByDeletion) {
+  final deletionTasks = tasksAffectedByDeletion[task.name] ?? const {};
+  for (final delTask in deletionTasks) {
+    final status = taskStatuses[delTask];
+    if (status?.mustRun == true) return true;
+  }
+  return false;
 }
 
 void _throwAggregateErrors(List<Exception> errors) {
