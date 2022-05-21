@@ -183,6 +183,7 @@ class JsonReporter {
       _threads[idx] = null;
       return data;
     }
+    return null;
   }
 
   void _printThreads(int prevThreadCount) {

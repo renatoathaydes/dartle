@@ -70,7 +70,7 @@ Future<void> abortIfNotDartleProject() async {
 /// completion, re-throwing Exceptions. Otherwise, the process will exit with
 /// 0 on success, or the appropriate error code on error.
 Future<void> runSafely(List<String> args, bool doNotExit,
-    FutureOr<Object?> Function(Stopwatch, Options) action) async {
+    FutureOr<void> Function(Stopwatch, Options) action) async {
   final stopWatch = Stopwatch()..start();
   var options = const Options();
 
