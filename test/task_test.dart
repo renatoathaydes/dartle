@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:dartle/dartle.dart';
 import 'package:test/test.dart';
 
@@ -166,6 +168,7 @@ void main() {
             RunOnChanges(inputs: file('in.txt'), outputs: file('out.txt')));
     final barTask = Task(noop,
         name: 'bar',
+        phase: TaskPhase.tearDown,
         runCondition:
             RunOnChanges(inputs: file('out.txt'), outputs: file('out2.txt')));
     final zortTask = Task(noop,
@@ -174,6 +177,16 @@ void main() {
     final blahTask = Task(noop,
         name: 'blah',
         runCondition: RunOnChanges(inputs: dir('out'), outputs: dir('out2')));
+    final deleteTask = Task(noop,
+        phase: TaskPhase.setup,
+        name: 'delete',
+        runCondition: RunToDelete(files(['out.txt', 'in.txt'])));
+    final deleteTaskBad = Task(noop,
+        name: 'deleteBad',
+        runCondition: RunToDelete(FileCollection([
+          Directory('out'),
+          File('out2.txt'),
+        ])));
 
     test(
         'if a task outputs are used as inputs for other task, '
@@ -196,6 +209,28 @@ void main() {
                   'Please add the dependencies explicitly.\n'))));
     });
 
+    test(
+        'if a cleaning task affects other task, '
+        'an error occurs when they run on the same phase', () {
+      expect(
+          () async => await verifyTaskInputsAndOutputsConsistency({
+                'zort': TaskWithDeps(zortTask),
+                'bar': TaskWithDeps(barTask),
+                'deleteBad': TaskWithDeps(deleteTaskBad),
+              }),
+          throwsA(isA<DartleException>().having(
+              (e) => e.message,
+              'message',
+              equals(
+                  "The following tasks delete inputs or outputs of another task that "
+                  "does not run on a later phase, hence could corrupt those tasks "
+                  "execution:\n"
+                  "  * Task 'deleteBad' (phase 'build') deletes outputs "
+                  "of 'zort' (phase 'build'): [Directory: 'out'].\n\n"
+                  "Please change the task phases so that deletion tasks run on "
+                  "earlier phases (typically 'setup') than other tasks.\n"))));
+    });
+
     test('no error occurs if tasks ins/outs are unrelated', () async {
       await verifyTaskInputsAndOutputsConsistency({
         'foo': TaskWithDeps(fooTask),
@@ -209,6 +244,23 @@ void main() {
         'foo': TaskWithDeps(fooTask),
         'bar': TaskWithDeps(barTask, [TaskWithDeps(fooTask)]),
       });
+    });
+
+    test(
+        'no error occurs if the deletion task runs on an earlier phase than others',
+        () async {
+      final result = await verifyTaskInputsAndOutputsConsistency({
+        'foo': TaskWithDeps(fooTask),
+        'bar': TaskWithDeps(barTask, [TaskWithDeps(fooTask)]),
+        'delete': TaskWithDeps(deleteTask),
+        'deleteBad': TaskWithDeps(deleteTaskBad),
+      });
+      expect(
+          result,
+          equals(const {
+            'foo': ['delete'],
+            'bar': ['delete', 'deleteBad']
+          }));
     });
   });
 

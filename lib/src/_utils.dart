@@ -90,6 +90,13 @@ extension MultiMapUtils<K, V> on Map<K, Set<V>> {
   }
 }
 
+extension StreamUtils<T> on Stream<T> {
+  Stream<T> followedBy(Stream<T> next) async* {
+    yield* this;
+    yield* next;
+  }
+}
+
 class MultipleExceptions with Exception {
   final List exceptions;
 

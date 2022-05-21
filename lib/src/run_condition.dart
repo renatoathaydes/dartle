@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:clock/clock.dart';
+import 'package:file/file.dart';
 import 'package:meta/meta.dart';
 
 import '_log.dart';
@@ -30,7 +31,9 @@ mixin RunCondition {
 /// Dartle considers these when verifying implicit dependencies between tasks.
 mixin FilesCondition on RunCondition {
   FileCollection get inputs => FileCollection.empty;
+
   FileCollection get outputs => FileCollection.empty;
+
   FileCollection get deletions => FileCollection.empty;
 }
 
@@ -203,8 +206,15 @@ class RunToDelete with RunCondition, FilesCondition {
   final FileCollection deletions;
   final DartleCache cache;
 
-  RunToDelete(this.deletions, [DartleCache? cache])
-      : cache = cache ?? DartleCache.instance;
+  /// whether to verify that all declared deletions have been performed
+  /// after the task has run.
+  final bool verifyDeletions;
+
+  RunToDelete(
+    this.deletions, {
+    this.verifyDeletions = true,
+    DartleCache? cache,
+  }) : cache = cache ?? DartleCache.instance;
 
   @override
   FileCollection get inputs => FileCollection.empty;
@@ -219,7 +229,23 @@ class RunToDelete with RunCondition, FilesCondition {
   }
 
   @override
-  FutureOr<void> postRun(TaskResult result) async {}
+  FutureOr<void> postRun(TaskResult result) async {
+    if (verifyDeletions) {
+      final failedToDelete = _collectNotDeleted();
+      throw DartleException(
+          message: 'task did not delete the following expected entities:\n' +
+              await failedToDelete.map((f) => '  * $f').join('\n'));
+    }
+  }
+
+  Stream<FileSystemEntity> _collectNotDeleted() async* {
+    Stream<FileSystemEntity> all = deletions.files.cast();
+    await for (final file in all.followedBy(deletions.directories.cast())) {
+      if (await file.exists()) {
+        yield file;
+      }
+    }
+  }
 }
 
 /// Base mixin for a [RunCondition] that combines other [RunCondition]s.
