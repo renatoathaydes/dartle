@@ -5,6 +5,7 @@ import 'package:logging/logging.dart';
 import '_actor_task.dart';
 import '_log.dart';
 import '_utils.dart';
+import 'error.dart';
 import 'task.dart';
 import 'task_invocation.dart';
 
@@ -22,8 +23,17 @@ class TaskResult {
 
 /// Calls [runTask] with each given task that must run.
 ///
+/// At the end of each [TaskPhase], the executed
+/// tasks' [RunCondition.postRun] actions are also run.
+///
 /// Returns the result of each executed task. If a task fails, execution
 /// stops and only the results thus far accumulated are returned.
+///
+/// If a task's [RunCondition.postRun] action fails, a [MultipleExceptions]
+/// is thrown with all accumulated errors up to the end of the phase the task
+/// belongs to, including from other task's actions and `postRun`s.
+/// Notice that [MultipleExceptions] is not thrown in case there are
+/// task failures, but no post-run action failures.
 ///
 /// Tasks within each [ParallelTasks] entry are always called "simultaneously",
 /// then their [Future] results are awaited in order. If [parallelize] is true,
@@ -40,28 +50,52 @@ Future<List<TaskResult>> runTasks(List<ParallelTasks> tasks,
         : 'on main Isolate as no parallelization was enabled';
     logger.fine('Will execute tasks $execMode');
   }
+
   final results = <TaskResult>[];
+  final phaseResults = <TaskResult>[];
+  final phaseErrors = <Exception>[];
+  TaskPhase? currentPhase;
+
   for (final parTasks in tasks) {
+    if (parTasks.tasks.isEmpty) continue;
+    final isNewPhase = parTasks.phase != currentPhase;
+    if (isNewPhase) {
+      phaseErrors.addAll(await _onNewPhaseStarted(phaseResults, currentPhase));
+      currentPhase = parTasks.phase;
+      if (phaseErrors.isNotEmpty) {
+        logger.fine('Aborting task execution due to task post-run error');
+        break;
+      }
+    }
     final useIsolate = parallelize && parTasks.mustRunCount > 1;
     final futureResults = parTasks.tasks
-        .where((pTask) {
-          final willRun = pTask.mustRun;
-          logger.fine(() => "Task '${pTask.task.name}' will "
-              "${willRun ? 'run' : 'be skipped'} because it has status "
-              '${pTask.status}');
-          return willRun;
-        })
+        .where(_taskMustRun)
         .map((pTask) => runTask(pTask.invocation, runInIsolate: useIsolate))
         .toList(growable: false);
+
     for (final futureResult in futureResults) {
-      results.add(await futureResult);
+      final result = await futureResult;
+      results.add(result);
+      phaseResults.add(result);
     }
 
     if (results.any((r) => r.isFailure)) {
-      logger.fine('Aborting task execution due to failure');
-      return results;
+      logger.fine('Aborting task execution due to task failure');
+      break;
     }
   }
+
+  phaseErrors.addAll(await _onNewPhaseStarted(phaseResults, currentPhase));
+
+  if (phaseErrors.isNotEmpty) {
+    // include the task errors as well
+    final taskErrors = results
+        .map((f) => f.error)
+        .whereType<Exception>()
+        .toList(growable: false);
+    throw MultipleExceptions(taskErrors.followedBy(phaseErrors).toList());
+  }
+
   return results;
 }
 
@@ -93,11 +127,34 @@ Future<TaskResult> runTask(TaskInvocation invocation,
   return result;
 }
 
+bool _taskMustRun(TaskWithStatus pTask) {
+  final willRun = pTask.mustRun;
+  logger.fine(() => "Task '${pTask.task.name}' will "
+      "${willRun ? 'run' : 'be skipped'} because it has status "
+      '${pTask.status}');
+  return willRun;
+}
+
 Function(List<String>) _createTaskAction(Task task, bool runInIsolate) {
   logger.fine("Scheduling task '${task.name}'" +
       (runInIsolate ? ' to run in parallel' : ''));
 
   return runInIsolate ? actorAction(task.action) : task.action;
+}
+
+Future<List<Exception>> _onNewPhaseStarted(
+    List<TaskResult> results, TaskPhase? phaseEnded) async {
+  if (results.isEmpty) return const [];
+  logger.fine(() {
+    final phaseMsg =
+        phaseEnded == null ? '' : " after phase '${phaseEnded.name}' ended";
+    return 'Running post-run actions$phaseMsg.';
+  });
+  try {
+    return await runTasksPostRun(results);
+  } finally {
+    results.clear();
+  }
 }
 
 Future<List<Exception>> runTasksPostRun(List<TaskResult> results) async {

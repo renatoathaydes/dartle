@@ -1,7 +1,9 @@
 import 'dart:async';
 
+// TODO use file package to avoid Dart VM direct coupling.
+import 'dart:io';
+
 import 'package:clock/clock.dart';
-import 'package:file/file.dart';
 import 'package:meta/meta.dart';
 
 import '_log.dart';
@@ -231,16 +233,19 @@ class RunToDelete with RunCondition, FilesCondition {
   @override
   FutureOr<void> postRun(TaskResult result) async {
     if (verifyDeletions) {
-      final failedToDelete = _collectNotDeleted();
-      throw DartleException(
-          message: 'task did not delete the following expected entities:\n' +
-              await failedToDelete.map((f) => '  * $f').join('\n'));
+      final failedToDelete = await _collectNotDeleted().toList();
+      if (failedToDelete.isNotEmpty) {
+        throw DartleException(
+            message: 'task did not delete the following expected entities:\n' +
+                failedToDelete.map((f) => '  * $f').join('\n'));
+      }
     }
   }
 
   Stream<FileSystemEntity> _collectNotDeleted() async* {
-    Stream<FileSystemEntity> all = deletions.files.cast();
-    await for (final file in all.followedBy(deletions.directories.cast())) {
+    await for (final file in deletions.files
+        .cast<FileSystemEntity>()
+        .followedBy(deletions.directories)) {
       if (await file.exists()) {
         yield file;
       }
@@ -254,11 +259,11 @@ mixin RunConditionCombiner implements RunCondition {
 
   @override
   FutureOr<void> postRun(TaskResult result) async {
-    final errors = [];
+    final errors = <Exception>[];
     for (var cond in conditions) {
       try {
         await cond.postRun(result);
-      } catch (e) {
+      } on Exception catch (e) {
         errors.add(e);
       }
     }

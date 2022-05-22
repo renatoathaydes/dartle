@@ -184,17 +184,16 @@ void _logTasksInfo(
 
 Future<void> _runAll(
     List<ParallelTasks> executableTasks, Options options) async {
-  final allErrors = <Exception>[];
-
   final results =
       await runTasks(executableTasks, parallelize: options.parallelizeTasks);
-  final postRunFailures = await runTasksPostRun(results);
 
-  allErrors.addAll(results.map((f) => f.error).whereType<Exception>());
-  allErrors.addAll(postRunFailures);
+  final taskErrors = results
+      .map((f) => f.error)
+      .whereType<Exception>()
+      .toList(growable: false);
 
-  if (allErrors.isNotEmpty) {
-    _throwAggregateErrors(allErrors);
+  if (taskErrors.isNotEmpty) {
+    throw MultipleExceptions(taskErrors);
   }
 }
 
@@ -307,29 +306,4 @@ bool _isAffectedByDeletionTask(
     if (status?.mustRun == true) return true;
   }
   return false;
-}
-
-void _throwAggregateErrors(List<Exception> errors) {
-  if (errors.isEmpty) return;
-  if (errors.length == 1) throw errors[0];
-
-  var exitCode = 1;
-  for (final dartleException in errors.whereType<DartleException>()) {
-    exitCode = dartleException.exitCode;
-    break;
-  }
-  // TODO use MultipleExceptions and move this code to exception handler
-  final messageBuilder = StringBuffer('Several errors have occurred:\n');
-  for (final error in errors) {
-    String errorMessage;
-    if (error is DartleException) {
-      errorMessage = error.message;
-    } else {
-      errorMessage = error.toString();
-    }
-    messageBuilder
-      ..write('  * ')
-      ..writeln(errorMessage);
-  }
-  throw DartleException(message: messageBuilder.toString(), exitCode: exitCode);
 }

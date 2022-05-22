@@ -96,14 +96,3 @@ extension StreamUtils<T> on Stream<T> {
     yield* next;
   }
 }
-
-class MultipleExceptions with Exception {
-  final List exceptions;
-
-  MultipleExceptions(this.exceptions);
-
-  @override
-  String toString() {
-    return 'MultipleExceptions{exceptions: $exceptions}';
-  }
-}

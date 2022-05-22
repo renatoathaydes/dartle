@@ -360,6 +360,8 @@ class ParallelTasks {
 
   int get length => tasks.length;
 
+  TaskPhase? get phase => tasks.firstOrNull?.task.phase;
+
   void add(TaskWithStatus taskWithStatus) {
     tasks.add(taskWithStatus);
   }
