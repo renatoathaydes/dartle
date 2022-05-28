@@ -142,7 +142,22 @@ void _log(log.LogRecord rec, bool colorfulLog) {
 
   msg ??=
       '${rec.time} - ${rec.loggerName}[${Isolate.current.debugName} $pid] - '
-      '${_nameByLevel[rec.level] ?? rec.level} - ${rec.message}';
+      '${_nameByLevel[rec.level] ?? rec.level} - ${rec.message}${_error(rec)}';
 
   log(msg);
+}
+
+String _error(log.LogRecord rec) {
+  final err = rec.error;
+  final st = rec.stackTrace;
+  if (err == null && st == null) return '';
+  final parts = [];
+  if (err?.toString().isNotEmpty == true) {
+    parts.add('Cause: $err');
+  }
+  if (st != null) {
+    parts.addAll(st.toString().split('\n'));
+  }
+  if (parts.isEmpty) return '';
+  return '\n  ${parts.join('\n  ')}';
 }
