@@ -90,9 +90,9 @@ Future<void> runSafely(List<String> args, bool doNotExit,
     } else {
       exit(e.exitCode);
     }
-  } on Exception catch (e) {
+  } on Exception catch (e, st) {
     activateLogging(log.Level.SEVERE);
-    logger.severe('Unexpected error: $e');
+    logger.severe('Unexpected error', e, st);
     if (options.logBuildTime) {
       logger.severe(ColoredLogMessage(
           '✗ Build failed in ${elapsedTime(stopWatch)}', LogColor.red));
