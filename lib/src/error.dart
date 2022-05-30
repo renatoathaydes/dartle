@@ -5,6 +5,10 @@ class DartleException implements Exception {
 
   DartleException({required this.message, this.exitCode = 1});
 
+  /// Returns a copy of this Exception but with a new message.
+  DartleException withMessage(String newMessage) =>
+      DartleException(message: newMessage, exitCode: exitCode);
+
   @override
   String toString() => 'DartleException{message=$message, exitCode=$exitCode}';
 }

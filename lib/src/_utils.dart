@@ -96,3 +96,11 @@ extension StreamUtils<T> on Stream<T> {
     yield* next;
   }
 }
+
+extension IterableUtils<T> on Iterable<T?> {
+  Iterable<T> whereNotNull() sync* {
+    for (final item in this) {
+      if (item != null) yield item;
+    }
+  }
+}
