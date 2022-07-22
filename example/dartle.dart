@@ -1,17 +1,33 @@
 import 'dart:convert';
 
+import 'dart:io';
 import 'package:dartle/dartle.dart';
+import 'package:path/path.dart' as p;
+
+/// Use Dartle's FileCollection factory methods (file, files, dir, dirs)
+/// to manage task's inputs/outputs.
+final outDir = 'out';
+
+FileCollection base64Inputs =
+    dir('.', fileExtensions: const {'txt'}, recurse: false);
+
+FileCollection base64Outputs =
+    dir(outDir, fileExtensions: const {'txt'}, recurse: false);
 
 /// Task declarations.
 final allTasks = [
   Task(hello, argsValidator: const ArgsCount.range(min: 0, max: 1)),
   Task(bye, dependsOn: const {'hello'}),
-  Task(clean),
+  Task(clean,
+      phase: TaskPhase.setup,
+      runCondition: RunToDelete(
+        base64Outputs,
+      )),
   Task(encodeBase64,
       description: 'Encodes input.txt in base64, writing to output.txt',
       runCondition: RunOnChanges(
-        inputs: file('input.txt'),
-        outputs: file('output.txt'),
+        inputs: base64Inputs,
+        outputs: base64Outputs,
       )),
 ];
 
@@ -35,9 +51,13 @@ void hello(List<String> args) =>
 void bye(_) => print('Bye!');
 
 Future<void> encodeBase64(_) async {
-  final input = await (await file('input.txt').files.first).readAsBytes();
-  await (await file('output.txt').files.first)
-      .writeAsString(base64.encode(input));
+  final inputs = base64Inputs.resolveFiles();
+  await for (final input in inputs) {
+    final encoded = base64.encode(await input.readAsBytes());
+    await Directory(outDir).create(recursive: true);
+    final output = p.join(outDir, p.setExtension(input.path, 'b64.txt'));
+    await File(output).writeAsString(encoded);
+  }
 }
 
 Future<void> clean(_) => deleteOutputs(allTasks);

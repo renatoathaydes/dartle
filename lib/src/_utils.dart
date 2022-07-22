@@ -1,8 +1,21 @@
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:crypto/crypto.dart';
 
+import '_log.dart';
+import '_project.dart';
+
 final _capitalLetterPattern = RegExp(r'[A-Z]');
+
+Future<void> checkDartleFileExists(bool doNotExit) async {
+  final dartleFile = File('dartle.dart');
+  if (await dartleFile.exists()) {
+    logger.fine('Dartle file exists.');
+  } else {
+    await onNoDartleFile(doNotExit);
+  }
+}
 
 String decapitalize(String text) {
   if (text.startsWith(_capitalLetterPattern)) {
@@ -56,9 +69,9 @@ String? findMatchingByWords(String searchText, List<String> options) {
   return result.isEmpty ? null : result;
 }
 
-String hash(String text) => hashBytes(utf8.encode(text));
+Digest hash(String text) => hashBytes(utf8.encode(text));
 
-String hashBytes(List<int> bytes) => sha1.convert(bytes).toString();
+Digest hashBytes(List<int> bytes) => sha1.convert(bytes);
 
 String elapsedTime(Stopwatch stopwatch) {
   final millis = stopwatch.elapsedMilliseconds;

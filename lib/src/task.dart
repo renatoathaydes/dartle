@@ -541,12 +541,13 @@ Future<DeletionTasksByTask> verifyTaskInputsAndOutputsConsistency(
   // 1. a task's inputs may only include another's outputs if it depends on it
   inputsByTask.forEach((task, ins) {
     outputsByTask.forEach((otherTask, otherOuts) {
-      if (task.dependencySet.contains(otherTask.name)) return;
+      if (task.name == otherTask.name ||
+          task.dependencySet.contains(otherTask.name)) return;
       final intersectInsOuts = ins.intersection(otherOuts);
-      if (intersectInsOuts.inclusions.isNotEmpty) {
+      if (intersectInsOuts.isNotEmpty) {
         dependencyErrors
             .add("Task '${task.name}' must dependOn '${otherTask.name}' "
-                '(clashing outputs: ${intersectInsOuts.inclusions})');
+                '(clashing outputs: $intersectInsOuts)');
       }
     });
   });
@@ -557,13 +558,13 @@ Future<DeletionTasksByTask> verifyTaskInputsAndOutputsConsistency(
     deletionsByTask.forEach((deletionTask, deletedFiles) {
       final outs = outputsByTask[task]!;
 
-      bool addErrorIfNotEmpty(FileCollection fc, String io) {
-        if (fc.inclusions.isNotEmpty) {
+      bool addErrorIfNotEmpty(Set<String> intersection, String io) {
+        if (intersection.isNotEmpty) {
           tasksAffectedByDeletion.accumulate(task.name, deletionTask.name);
           if (!task.phase.isAfter(deletionTask.phase)) {
             phaseErrors.add("Task '${deletionTask.name}' "
                 "(phase '${deletionTask.phase.name}') deletes $io of "
-                "'${task.name}' (phase '${task.phase.name}'): ${fc.inclusions}");
+                "'${task.name}' (phase '${task.phase.name}'): $intersection");
             return true;
           }
         }

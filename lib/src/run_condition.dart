@@ -1,6 +1,4 @@
 import 'dart:async';
-
-// TODO use file package to avoid Dart VM direct coupling.
 import 'dart:io';
 
 import 'package:clock/clock.dart';
@@ -101,7 +99,7 @@ class RunOnChanges with RunCondition, FilesCondition {
       logger.fine('Changes detected on task outputs: $outputs');
       return true;
     }
-    await for (final output in outputs.files) {
+    for (final output in outputs.includedEntities()) {
       if (!await output.exists()) {
         logger.fine('Task output does not exist: ${output.path}');
         return true;
@@ -116,7 +114,7 @@ class RunOnChanges with RunCondition, FilesCondition {
     DartleException? error;
 
     if (success) {
-      if (await outputs.isNotEmpty && verifyOutputsExist) {
+      if (outputs.isNotEmpty && verifyOutputsExist) {
         logger.fine('Verifying task produced expected outputs');
         try {
           await _verifyOutputs();
@@ -133,7 +131,7 @@ class RunOnChanges with RunCondition, FilesCondition {
       await cache(outputs, key: taskName);
       await cache.cacheTaskInvocation(result.invocation);
     } else {
-      if (await outputs.isEmpty) {
+      if (outputs.isEmpty) {
         // the task failed without any outputs, so for it to run again next
         // time we need to remove its inputs
         await cache.remove(inputs, key: taskName);
@@ -149,11 +147,8 @@ class RunOnChanges with RunCondition, FilesCondition {
 
   Future<void> _verifyOutputs() async {
     final missingOutputs = <String>[];
-    await for (final file in outputs.files) {
-      if (!await file.exists()) missingOutputs.add(file.path);
-    }
-    await for (final dir in outputs.directories) {
-      if (!await dir.exists()) missingOutputs.add(dir.path);
+    await for (final entity in outputs.resolve()) {
+      if (!await entity.exists()) missingOutputs.add(entity.path);
     }
     if (missingOutputs.isNotEmpty) {
       throw DartleException(
@@ -226,8 +221,7 @@ class RunToDelete with RunCondition, FilesCondition {
 
   @override
   FutureOr<bool> shouldRun(TaskInvocation invocation) async {
-    return await deletions.files.asyncAny((f) => f.exists()) ||
-        await deletions.directories.asyncAny((d) => d.exists());
+    return await deletions.resolve().asyncAny((f) => f.exists());
   }
 
   @override
@@ -243,11 +237,9 @@ class RunToDelete with RunCondition, FilesCondition {
   }
 
   Stream<FileSystemEntity> _collectNotDeleted() async* {
-    await for (final file in deletions.files
-        .cast<FileSystemEntity>()
-        .followedBy(deletions.directories)) {
-      if (await file.exists()) {
-        yield file;
+    await for (final entity in deletions.resolve()) {
+      if (await entity.exists()) {
+        yield entity;
       }
     }
   }

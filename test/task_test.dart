@@ -183,7 +183,7 @@ void main() {
         runCondition: RunToDelete(files(['out.txt', 'in.txt'])));
     final deleteTaskBad = Task(noop,
         name: 'deleteBad',
-        runCondition: RunToDelete(FileCollection([
+        runCondition: RunToDelete(entities([
           Directory('out'),
           File('out2.txt'),
         ])));
@@ -204,8 +204,8 @@ void main() {
               equals(
                   'The following tasks have implicit dependencies due to their'
                   " inputs depending on other tasks' outputs:\n"
-                  "  * Task 'bar' must dependOn 'foo' (clashing outputs: [File: 'out.txt']).\n"
-                  "  * Task 'blah' must dependOn 'zort' (clashing outputs: [Directory: 'out']).\n\n"
+                  "  * Task 'bar' must dependOn 'foo' (clashing outputs: {out.txt}).\n"
+                  "  * Task 'blah' must dependOn 'zort' (clashing outputs: {out}).\n\n"
                   'Please add the dependencies explicitly.\n'))));
     });
 
@@ -226,7 +226,7 @@ void main() {
                   "does not run on a later phase, hence could corrupt those tasks "
                   "execution:\n"
                   "  * Task 'deleteBad' (phase 'build') deletes outputs "
-                  "of 'zort' (phase 'build'): [Directory: 'out'].\n\n"
+                  "of 'zort' (phase 'build'): {out}.\n\n"
                   "Please change the task phases so that deletion tasks run on "
                   "earlier phases (typically 'setup') than other tasks.\n"))));
     });

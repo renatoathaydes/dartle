@@ -2,6 +2,7 @@ import 'dart:io';
 
 @TestOn('!browser')
 import 'package:dartle/dartle.dart';
+import 'package:path/path.dart' show join;
 import 'package:test/test.dart';
 
 import 'test_utils.dart';
@@ -20,18 +21,24 @@ void main() {
       expect(() => Task((_) {}).name, throwsArgumentError);
     });
   });
+
   group('Task execution', () {
-    final outputFile = File('example/output.txt');
+    final outputFile = File(join('example', 'out', 'inputb64.txt'));
 
     // create a snapshot so we can run the build quickly, several times
     var exampleDartleBuild = File('');
 
     setUpAll(() async {
       exampleDartleBuild =
-          (await createDartExe(File('example/dartle.dart'))).absolute;
+          await createDartExe(File(join('example', 'dartle.dart')));
     });
+
+    setUp(() async {
+      await deleteAll(files([outputFile.path]));
+    });
+
     tearDownAll(() async {
-      await deleteAll(FileCollection([outputFile, exampleDartleBuild]));
+      await deleteAll(files([outputFile.path, exampleDartleBuild.path]));
     });
 
     Future<ProcessResult> runExampleDartBuild(List<String> args) async {
@@ -83,9 +90,6 @@ void main() {
     });
 
     test('runs only tasks that are required, unless forced', () async {
-      // delete task output to make sure task runs
-      await ignoreExceptions(() async => await outputFile.delete());
-
       var proc = await runExampleDartBuild(['encode']);
       expect(
           proc.stdout[0],
@@ -126,9 +130,6 @@ void main() {
     });
 
     test('errors if task does not exist', () async {
-      // delete task output to make sure task runs
-      await ignoreExceptions(() async => await outputFile.delete());
-
       var proc = await runExampleDartBuild(['foo']);
       expect(proc.stdout.length, equals(2));
       expect(proc.stdout[0],
@@ -138,9 +139,6 @@ void main() {
     });
 
     test('errors if option does not exist', () async {
-      // delete task output to make sure task runs
-      await ignoreExceptions(() async => await outputFile.delete());
-
       var proc = await runExampleDartBuild(['--foo']);
       expect(proc.stdout.length, equals(2));
       expect(

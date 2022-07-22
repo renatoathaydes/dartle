@@ -7,7 +7,7 @@ import 'dartle-src/metadata_generator.dart';
 final dartleDart = DartleDart();
 
 final libDirDartFiles =
-    dir(join(dartleDart.rootDir, 'lib'), fileFilter: dartFileFilter);
+    dir(join(dartleDart.rootDir, 'lib'), fileExtensions: const {'dart'});
 
 void main(List<String> args) {
   dartleDart.analyzeCode.dependsOn({'generateDartSources', 'checkImports'});

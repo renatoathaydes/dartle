@@ -141,30 +141,8 @@ Future<void> deleteOutputs(Iterable<Task> tasks) async {
 /// directories are deleted as long as no filters belonging to the given
 /// [FileCollection] exclude files or sub-directories within such directory.
 Future<void> deleteAll(FileCollection fileCollection) async {
-  await for (final file in fileCollection.files) {
-    logger.fine('Deleting file ${file.path}');
-    await ignoreExceptions(file.delete);
-  }
-  await for (final dir in fileCollection.directories) {
-    if (await dir.exists()) {
-      if (await dir.list().isEmpty) {
-        logger.fine('Deleting directory ${dir.path}');
-        await ignoreExceptions(dir.delete);
-      }
-    }
-  }
-}
-
-/// Check if the system responds to the given command.
-Future<bool> isValidCommand(
-  String command, {
-  List<String> args = const [],
-  bool runInShell = false,
-}) async {
-  try {
-    await Process.run(command, args, runInShell: runInShell);
-    return true;
-  } on ProcessException {
-    return false;
+  await for (final entity in fileCollection.resolve()) {
+    logger.fine('Deleting ${entity.path}');
+    await ignoreExceptions(entity.delete);
   }
 }

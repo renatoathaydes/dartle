@@ -12,12 +12,11 @@ void main() {
     var manyTasksBuild = File('');
 
     setUpAll(() async {
-      manyTasksBuild =
-          (await createDartExe(File('test/test_builds/many_tasks/dartle.dart')))
-              .absolute;
+      manyTasksBuild = (await createDartExe(
+          File('test/test_builds/many_tasks/dartle.dart')));
     });
     tearDownAll(() async {
-      await deleteAll(FileCollection([manyTasksBuild]));
+      await deleteAll(file(manyTasksBuild.path));
     });
 
     Future<ProcessResult> runExampleDartBuild(List<String> args) async {

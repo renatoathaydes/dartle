@@ -23,273 +23,194 @@ void main() {
         Entry.fileWithText('A/B/D/E/e.txt', 'EEEE'),
       ]);
     });
+
     test('can be created for a single file', () async {
       final files = file('dartle.dart');
-      await _expectFileCollection(files, files: ['dartle.dart']);
-    });
-    test('can be created for multiple files', () async {
-      final allFiles = files(const ['a', 'b', 'c', 'd', 'e']);
-      await _expectFileCollection(allFiles,
-          files: const ['a', 'b', 'c', 'd', 'e']);
-    });
-    test('can be created for multiple file entities', () async {
-      final files =
-          FileCollection([fs.file('dartle/some.txt'), fs.file('dartle.dart')]);
-      await _expectFileCollection(files,
-          files: const ['dartle.dart', 'dartle/some.txt']);
+      await _expectFileCollection(fs, files, files: {'dartle.dart'});
     });
 
-    // FileCollections containing directories require them to exist
+    test('can be created for multiple files', () async {
+      final allFiles =
+          files(const ['a', 'b', 'c', 'b/b.txt', 'dartle', 'dartle.dart']);
+      await _expectFileCollection(fs, allFiles,
+          files: {'b/b.txt', 'dartle.dart'});
+    });
+
     test('can be created for a single, empty directory', () async {
-      await withFileSystem(fs, () async {
-        final files = dir('a');
-        await _expectFileCollection(files, dirs: ['a']);
+      final files = dir('a');
+      await _expectFileCollection(fs, files, dirs: {'a'});
+    });
+
+    test('can be created for a single, non-empty directory (no recurse)',
+        () async {
+      final files = dir('A/B/D', recurse: false);
+      await _expectFileCollection(
+        fs,
+        files,
+        dirs: const {'A/B/D'},
+        files: const {'A/B/D/d.txt'},
+      );
+    });
+
+    test('can be created for a single, non-empty directory (recurse)',
+        () async {
+      final files = dir('A/B/D', recurse: true);
+      await _expectFileCollection(
+        fs,
+        files,
+        dirs: const {'A/B/D', 'A/B/D/E'},
+        files: const {'A/B/D/d.txt', 'A/B/D/E/e.txt'},
+      );
+    });
+
+    test('can be created for multiple directories (no recurse)', () async {
+      final files = dirs(const ['a', 'b', 'c', 'd'], recurse: false);
+      await _expectFileCollection(fs, files,
+          files: const {'b/b.txt'}, dirs: const {'a', 'b', 'c', 'd'});
+    });
+
+    test('can be created for root dir with extension filter including dot',
+        () async {
+      final files = dir('.', recurse: true, fileExtensions: {'.dart'});
+      await _expectFileCollection(fs, files, files: const {
+        './dartle.dart'
+      }, dirs: const {
+        '.',
+        './dartle',
+        './a',
+        './b',
+        './c',
+        './d',
+        './A',
+        './A/B',
+        './A/B/C',
+        './A/B/D',
+        './A/B/D/E',
       });
     });
-    test(
-        'can be created for a single directory '
-        'including sub-directories and files', () async {
-      await withFileSystem(fs, () async {
-        final files = dir('A/B/D');
-        await _expectFileCollection(
-          files,
-          dirs: const ['A/B/D'],
-          files: const ['A/B/D/d.txt', 'A/B/D/E/e.txt'],
-        );
+
+    test('can be created for multiple directories with extension filter',
+        () async {
+      final files = dirs(const ['dartle', 'b', 'c', 'A'],
+          fileExtensions: const {'.txt'}, recurse: true);
+      await _expectFileCollection(fs, files, files: {
+        'dartle/some.txt',
+        'b/b.txt',
+        'A/B/C/c.txt',
+        'A/B/D/d.txt',
+        'A/B/D/E/e.txt',
+      }, dirs: const {
+        'dartle',
+        'b',
+        'c',
+        'A',
+        'A/B',
+        'A/B/C',
+        'A/B/D',
+        'A/B/D/E',
       });
     });
-    test('can be created for multiple directories', () async {
-      await withFileSystem(fs, () async {
-        final files = dirs(const ['a', 'b', 'c', 'd']);
-        await _expectFileCollection(files,
-            files: const ['b/b.txt'], dirs: const ['a', 'b', 'c', 'd']);
-      });
-    });
-    test('can be created for multiple directories with filters', () async {
-      await withFileSystem(fs, () async {
-        final files = dirs(const ['dartle', 'b', 'c', 'A'],
-            fileFilter: (file) => file.path.posix() != 'b/b.txt',
-            dirFilter: (dir) =>
-                dir.path.posix().contains('A/B') ||
-                (const {'A', 'dartle', 'b'}).contains(dir.path.posix()));
-        await _expectFileCollection(files, files: [
-          'dartle/some.txt',
-          'A/B/C/c.txt',
-          'A/B/D/d.txt',
-          'A/B/D/E/e.txt',
-        ], dirs: const [
-          'A',
-          'b',
-          'c',
-          'dartle',
-        ]);
-      });
-    });
-    test('can be created for multiple entities with filters', () async {
-      await withFileSystem(fs, () async {
-        final files = FileCollection([
-          fs.directory('dartle'),
-          fs.directory('b'),
-          fs.directory('c'),
-          fs.directory('A/B'),
-          fs.file('A/B/D/E/e.txt'),
-        ],
-            fileFilter: (file) => file.path.posix() != 'b/b.txt',
-            dirFilter: (dir) => !dir.path.posix().startsWith('A/B/D'));
-        await _expectFileCollection(files,
-            files: const ['dartle/some.txt', 'A/B/C/c.txt', 'A/B/D/E/e.txt'],
-            dirs: const ['b', 'c', 'dartle', 'A/B']);
-      });
-    });
-    test('file includes', () async {
-      await withFileSystem(fs, () async {
-        final file = files(const ['b/b.txt']);
-        expect(await file.includes(fs.file('b/b.txt')), isTrue);
-        expect(await file.includes(fs.file('b/c.txt')), isFalse);
-        expect(await file.includes(fs.file('dartle.dart')), isFalse);
-        expect(await file.includes(fs.file('other')), isFalse);
-        expect(await file.includes(fs.directory('b')), isFalse);
-        expect(await file.includes(fs.directory('A/b')), isFalse);
-      });
-    });
-    test('dir includes', () async {
-      await withFileSystem(fs, () async {
-        final directory = dir('b');
-        expect(await directory.includes(fs.directory('b')), isTrue);
-        expect(await directory.includes(fs.file('b/b.txt')), isTrue);
-        expect(await directory.includes(fs.file('b/c.txt')), isTrue);
-        expect(await directory.includes(fs.file('A/B/C/c.txt')), isFalse);
-        expect(await directory.includes(fs.file('dartle.dart')), isFalse);
-        expect(await directory.includes(fs.file('other')), isFalse);
-        expect(await directory.includes(fs.directory('A')), isFalse);
-        expect(await directory.includes(fs.directory('A/b')), isFalse);
-      });
-    });
-    test('dir includes (with exclusions)', () async {
-      await withFileSystem(fs, () async {
-        final directory = dir('b',
-            fileFilter: (f) => f.path.endsWith('foo.txt'),
-            dirFilter: (d) => !d.path.contains('f'));
-        expect(await directory.includes(fs.directory('b')), isTrue);
-        expect(await directory.includes(fs.file('b/foo.txt')), isTrue);
-        expect(await directory.includes(fs.file('b/c/foo.txt')), isTrue);
-        expect(await directory.includes(fs.file('b/f/foo.txt')), isFalse);
-        expect(await directory.includes(fs.file('b/b.txt')), isFalse);
-        expect(await directory.includes(fs.file('A/B/C/c.txt')), isFalse);
-        expect(await directory.includes(fs.file('dartle.dart')), isFalse);
-      });
-    });
+
     test('file intersection', () async {
-      await withFileSystem(fs, () async {
-        expect(
-            await file('b/b.txt')
-                .intersection(files(const ['b/b.txt']))
-                .files
-                .map((f) => f.path.posix())
-                .toList(),
-            equals(['b/b.txt']));
-        expect(
-            await file('b/b.txt')
-                .intersection(dir('b'))
-                .files
-                .map((f) => f.path.posix())
-                .toList(),
-            equals(['b/b.txt']));
-        expect(await file('b/b.txt').intersection(dir('A/B/D')).files.toSet(),
-            isEmpty);
-      });
+      expect(file('b/b.txt').intersection(files(const ['b/b.txt'])),
+          equals({'b/b.txt'}));
+      expect(file('b/b.txt').intersection(dir('b')), equals({'b/b.txt'}));
+      expect(file('b/b.txt').intersection(dir('A/B/D')), isEmpty);
+      expect(file('b/c/d.txt').intersection(dir('b', recurse: false)), isEmpty);
+      expect(file('b/c/d.txt').intersection(dir('b', recurse: true)),
+          equals({'b/c/d.txt'}));
     });
+
     test('files intersection', () async {
-      await withFileSystem(fs, () async {
-        expect(
-            await files(const ['b/b.txt'])
-                .intersection(files(const ['b/b.txt']))
-                .files
-                .map((f) => f.path.posix())
-                .toList(),
-            equals(['b/b.txt']));
-        expect(
-            await files(const ['dartle.dart', 'b/b.txt'])
-                .intersection(files(const ['b/b.txt']))
-                .files
-                .map((f) => f.path.posix())
-                .toList(),
-            equals(['b/b.txt']));
-        expect(
-            await files(const ['dartle.dart', 'b/b.txt', 'A/B/C/c.txt'])
-                .intersection(files(const ['b/b.txt', 'A/B/C/c.txt']))
-                .files
-                .map((f) => f.path.posix())
-                .toSet(),
-            equals({'b/b.txt', 'A/B/C/c.txt'}));
-        expect(
-            await files(const ['dartle.dart', 'b/b.txt', 'A/B/C/c.txt'])
-                .intersection(dir('b'))
-                .files
-                .map((f) => f.path.posix())
-                .toSet(),
-            equals({'b/b.txt'}));
-        expect(
-            await files(const ['dartle.dart', 'b/b.txt', 'A/B/C/c.txt'])
-                .intersection(dir('A'))
-                .files
-                .map((f) => f.path.posix())
-                .toSet(),
-            equals({'A/B/C/c.txt'}));
-        expect(
-            await files(const ['dartle.dart', 'b/b.txt', 'A/B/C/c.txt'])
-                .intersection(dir('A/B/D'))
-                .files
-                .toSet(),
-            isEmpty);
-      });
+      expect(files(const ['b/b.txt']).intersection(files(const ['b/b.txt'])),
+          equals({'b/b.txt'}));
+      expect(
+          files(const ['dartle.dart', 'b/b.txt', 'A/B/C/c.txt'])
+              .intersection(files(const ['b/b.txt', 'A/B/C/c.txt'])),
+          equals({'b/b.txt', 'A/B/C/c.txt'}));
+      expect(
+          files(const ['dartle.dart', 'b/b.txt', 'A/B/C/c.txt'])
+              .intersection(dir('b', recurse: false)),
+          equals({'b/b.txt'}));
+      expect(
+          files(const ['dartle.dart', 'b/b.txt', 'A/B/C/c.txt'])
+              .intersection(dir('A', recurse: true)),
+          equals({'A/B/C/c.txt'}));
+      expect(
+          files(const ['dartle.dart', 'b/b.txt', 'A/B/C/c.txt'])
+              .intersection(dir('A', recurse: false)),
+          isEmpty);
+      expect(
+          files(const ['dartle.dart', 'b/b.txt', 'A/B/C/c.txt'])
+              .intersection(dir('A/B/D', recurse: true)),
+          isEmpty);
     });
+
     test('dir intersection', () async {
-      await withFileSystem(fs, () async {
-        expect(
-            await dir('b')
-                .intersection(files(const ['b/b.txt']))
-                .files
-                .map((f) => f.path.posix())
-                .toList(),
-            equals(const ['b/b.txt']));
-        expect(
-            await dir('A/B/C')
-                .intersection(dir('A/B/C'))
-                .files
-                .map((f) => f.path.posix())
-                .toList(),
-            equals(const ['A/B/C/c.txt']));
-        expect(
-            await dir('A/B/C')
-                .intersection(dir('A/B'))
-                .files
-                .map((f) => f.path.posix())
-                .toList(),
-            equals(['A/B/C/c.txt']));
-        expect(await dir('b').intersection(dir('A')).files.toList(), isEmpty);
-        expect(
-            await dir('A/B/C')
-                .intersection(files(const ['A/B/C/c.txt']))
-                .files
-                .map((f) => f.path.posix())
-                .toList(),
-            equals(const ['A/B/C/c.txt']));
-        expect(
-            await dir('b')
-                .intersection(files(const ['dartle.dart']))
-                .files
-                .toList(),
-            isEmpty);
-      });
+      expect(dir('b').intersection(files(const ['b/b.txt'])),
+          equals(const {'b/b.txt'}));
+      expect(dir('A/B/C').intersection(dir('A/B')), equals(const {'A/B/C'}));
+      expect(dir('A/B/').intersection(dir('A/B/C')), equals(const {'A/B/C'}));
+      expect(dir('b').intersection(dir('A')), isEmpty);
+      expect(dir('A/B/C').intersection(files(const ['A/B/C/c.txt'])),
+          equals(const {'A/B/C/c.txt'}));
+      expect(
+          dir('A/B', recurse: false).intersection(files(const ['A/B/C/c.txt'])),
+          isEmpty);
+      expect(
+          dir('A/B', recurse: true).intersection(files(const ['A/B/C/c.txt'])),
+          equals(const {'A/B/C/c.txt'}));
+      expect(dir('b', recurse: false).intersection(dir('b/c/d')), isEmpty);
+      expect(dir('b/c/d').intersection(dir('b', recurse: false)), isEmpty);
+      expect(dir('b/c/d', recurse: true).intersection(dir('b', recurse: false)),
+          isEmpty);
+      expect(dir('b/c/d', recurse: true).intersection(dir('b', recurse: true)),
+          equals(const {'b/c/d'}));
     });
-    test('dir intersection (with exclusions)', () async {
-      await withFileSystem(fs, () async {
-        expect(
-            await dir('A', dirFilter: (d) => d.path.posix() != 'A/B/C')
-                .intersection(dir('A/B/D'))
-                .files
-                .map((f) => f.path.posix())
-                .toSet(),
-            equals(const {'A/B/D/d.txt', 'A/B/D/E/e.txt'}));
-        expect(
-            await dir('A', dirFilter: (d) => d.path.posix() != 'A/B/C')
-                .intersection(dir('A/B/D/E'))
-                .files
-                .map((f) => f.path.posix())
-                .toSet(),
-            equals(const {'A/B/D/E/e.txt'}));
-        expect(
-            await dir('A', dirFilter: (d) => d.path.posix() != 'A/B/C')
-                .intersection(dir('A/B/C'))
-                .files
-                .toSet(),
-            isEmpty);
-        expect(
-            await dir('A', dirFilter: (d) => d.path.posix() != 'A/B/C')
-                .intersection(files(const ['A/B/D/d.txt']))
-                .files
-                .map((f) => f.path.posix())
-                .toList(),
-            equals(const ['A/B/D/d.txt']));
-        expect(
-            await dir('A', dirFilter: (d) => d.path.posix() != 'A/B/C')
-                .intersection(files(const ['A/B/C/c.txt']))
-                .files
-                .map((f) => f.path.posix())
-                .toList(),
-            equals(const ['A/B/C/c.txt']));
-      });
+
+    test('intersection with extension filter', () async {
+      expect(dir('b', fileExtensions: {'txt'}).intersection(dir('c')), isEmpty);
+      expect(dir('b', fileExtensions: {'txt'}).intersection(dir('b')),
+          equals({'b'}));
+      expect(dir('b', fileExtensions: {'txt'}).intersection(file('c.txt')),
+          isEmpty);
+      expect(dir('b', fileExtensions: {'txt'}).intersection(file('b/c.txt')),
+          equals({'b/c.txt'}));
+      expect(
+          dir('b', fileExtensions: {'txt'}, recurse: false)
+              .intersection(files({'b/c.txt', 'b/c.foo'})),
+          equals({'b/c.txt'}));
+      expect(
+          dir('b', fileExtensions: {'txt'}, recurse: false)
+              .intersection(files({'b/c.txt', 'b/c/d.txt'})),
+          equals({'b/c.txt'}));
+      expect(
+          dir('b', fileExtensions: {'txt'}, recurse: true)
+              .intersection(files({'b/c.txt', 'b/c/d.txt'})),
+          equals({'b/c.txt', 'b/c/d.txt'}));
+      expect(
+          dirs(['b', 'c'], fileExtensions: {'txt', 'foo'}, recurse: true)
+              .intersection(
+                  files({'b/c.txt', 'b/c/d.txt.a', 'c/d/e/foo', 'c/g/e.foo'})),
+          equals({'b/c.txt', 'c/g/e.foo'}));
+      expect(
+          files({'b/c.txt', 'b/c/d.txt.a', 'c/d/e/foo', 'c/g/e.foo'})
+              .intersection(dirs(['b', 'c'],
+                  fileExtensions: {'txt', 'foo'}, recurse: true)),
+          equals({'b/c.txt', 'c/g/e.foo'}));
     });
   }, timeout: Timeout(Duration(milliseconds: 250)));
 }
 
-Future _expectFileCollection(FileCollection actual,
-    {List<String> files = const [], List<String> dirs = const []}) async {
-  final allFiles = await actual.files.map((f) => f.path.posix()).toList();
-  final allDirs = await actual.directories.map((f) => f.path.posix()).toList();
-  expect(allFiles, equals(files));
-  expect(allDirs, equals(dirs));
+Future _expectFileCollection(FileSystem fs, FileCollection actual,
+    {Set<String> files = const {}, Set<String> dirs = const {}}) async {
+  await withFileSystem(fs, () async {
+    final entities = await actual.resolve().toList();
+    final allFiles = entities.whereType<File>().map((e) => e.path).toSet();
+    final allDirs = entities.whereType<Directory>().map((e) => e.path).toSet();
+    expect(allFiles, equals(files));
+    expect(allDirs, equals(dirs));
+  });
 }
 
 class Entry {

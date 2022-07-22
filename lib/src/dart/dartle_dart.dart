@@ -1,6 +1,6 @@
 import 'dart:io';
 
-import 'package:path/path.dart' show extension, join;
+import 'package:path/path.dart' show join;
 
 import '../file_collection.dart';
 import '../helpers.dart';
@@ -91,10 +91,10 @@ class DartleDart {
   final String rootDir;
 
   DartleDart([this.config = const DartConfig()])
-      : rootDir = config.rootDir ?? Directory.current.path {
-    final allDartFiles = dir(rootDir, fileFilter: dartFileFilter);
+      : rootDir = config.rootDir ?? '.' {
+    final allDartFiles = dir(rootDir, fileExtensions: const {'dart'});
     final testDartFiles =
-        dir(join(rootDir, 'test'), fileFilter: dartFileFilter);
+        dir(join(rootDir, 'test'), fileExtensions: const {'dart'});
 
     formatCode = Task(_formatCode,
         name: 'format',
@@ -178,6 +178,3 @@ class DartleDart {
     if (code != 0) failBuild(reason: 'Dart "pub get"" failed');
   }
 }
-
-/// Return true for files with the `.dart` extension, false otherwise.
-bool dartFileFilter(File f) => extension(f.path) == '.dart';

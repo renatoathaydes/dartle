@@ -83,7 +83,7 @@ void main() {
       expect(wouldRun, isFalse);
     });
 
-    test('runs if inputs and outpus did not change but output does not exist',
+    test('runs if inputs and outputs did not change but output does not exist',
         () async {
       final fs = await createFileSystem([]);
 

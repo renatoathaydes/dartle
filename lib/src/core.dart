@@ -1,10 +1,9 @@
 import 'dart:async';
-import 'dart:io';
 
 import 'package:logging/logging.dart' as log;
 
 import '_log.dart';
-import '_new_project.dart';
+import '_project.dart';
 import '_task_graph.dart';
 import '_utils.dart';
 import 'cache/cache.dart';
@@ -16,6 +15,9 @@ import 'task.dart';
 import 'task_invocation.dart';
 import 'task_run.dart';
 
+const dartleFileMissingMessage = 'Missing dartle.dart file. '
+    'Please create one to be able to use Dartle.';
+
 /// Initializes the dartle library and runs the tasks selected by the user
 /// (or in the provided [args]).
 ///
@@ -25,7 +27,7 @@ Future<void> run(List<String> args,
     {required Set<Task> tasks,
     Set<Task> defaultTasks = const {},
     bool doNotExit = false}) async {
-  await abortIfNotDartleProject();
+  await checkDartleFileExists(doNotExit);
 
   await runSafely(args, doNotExit, (stopWatch, options) async {
     if (options.showHelp) {
@@ -46,23 +48,6 @@ Future<void> run(List<String> args,
   });
 }
 
-Future<void> abortIfNotDartleProject() async {
-  final dartleFile = File('dartle.dart');
-  if (await dartleFile.exists()) {
-    logger.fine('Dartle file exists.');
-  } else {
-    stdout.write('There is no dartle.dart file in the current directory.\n'
-        'Would you like to create one [y/N]? ');
-    final answer = stdin.readLineSync()?.toLowerCase();
-    if (answer == 'y' || answer == 'yes') {
-      await createNewProject();
-    } else {
-      logger.severe('dartle.dart file does not exist. Aborting!');
-      exit(4);
-    }
-  }
-}
-
 /// Run the given action in a safe try/catch block, allowing Dartle to handle
 /// any errors by logging the appropriate build failure.
 ///
@@ -77,7 +62,7 @@ Future<void> runSafely(List<String> args, bool doNotExit,
   try {
     options = parseOptions(args);
     await action(stopWatch, options);
-    if (!doNotExit) exit(0);
+    if (!doNotExit) abort(0);
   } on DartleException catch (e) {
     activateLogging(log.Level.SEVERE);
     logger.severe(e.message);
@@ -88,7 +73,7 @@ Future<void> runSafely(List<String> args, bool doNotExit,
     if (doNotExit) {
       rethrow;
     } else {
-      exit(e.exitCode);
+      abort(e.exitCode);
     }
   } on Exception catch (e, st) {
     activateLogging(log.Level.SEVERE);
@@ -100,7 +85,7 @@ Future<void> runSafely(List<String> args, bool doNotExit,
     if (doNotExit) {
       rethrow;
     } else {
-      exit(22);
+      abort(22);
     }
   }
 }

@@ -11,11 +11,10 @@ void main() {
 
   setUpAll(() async {
     parallelTasksBuild = (await createDartExe(
-            File('test/test_builds/parallel_tasks/dartle.dart')))
-        .absolute;
+        File('test/test_builds/parallel_tasks/dartle.dart')));
   });
   tearDownAll(() async {
-    await deleteAll(FileCollection([parallelTasksBuild]));
+    await deleteAll(files([parallelTasksBuild.path]));
   });
 
   Future<ProcessResult> runBuild(List<String> args) async {

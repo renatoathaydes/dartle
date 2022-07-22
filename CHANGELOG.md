@@ -2,6 +2,22 @@
 
 - forbid tasks from accessing IO resources not declared in inputs/outputs.
 
+## done, waiting for next release
+
+- breaking change: refactored FileCollection (incl. `file`, `dir` functions). Simplified how collections may be defined.
+- run post-run actions at end of each TaskPhase instead of only at the end of the build.
+- better reporting of which tasks failed at end of build.
+- cancel all pending tasks immediately on first build failure.
+- `deleteOutputs` function now works with all instances of `FileCondition`, not only `RunOnChanges`.
+- new `RunCondition` implementation: `RunToDelete` (used to implement _cleaning_ tasks).
+
+> Note: the file collection change was necessary for Dartle to be able to reliably detect
+> build misconfiguration. It was previously next to impossible to determine when tasks had
+> clashing outputs or were missing dependencies given the order in which files are read and
+> written to. The new API is less powerful but should suffice in most cases, and it allows
+> computing the intersection between tasks inputs and outputs reliably... that lets Dartle
+> provide much more powerful diagnostics, getting it closer to providing reproduce-able builds. 
+
 ## 0.12.1
 
 - include custom task phases in information about tasks.

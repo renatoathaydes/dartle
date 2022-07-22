@@ -3,7 +3,7 @@ class DartleException implements Exception {
   final String message;
   final int exitCode;
 
-  DartleException({required this.message, this.exitCode = 1});
+  const DartleException({required this.message, this.exitCode = 1});
 
   /// Returns a copy of this Exception but with a new message.
   DartleException withMessage(String newMessage) =>
@@ -56,4 +56,14 @@ class MultipleExceptions extends DartleException {
     if (e is DartleException) return e.message;
     return e.toString();
   }
+}
+
+/// Exception thrown when the build must be aborted immediately.
+///
+/// On platforms supporting dart:io, this is not normally thrown as the
+/// build may exit directly.
+class DartleAbortException implements Exception {
+  final int exitCode;
+
+  const DartleAbortException({this.exitCode = 1});
 }
