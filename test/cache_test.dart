@@ -232,6 +232,7 @@ void main([List<String> args = const []]) {
         await Directory(join(directory.path, 'sub-dir')).delete();
         await File(join(directory.path, 'sub-dir'))
             .writeAsString('not dir now');
+        await Future.delayed(const Duration(milliseconds: 100));
 
         interactions['hasChangedAfterSubDirTurnedIntoFile'] =
             await cache.hasChanged(dirCollection);

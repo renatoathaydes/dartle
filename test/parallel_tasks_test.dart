@@ -35,9 +35,6 @@ void main() {
       expect(tasksOutput, contains("Running task 'sayHi'"));
       expect(tasksOutput, contains("Running task 'sayHo'"));
       expect(tasksOutput, contains("Running task 'sayArgs'"));
-      expect(tasksOutput, contains('\nHi'));
-      expect(tasksOutput, contains('\nHo'));
-      expect(tasksOutput, contains('\n[]'));
     });
 
     test('run in separate Isolates with -p flag', () async {
