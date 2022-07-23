@@ -13,14 +13,25 @@ void main() {
 
     setUpAll(() async {
       fs = await createFileSystem([
-        ...['dartle', 'a', 'b', 'c', 'd', 'A/B/C', 'A/B/D', 'A/B/D/E']
-            .map((d) => Entry.directory(d)),
+        ...[
+          'dartle',
+          'a',
+          'b',
+          'c',
+          'd',
+          'A/B/C',
+          'A/B/D',
+          'A/B/D/E',
+          'A/B/D/.git'
+        ].map((d) => Entry.directory(d)),
         Entry.fileWithText('dartle.dart', 'hello world'),
         Entry.fileWithText('dartle/some.txt', 'text'),
         Entry.fileWithText('b/b.txt', 'BBBB'),
         Entry.fileWithText('A/B/C/c.txt', 'CCCC'),
         Entry.fileWithText('A/B/D/d.txt', 'DDDD'),
+        Entry.fileWithText('A/B/D/.hide.txt', 'hidden file'),
         Entry.fileWithText('A/B/D/E/e.txt', 'EEEE'),
+        Entry.fileWithText('A/B/D/E/.hide.txt', 'invisible'),
       ]);
     });
 
@@ -60,6 +71,23 @@ void main() {
         files,
         dirs: const {'A/B/D', 'A/B/D/E'},
         files: const {'A/B/D/d.txt', 'A/B/D/E/e.txt'},
+      );
+    });
+
+    test(
+        'can be created for a single, non-empty directory (recurse, include hidden)',
+        () async {
+      final files = dir('A/B/D', recurse: true, includeHidden: true);
+      await _expectFileCollection(
+        fs,
+        files,
+        dirs: const {'A/B/D', 'A/B/D/E', 'A/B/D/.git'},
+        files: const {
+          'A/B/D/d.txt',
+          'A/B/D/E/e.txt',
+          'A/B/D/.hide.txt',
+          'A/B/D/E/.hide.txt'
+        },
       );
     });
 

@@ -3,14 +3,19 @@ import 'dart:io';
 
 import 'package:path/path.dart' as p;
 
+/// A directory entry, usually used within a [FileCollection].
+///
+/// See [file], [files], [dir], [dirs], [entities].
 class DirectoryEntry {
   final String path;
   final bool recurse;
+  final bool includeHidden;
   final Set<String> fileExtensions;
 
   DirectoryEntry(
       {required this.path,
-      this.recurse = false,
+      this.recurse = true,
+      this.includeHidden = false,
       Set<String> fileExtensions = const {}})
       : fileExtensions = {
           for (var e in fileExtensions) e.startsWith('.') ? e : '.$e'
@@ -52,39 +57,63 @@ FileCollection files(Iterable<String> paths) =>
 /// Create a [FileCollection] consisting of a directory, possibly filtering
 /// which files within that directory may be included.
 ///
-/// If `include` is provided, only files matching its pattern are resolved.
+/// If `fileExtensions` is not empty, only files with such extensions are
+/// resolved.
 ///
 /// If `recurse` is set to `true` (the default), child directories are included.
 ///
+/// If `includeHidden` is set to `true` (default is `false`), files and
+/// directories starting with a `.` are included, otherwise they are ignored.
+///
 /// Only relative (to the root project directory) directories are allowed.
-FileCollection dir(String directory,
-        {Set<String> fileExtensions = const {}, bool recurse = true}) =>
+FileCollection dir(
+  String directory, {
+  Set<String> fileExtensions = const {},
+  bool recurse = true,
+  bool includeHidden = false,
+}) =>
     _FileCollection(
         const {},
         List.unmodifiable(_ensureValidDirs([
           DirectoryEntry(
-              path: directory, fileExtensions: fileExtensions, recurse: recurse)
+              path: directory,
+              fileExtensions: fileExtensions,
+              recurse: recurse,
+              includeHidden: includeHidden)
         ])));
 
 /// Create a [FileCollection] consisting of multiple directories, possibly
 /// filtering which files within each directory may be included.
 ///
-/// If `include` is provided, only files matching its pattern are resolved.
+/// If `fileExtensions` is not empty, only files with such extensions are
+/// resolved.
 ///
-/// If `recurse` is set to `true`, child directories are included.
+/// If `recurse` is set to `true` (the default), child directories are included.
+///
+/// If `includeHidden` is set to `true` (default is `false`), files and
+/// directories starting with a `.` are included, otherwise they are ignored.
 ///
 /// The provided directories must be disjoint and unique, otherwise an
 /// [ArgumentError] is thrown.
 ///
 /// Only relative (to the root project directory) directories are allowed.
 FileCollection dirs(Iterable<String> directories,
-        {Set<String> fileExtensions = const {}, bool recurse = false}) =>
+        {Set<String> fileExtensions = const {},
+        bool recurse = true,
+        bool includeHidden = false}) =>
     _FileCollection(
         const {},
         List.unmodifiable(_ensureValidDirs(directories.map((d) =>
             DirectoryEntry(
-                path: d, fileExtensions: fileExtensions, recurse: recurse)))));
+                path: d,
+                fileExtensions: fileExtensions,
+                recurse: recurse,
+                includeHidden: includeHidden)))));
 
+/// A File collection including the given [FileSystemEntity]'s.
+///
+/// Directories are included with the default options for
+/// [DirectoryEntry].
 FileCollection entities(Iterable<FileSystemEntity> entities) =>
     _FileCollection({
       for (var f in entities)
@@ -156,7 +185,9 @@ abstract class FileCollection {
       final dir = Directory(entry.path);
       yield dir;
       await for (final file in dir.list(recursive: false, followLinks: false)) {
-        if (file is File && entry.includesExtension(file.path)) yield file;
+        if (file is File &&
+            (entry.includeHidden || !p.basename(file.path).startsWith('.')) &&
+            entry.includesExtension(file.path)) yield file;
       }
     }
   }
@@ -183,13 +214,20 @@ abstract class FileCollection {
   Stream<DirectoryEntry> _resolveDirectoryEntries() async* {
     for (final entry in directories) {
       final dir = Directory(entry.path);
-      if (await dir.exists()) {
+      if (await dir.exists() &&
+          (entry.includeHidden ||
+              entry.path == '.' || // not a hidden directory
+              !p.basename(entry.path).startsWith('.'))) {
         yield entry;
         if (entry.recurse) {
           await for (final entity in dir.list(recursive: true)) {
-            if (entity is Directory) {
+            if (entity is Directory &&
+                (entry.includeHidden ||
+                    !p.basename(entity.path).startsWith('.'))) {
               yield DirectoryEntry(
-                  path: entity.path, fileExtensions: entry.fileExtensions);
+                  path: entity.path,
+                  includeHidden: entry.includeHidden,
+                  fileExtensions: entry.fileExtensions);
             }
           }
         }
@@ -281,6 +319,9 @@ Iterable<DirectoryEntry> _ensureValidDirs(Iterable<DirectoryEntry> dirs) sync* {
       throw ArgumentError('Duplicate directory: ${dir.path}');
     }
     yield DirectoryEntry(
-        path: pdir, recurse: dir.recurse, fileExtensions: dir.fileExtensions);
+        path: pdir,
+        recurse: dir.recurse,
+        includeHidden: dir.includeHidden,
+        fileExtensions: dir.fileExtensions);
   }
 }

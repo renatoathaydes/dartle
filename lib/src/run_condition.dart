@@ -30,10 +30,13 @@ mixin RunCondition {
 ///
 /// Dartle considers these when verifying implicit dependencies between tasks.
 mixin FilesCondition on RunCondition {
+  /// Inputs which should be monitored for changes.
   FileCollection get inputs => FileCollection.empty;
 
+  /// Outputs which should be monitored for changes.
   FileCollection get outputs => FileCollection.empty;
 
+  /// Deletions which are expected to be performed after an action has run.
   FileCollection get deletions => FileCollection.empty;
 }
 
@@ -203,7 +206,7 @@ class RunToDelete with RunCondition, FilesCondition {
   final FileCollection deletions;
   final DartleCache cache;
 
-  /// whether to verify that all declared deletions have been performed
+  /// Whether to verify that all declared deletions have been performed
   /// after the task has run.
   final bool verifyDeletions;
 
