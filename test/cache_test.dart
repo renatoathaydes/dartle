@@ -230,6 +230,7 @@ void main([List<String> args = const []]) {
 
         await cache(dirCollection);
         await Directory(join(directory.path, 'sub-dir')).delete();
+        await Future.delayed(const Duration(milliseconds: 100));
         await File(join(directory.path, 'sub-dir'))
             .writeAsString('not dir now');
         await Future.delayed(const Duration(milliseconds: 100));
