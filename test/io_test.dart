@@ -22,11 +22,13 @@ void main() {
           'A/B/C',
           'A/B/D',
           'A/B/D/E',
-          'A/B/D/.git'
+          'A/B/D/.git',
+          '.hide',
         ].map((d) => Entry.directory(d)),
         Entry.fileWithText('dartle.dart', 'hello world'),
         Entry.fileWithText('dartle/some.txt', 'text'),
         Entry.fileWithText('b/b.txt', 'BBBB'),
+        Entry.fileWithText('.hide/secret', 'secret contents'),
         Entry.fileWithText('A/B/C/c.txt', 'CCCC'),
         Entry.fileWithText('A/B/D/d.txt', 'DDDD'),
         Entry.fileWithText('A/B/D/.hide.txt', 'hidden file'),
@@ -87,6 +89,36 @@ void main() {
           'A/B/D/E/e.txt',
           'A/B/D/.hide.txt',
           'A/B/D/E/.hide.txt'
+        },
+      );
+    });
+
+    test('can be created for root dir, with filter (recurse, exclude hidden)',
+        () async {
+      final files = dir('.',
+          fileExtensions: {'.txt'}, recurse: true, includeHidden: false);
+      await _expectFileCollection(
+        fs,
+        files,
+        dirs: const {
+          '.',
+          './dartle',
+          './a',
+          './b',
+          './c',
+          './d',
+          './A',
+          './A/B',
+          './A/B/C',
+          './A/B/D',
+          './A/B/D/E',
+        },
+        files: const {
+          './dartle/some.txt',
+          './b/b.txt',
+          './A/B/C/c.txt',
+          './A/B/D/d.txt',
+          './A/B/D/E/e.txt',
         },
       );
     });
@@ -238,6 +270,10 @@ Future _expectFileCollection(FileSystem fs, FileCollection actual,
     final allDirs = entities.whereType<Directory>().map((e) => e.path).toSet();
     expect(allFiles, equals(files));
     expect(allDirs, equals(dirs));
+    expect(
+        await actual.resolveFiles().map((f) => f.path).toSet(), equals(files));
+    expect(await actual.resolveDirectories().map((f) => f.path).toSet(),
+        equals(dirs));
   });
 }
 
