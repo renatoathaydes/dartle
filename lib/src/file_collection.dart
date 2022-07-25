@@ -46,6 +46,13 @@ class DirectoryEntry {
       'fileExtensions: $fileExtensions}';
 }
 
+class _ResolvedDirEntry {
+  final String path;
+  final Iterable<File> files;
+
+  _ResolvedDirEntry(this.path, this.files);
+}
+
 /// Create a [FileCollection] consisting of a single file.
 FileCollection file(String path) =>
     _FileCollection({_ensurePosixPath(path)}, const []);
@@ -181,13 +188,10 @@ abstract class FileCollection {
       final f = File(file);
       if (await f.exists()) yield f;
     }
-    await for (final entry in _resolveDirectoryEntries()) {
-      final dir = Directory(entry.path);
-      yield dir;
-      await for (final file in dir.list(recursive: false, followLinks: false)) {
-        if (file is File &&
-            (entry.includeHidden || !p.basename(file.path).startsWith('.')) &&
-            entry.includesExtension(file.path)) yield file;
+    await for (final resolved in _resolveDirectoryEntries()) {
+      yield Directory(resolved.path);
+      for (final file in resolved.files) {
+        yield file;
       }
     }
   }
@@ -211,28 +215,37 @@ abstract class FileCollection {
     return _resolveDirectoryEntries().map((e) => Directory(e.path));
   }
 
-  Stream<DirectoryEntry> _resolveDirectoryEntries() async* {
+  Stream<_ResolvedDirEntry> _resolveDirectoryEntries() async* {
     for (final entry in directories) {
+      final includeHidden = entry.includeHidden;
       final dir = Directory(entry.path);
-      if (await dir.exists() &&
-          (entry.includeHidden ||
-              entry.path == '.' || // not a hidden directory
-              !p.basename(entry.path).startsWith('.'))) {
-        yield entry;
+      if (await dir.exists()) {
         if (entry.recurse) {
-          await for (final entity in dir.list(recursive: true)) {
-            if (entity is Directory &&
-                (entry.includeHidden ||
-                    !p.basename(entity.path).startsWith('.'))) {
-              yield DirectoryEntry(
-                  path: entity.path,
-                  includeHidden: entry.includeHidden,
-                  fileExtensions: entry.fileExtensions);
+          final dirsToVisit = [dir];
+          do {
+            final nextDir = dirsToVisit.removeLast();
+            if (includeHidden || nextDir.path.isNotHidden()) {
+              final children = await nextDir.list(followLinks: false).toList();
+              yield _ResolvedDirEntry(
+                  nextDir.path,
+                  children
+                      .whereType<File>()
+                      .where((f) => _includeFile(entry, f)));
+              dirsToVisit.addAll(children.whereType<Directory>());
             }
-          }
+          } while (dirsToVisit.isNotEmpty);
+        } else if (includeHidden || entry.path.isNotHidden()) {
+          final children = await dir.list(followLinks: false).toList();
+          yield _ResolvedDirEntry(entry.path,
+              children.whereType<File>().where((f) => _includeFile(entry, f)));
         }
       }
     }
+  }
+
+  bool _includeFile(DirectoryEntry entry, File file) {
+    return (entry.includeHidden || file.path.isNotHidden()) &&
+        entry.isWithin(file.path, isDir: false);
   }
 
   /// Compute the intersection between this collection and another.
@@ -323,5 +336,27 @@ Iterable<DirectoryEntry> _ensureValidDirs(Iterable<DirectoryEntry> dirs) sync* {
         recurse: dir.recurse,
         includeHidden: dir.includeHidden,
         fileExtensions: dir.fileExtensions);
+  }
+}
+
+extension _PathHelper on String {
+  static final pathSeparator =
+      Platform.isWindows ? RegExp(r'[/\\]') : RegExp(r'/');
+
+  /// check if this path represents a hidden location without allocating
+  /// a new string (which the path package would force us to do).
+  bool isNotHidden() {
+    final h = isHidden();
+    return !h;
+  }
+
+  bool isHidden() {
+    if (this == '.' || isEmpty) return false;
+    return this[_firstEffectiveIndex()] == '.';
+  }
+
+  int _firstEffectiveIndex() {
+    final index = lastIndexOf(pathSeparator);
+    return index > 0 && index < length - 1 ? index + 1 : 0;
   }
 }
