@@ -75,13 +75,6 @@ class DartleCache {
         .where(visitedEntities.add)) {
       await _cacheDir(Directory(dir), key: key);
     }
-
-    await for (final entity in collection.resolveFiles()) {
-      await _cacheFile(entity, key: key);
-    }
-    await for (final entity in collection.resolveDirectories()) {
-      await _cacheDir(entity, key: key);
-    }
   }
 
   /// Check if the given file system entity is present in the cache.
