@@ -65,4 +65,10 @@ class CacheMock implements DartleCache {
   Future<DateTime?> getLatestInvocationTime(TaskInvocation invocation) async {
     return invocationTimes[invocation.task.name];
   }
+
+  @override
+  Future<void> removeNotMatching(
+      Set<String> taskNames, Set<String> keys) async {
+    invocationTimes.removeWhere((name, value) => !taskNames.contains(name));
+  }
 }

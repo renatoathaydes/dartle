@@ -130,6 +130,7 @@ class RunOnChanges with RunCondition, FilesCondition {
 
     final taskName = result.invocation.name;
     if (success) {
+      await cache.clean(key: taskName);
       await cache(inputs, key: taskName);
       await cache(outputs, key: taskName);
       await cache.cacheTaskInvocation(result.invocation);

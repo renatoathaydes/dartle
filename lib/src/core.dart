@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'helpers.dart';
 import 'package:logging/logging.dart' as log;
 
 import '_log.dart';
@@ -121,8 +122,16 @@ Future<void> _runWithoutErrorHandling(List<String> args, Set<Task> tasks,
           defaultTasks);
     }
 
-    await _runAll(executableTasks, options);
+    try {
+      await _runAll(executableTasks, options);
+    } finally {
+      await _cleanCache(DartleCache.instance, taskMap.keys.toSet());
+    }
   }
+}
+
+FutureOr<void> _cleanCache(DartleCache cache, Set<String> taskNames) {
+  return ignoreExceptions(() => cache.removeNotMatching(taskNames, taskNames));
 }
 
 void _logTasksInfo(

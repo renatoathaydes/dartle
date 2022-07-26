@@ -3,6 +3,7 @@ import 'dart:io';
 
 import 'package:collection/collection.dart';
 import 'package:crypto/crypto.dart';
+import '../task.dart';
 import 'package:path/path.dart' as path;
 
 import '../_log.dart';
@@ -38,11 +39,23 @@ class DartleCache {
   }
 
   /// Clean the Dartle cache.
+  ///
+  /// If the key is empty, then the cache is cleaned completely, otherwise only
+  /// entries associated with the key are removed.
   Future<void> clean({String key = ''}) async {
-    logger.fine('Cleaning Dartle cache');
-    await ignoreExceptions(() => Directory(_tasksDir).delete(recursive: true));
-    await ignoreExceptions(() => Directory(_hashesDir).delete(recursive: true));
-    logger.fine('Dartle cache has been cleaned.');
+    if (key.isEmpty) {
+      logger.fine('Cleaning Dartle cache');
+      await ignoreExceptions(
+          () => Directory(_tasksDir).delete(recursive: true));
+      await ignoreExceptions(
+          () => Directory(_hashesDir).delete(recursive: true));
+      logger.fine('Dartle cache has been cleaned');
+    } else {
+      logger.fine(() => 'Cleaning Dartle cache (key=$key)');
+      final dir = Directory(path.join(_hashesDir, key));
+      await ignoreExceptions(() => dir.delete(recursive: true));
+      logger.fine(() => 'Dartle cache has been cleaned (key=$key)');
+    }
   }
 
   /// Remove from this cache all files and directories in the given collection.
@@ -127,7 +140,30 @@ class DartleCache {
   /// from the cache.
   Future<void> removeTaskInvocation(String taskName) async {
     final file = File(path.join(_tasksDir, taskName));
-    await ignoreExceptions(() => file.delete());
+    await ignoreExceptions(file.delete);
+  }
+
+  /// Remove any cache entry that is not relevant given the remaining
+  /// taskNames and keys.
+  Future<void> removeNotMatching(
+      Set<String> taskNames, Set<String> keys) async {
+    var removedCount = 0;
+    final oldTasks = Directory(_tasksDir).list();
+    await for (final oldTask in oldTasks) {
+      if (!taskNames.contains(path.basename(oldTask.path))) {
+        await oldTask.delete(recursive: true);
+        removedCount++;
+      }
+    }
+    final oldKeys = Directory(_hashesDir).list();
+    await for (final oldKey in oldKeys) {
+      if (!keys.contains(path.basename(oldKey.path))) {
+        await oldKey.delete(recursive: true);
+        removedCount++;
+      }
+    }
+    logger.fine(() =>
+        'Removed $removedCount cache entries that are no longer relevant');
   }
 
   Future<void> _cacheFile(File file, {required String key}) async {
@@ -147,7 +183,7 @@ class DartleCache {
   Future<void> _cacheDir(Directory dir, {required String key}) async {
     final hf = _getCacheLocation(dir, key: key);
     if (await dir.exists()) {
-      logger.fine(() => 'Caching directory: ${dir.path} at ${hf.path}');
+      logger.fine(() => 'Caching directory ${dir.path} at ${hf.path}');
       await hf.parent.create(recursive: true);
       await hf.writeAsBytes((await _hashDirectChildren(dir)).bytes);
     } else {
@@ -159,8 +195,8 @@ class DartleCache {
 
   Future<void> _removeEntity(FileSystemEntity entity,
       {required String key, File? cacheLocation}) async {
-    cacheLocation ??= _getCacheLocation(entity, key: key);
-    await ignoreExceptions(cacheLocation.delete);
+    final cl = cacheLocation ?? _getCacheLocation(entity, key: key);
+    await ignoreExceptions(cl.delete);
   }
 
   /// Check if any member of a [FileCollection] has been modified since the

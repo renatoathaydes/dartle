@@ -292,7 +292,6 @@ void main([List<String> args = const []]) {
         await cache(dirCollection);
         await cache(dirCollectionNonRecursive);
         await Future.delayed(const Duration(milliseconds: 100));
-        logger.info('ADDING NEW FILE IN a/b/ DIR');
         await File(join('a', 'b', 'other-file.txt')).writeAsString('hi');
 
         interactions['hasChangedAfterAddingFileInNestedDir'] =
