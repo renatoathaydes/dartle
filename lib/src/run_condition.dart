@@ -151,7 +151,7 @@ class RunOnChanges with RunCondition, FilesCondition {
 
   Future<void> _verifyOutputs() async {
     final missingOutputs = <String>[];
-    await for (final entity in outputs.resolve()) {
+    for (final entity in outputs.includedEntities()) {
       if (!await entity.exists()) missingOutputs.add(entity.path);
     }
     if (missingOutputs.isNotEmpty) {
