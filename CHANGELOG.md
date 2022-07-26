@@ -5,6 +5,8 @@
 ## done, waiting for next release
 
 - breaking change: refactored FileCollection (incl. `file`, `dir` functions). Simplified how collections may be defined.
+- added 'PROFILE' log level and logged times of each significant build step.
+- cleanup cache entries that are no long relevant after build.
 - run post-run actions at end of each TaskPhase instead of only at the end of the build.
 - better reporting of which tasks failed at end of build.
 - cancel all pending tasks immediately on first build failure.
