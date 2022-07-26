@@ -145,13 +145,15 @@ Future<TaskResult> runTask(TaskInvocation invocation,
     // other tasks should be cancelled if there's a failure
     currentCancellableContext()?.cancel();
   }
-  if (logger.isLoggable(Level.FINE)) {
+  if (logger.isLoggable(profile)) {
     final completionReason = result.isSuccess
         ? 'successfully'
         : result.isCancelled
             ? 'due to being cancelled'
             : 'with errors';
-    logger.fine("Task '${task.name}' completed "
+    logger.log(
+        profile,
+        "Task '${task.name}' completed "
         '$completionReason in ${elapsedTime(stopwatch)}');
   }
   return result;
@@ -224,7 +226,9 @@ Future<void> runTaskPostRun(TaskResult taskResult) async {
     isError = true;
     rethrow;
   } finally {
-    logger.fine("Post-run action of task '${task.name}' completed "
+    logger.log(
+        profile,
+        "Post-run action of task '${task.name}' completed "
         "${!isError ? 'successfully' : 'with errors'}"
         ' in ${elapsedTime(stopwatch)}');
   }

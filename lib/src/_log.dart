@@ -5,7 +5,7 @@ import 'package:io/ansi.dart' as ansi;
 import 'package:logging/logging.dart' as log;
 
 /// Supported log colors.
-enum LogColor { red, green, blue, yellow, gray }
+enum LogColor { red, green, blue, yellow, gray, magenta }
 
 /// Supported log styles.
 enum LogStyle { bold, dim, italic }
@@ -35,11 +35,14 @@ class ColoredLogMessage {
 
 enum LogLevel { debug, info, warn, error }
 
+const profile = log.Level('PROFILE', 550);
+
 const levelByName = <String, log.Level>{
   'debug': log.Level.FINE,
   'info': log.Level.INFO,
   'warn': log.Level.WARNING,
   'error': log.Level.SEVERE,
+  'profile': profile,
 };
 
 final _nameByLevel = <log.Level, String>{
@@ -47,6 +50,7 @@ final _nameByLevel = <log.Level, String>{
   log.Level.INFO: 'INFO',
   log.Level.WARNING: 'WARN',
   log.Level.SEVERE: 'ERROR',
+  profile: 'PROFILE',
 };
 
 final _logByLevel = <log.Level, _Log>{
@@ -54,6 +58,7 @@ final _logByLevel = <log.Level, _Log>{
   log.Level.INFO: const _Log(null),
   log.Level.WARNING: const _Log(LogColor.yellow),
   log.Level.SEVERE: const _Log(LogColor.red),
+  profile: const _Log(LogColor.magenta),
 };
 
 ansi.AnsiCode _ansiCode(LogColor color) {
@@ -68,6 +73,8 @@ ansi.AnsiCode _ansiCode(LogColor color) {
       return ansi.yellow;
     case LogColor.gray:
       return ansi.darkGray;
+    case LogColor.magenta:
+      return ansi.magenta;
   }
 }
 

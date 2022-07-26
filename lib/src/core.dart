@@ -125,13 +125,22 @@ Future<void> _runWithoutErrorHandling(List<String> args, Set<Task> tasks,
     try {
       await _runAll(executableTasks, options);
     } finally {
-      await _cleanCache(DartleCache.instance, taskMap.keys.toSet());
+      await _cleanCache(DartleCache.instance,
+          taskMap.keys.followedBy(const ['_compileDartleFile']).toSet());
     }
   }
 }
 
 FutureOr<void> _cleanCache(DartleCache cache, Set<String> taskNames) {
-  return ignoreExceptions(() => cache.removeNotMatching(taskNames, taskNames));
+  return ignoreExceptions(() {
+    final stopWatch = Stopwatch()..start();
+    try {
+      return cache.removeNotMatching(taskNames, taskNames);
+    } finally {
+      logger.log(
+          profile, 'Garbage-collected cache in ${elapsedTime(stopWatch)}');
+    }
+  });
 }
 
 void _logTasksInfo(
@@ -282,12 +291,22 @@ Future<TaskWithStatus> _createTaskWithStatus(
     status = TaskStatus.affectedByDeletionTask;
   } else if (_anyDepMustRun(task, taskStatuses)) {
     status = TaskStatus.dependencyIsOutOfDate;
-  } else if (await task.runCondition.shouldRun(invocation)) {
+  } else if (await _shouldRun(invocation)) {
     status = TaskStatus.outOfDate;
   } else {
     status = TaskStatus.upToDate;
   }
   return TaskWithStatus(task, status, invocation);
+}
+
+Future<bool> _shouldRun(TaskInvocation invocation) async {
+  final stopWatch = Stopwatch()..start();
+  final result = await invocation.task.runCondition.shouldRun(invocation);
+  logger.log(
+      profile,
+      "Checked task '${invocation.name}'"
+      ' runCondition in ${elapsedTime(stopWatch)}');
+  return result;
 }
 
 bool _isAffectedByDeletionTask(
