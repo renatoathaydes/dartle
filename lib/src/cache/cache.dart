@@ -246,7 +246,10 @@ class DartleCache {
     }
     bool changed;
     if (hashExists) {
+      // allow for 1 second difference: file systems seem to not refresh
+      // the timestamp with sub-second precision!
       if ((await file.lastModified())
+          .add(const Duration(seconds: 1))
           .isAfter((await hashFile.lastModified()))) {
         logger.fine(
             () => "Detected possibly stale cache for file '${file.path}', "
