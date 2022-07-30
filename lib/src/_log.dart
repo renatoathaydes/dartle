@@ -122,36 +122,40 @@ bool activateLogging(log.Level level, {bool colorfulLog = true}) {
     _loggingActivated = true;
     _colorfulLog = colorfulLog;
     log.Logger.root.level = level;
-    log.Logger.root.onRecord
-        .listen((log.LogRecord rec) => _log(rec, colorfulLog));
+    log.Logger.root.onRecord.listen(colorfulLog ? _logColored : _log);
     return true;
   }
   return false;
 }
 
-void _log(log.LogRecord rec, bool colorfulLog) {
+void _logColored(log.LogRecord rec) {
   _Log log;
   String? msg;
-  if (colorfulLog) {
-    final obj = rec.object;
-    if (obj is ColoredLogMessage) {
-      log = _Log(obj.color);
-      msg = rec.message;
-    } else {
-      log = _logByLevel[rec.level] ?? const _Log(null);
-    }
+  final obj = rec.object;
+  if (obj is ColoredLogMessage) {
+    log = _Log(obj.color);
+    msg = rec.message;
   } else {
-    log = const _Log(null);
-    if (rec.object is ColoredLogMessage) {
-      msg = rec.message;
-    }
+    log = _logByLevel[rec.level] ?? const _Log(null);
   }
 
-  msg ??=
-      '${rec.time} - ${rec.loggerName}[${Isolate.current.debugName} $pid] - '
-      '${_nameByLevel[rec.level] ?? rec.level} - ${rec.message}${_error(rec)}';
+  log(msg ?? _createLogMessage(rec));
+}
 
-  log(msg);
+void _log(log.LogRecord rec) {
+  _Log log = const _Log(null);
+
+  String? msg;
+  if (rec.object is ColoredLogMessage) {
+    msg = rec.message;
+  }
+
+  log(msg ?? _createLogMessage(rec));
+}
+
+String _createLogMessage(log.LogRecord rec) {
+  return '${rec.time} - ${rec.loggerName}[${Isolate.current.debugName} $pid] - '
+      '${_nameByLevel[rec.level] ?? rec.level} - ${rec.message}${_error(rec)}';
 }
 
 String _error(log.LogRecord rec) {
