@@ -141,7 +141,10 @@ Future<void> deleteOutputs(Iterable<Task> tasks) async {
 /// directories are deleted as long as no filters belonging to the given
 /// [FileCollection] exclude files or sub-directories within such directory.
 Future<void> deleteAll(FileCollection fileCollection) async {
-  await for (final entity in fileCollection.resolve()) {
+  final toDelete = await fileCollection.resolve().toList();
+  // the list is in listed-files order, so we must reverse it to delete
+  // directories last.
+  for (final entity in toDelete.reversed) {
     logger.fine('Deleting ${entity.path}');
     await ignoreExceptions(entity.delete);
   }
