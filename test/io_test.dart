@@ -266,8 +266,10 @@ Future _expectFileCollection(FileSystem fs, FileCollection actual,
     {Set<String> files = const {}, Set<String> dirs = const {}}) async {
   await withFileSystem(fs, () async {
     final entities = await actual.resolve().toList();
-    final allFiles = entities.whereType<File>().map((e) => e.path).toSet();
-    final allDirs = entities.whereType<Directory>().map((e) => e.path).toSet();
+    final allFiles = entities.map((e)=>e.entity)
+        .whereType<File>().map((e) => e.path).toSet();
+    final allDirs = entities.map((e)=>e.entity)
+        .whereType<Directory>().map((e) => e.path).toSet();
     expect(allFiles, equals(files));
     expect(allDirs, equals(dirs));
     expect(

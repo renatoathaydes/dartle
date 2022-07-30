@@ -22,22 +22,17 @@ class DirectoryEntry {
         };
 
   bool isWithin(String otherPath, {required bool isDir}) {
-    final posixPath = p.posix.canonicalize(otherPath);
-    if (isDir && path == posixPath) return true;
-    if (recurse) {
-      final pathWithin = p.isWithin(path, posixPath);
-      if (pathWithin && isDir) {
-        return true;
-      }
-      return pathWithin && includesExtension(otherPath);
-    }
-    // no recursion, so check the immediate parent of otherPath is path
-    return path == p.dirname(posixPath);
+    final otherPathPosix = p.posix.canonicalize(otherPath);
+    final isWithin = recurse
+        ? path == otherPathPosix || p.isWithin(path, otherPathPosix)
+        : path == (isDir ? path == otherPathPosix : p.dirname(otherPathPosix));
+    return isWithin && (isDir || includesExtension(otherPathPosix));
   }
 
   bool includesExtension(String otherPath) {
-    return fileExtensions.isEmpty ||
-        fileExtensions.contains(p.extension(otherPath));
+    // don't use path.extension() because we want to support extensions
+    // containing more than one dot, e.g. "foo.bar.txt"
+    return fileExtensions.isEmpty || fileExtensions.any(otherPath.endsWith);
   }
 
   @override
@@ -46,11 +41,44 @@ class DirectoryEntry {
       'fileExtensions: $fileExtensions}';
 }
 
-class _ResolvedDirEntry {
-  final String path;
-  final Iterable<File> files;
+mixin ResolvedEntity {
+  FileSystemEntity get entity;
 
-  _ResolvedDirEntry(this.path, this.files);
+  String get path => entity.path;
+
+  FutureOr<T> use<T>(FutureOr<T> Function(File) onFile,
+      FutureOr<T> Function(Directory, Iterable<FileSystemEntity>) onDir);
+}
+
+class _ResolvedFileEntry with ResolvedEntity {
+  final File file;
+
+  @override
+  FileSystemEntity get entity => file;
+
+  _ResolvedFileEntry(this.file);
+
+  @override
+  FutureOr<T> use<T>(FutureOr<T> Function(File p1) onFile,
+      FutureOr<T> Function(Directory, Iterable<FileSystemEntity>) onDir) {
+    return onFile(file);
+  }
+}
+
+class _ResolvedDirEntry with ResolvedEntity {
+  final Directory dir;
+  final Iterable<FileSystemEntity> children;
+
+  @override
+  FileSystemEntity get entity => dir;
+
+  _ResolvedDirEntry(this.dir, this.children);
+
+  @override
+  FutureOr<T> use<T>(FutureOr<T> Function(File) onFile,
+      FutureOr<T> Function(Directory, Iterable<FileSystemEntity>) onDir) {
+    return onDir(dir, children);
+  }
 }
 
 /// Create a [FileCollection] consisting of a single file.
@@ -183,15 +211,15 @@ abstract class FileCollection {
   /// Resolve all [FileSystemEntity]s inside this collection.
   ///
   /// Included files are only returned if they exist at the time of resolving.
-  Stream<FileSystemEntity> resolve() async* {
+  Stream<ResolvedEntity> resolve() async* {
     for (final file in files) {
       final f = File(file);
-      if (await f.exists()) yield f;
+      if (await f.exists()) yield _ResolvedFileEntry(f);
     }
     await for (final resolved in _resolveDirectoryEntries()) {
-      yield Directory(resolved.path);
-      for (final file in resolved.files) {
-        yield file;
+      yield resolved;
+      for (final file in resolved.children.whereType<File>()) {
+        yield _ResolvedFileEntry(file);
       }
     }
   }
@@ -200,7 +228,8 @@ abstract class FileCollection {
   ///
   /// Included files are only returned if they exist at the time of resolving.
   Stream<File> resolveFiles() async* {
-    await for (final entity in resolve()) {
+    await for (final entry in resolve()) {
+      final entity = entry.entity;
       if (entity is File) yield entity;
     }
   }
@@ -226,18 +255,15 @@ abstract class FileCollection {
             final nextDir = dirsToVisit.removeLast();
             if (includeHidden || nextDir.path.isNotHidden()) {
               final children = await nextDir.list(followLinks: false).toList();
-              yield _ResolvedDirEntry(
-                  nextDir.path,
-                  children
-                      .whereType<File>()
-                      .where((f) => _includeFile(entry, f)));
+              yield _ResolvedDirEntry(nextDir,
+                  children.where((f) => f is! File || _includeFile(entry, f)));
               dirsToVisit.addAll(children.whereType<Directory>());
             }
           } while (dirsToVisit.isNotEmpty);
         } else if (includeHidden || entry.path.isNotHidden()) {
           final children = await dir.list(followLinks: false).toList();
-          yield _ResolvedDirEntry(entry.path,
-              children.whereType<File>().where((f) => _includeFile(entry, f)));
+          yield _ResolvedDirEntry(
+              dir, children.where((f) => f is! File || _includeFile(entry, f)));
         }
       }
     }

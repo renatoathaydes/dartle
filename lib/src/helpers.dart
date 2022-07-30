@@ -144,8 +144,8 @@ Future<void> deleteAll(FileCollection fileCollection) async {
   final toDelete = await fileCollection.resolve().toList();
   // the list is in listed-files order, so we must reverse it to delete
   // directories last.
-  for (final entity in toDelete.reversed) {
-    logger.fine('Deleting ${entity.path}');
-    await ignoreExceptions(entity.delete);
+  for (final entry in toDelete.reversed) {
+    logger.fine('Deleting ${entry.path}');
+    await ignoreExceptions(entry.entity.delete);
   }
 }

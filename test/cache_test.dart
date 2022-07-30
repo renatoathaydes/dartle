@@ -306,9 +306,9 @@ void main([List<String> args = const []]) {
         await directory.delete();
         await Future.delayed(const Duration(milliseconds: 100));
 
-        interactions['hasChangedAfterCreatingDeletingNestedDir'] =
+        interactions['hasChangedAfterDeletingNestedDir'] =
             await cache.hasChanged(dirCollection);
-        interactions['hasChangedAfterCreatingDeletingNestedDirNonRecursive'] =
+        interactions['hasChangedAfterDeletingNestedDirNonRecursive'] =
             await cache.hasChanged(dirCollectionNonRecursive);
       });
 
@@ -320,8 +320,8 @@ void main([List<String> args = const []]) {
             'hasChangedAfterAddingFileAtRootNonRecursive': true,
             'hasChangedAfterAddingFileInNestedDir': true,
             'hasChangedAfterAddingFileInNestedDirNonRecursive': false,
-            'hasChangedAfterCreatingDeletingNestedDir': true,
-            'hasChangedAfterCreatingDeletingNestedDirNonRecursive': false,
+            'hasChangedAfterDeletingNestedDir': true,
+            'hasChangedAfterDeletingNestedDirNonRecursive': false,
           }));
     });
 

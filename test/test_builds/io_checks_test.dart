@@ -115,6 +115,7 @@ void main() {
       expect(proc.stderr, isEmpty);
     */
 
+      // reset input so the output should go back to the expected state
       await revertInputFileChange();
 
       // run again
