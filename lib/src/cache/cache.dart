@@ -317,6 +317,9 @@ class _DirectoryContents {
   }
 
   List<int> encode() {
-    return hashList(children.map((e) => e.path)).bytes;
+    // prepend 'd/' to mark hash as a directory
+    return hashAll((const [
+      [68, 47]
+    ]).followedBy(children.map((e) => e.path.codeUnits))).bytes;
   }
 }

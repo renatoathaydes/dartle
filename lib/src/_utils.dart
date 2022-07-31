@@ -96,11 +96,11 @@ Future<Digest> hashFile(File file) async {
   }
 }
 
-Digest hashList(Iterable<String> items) {
+Digest hashAll(Iterable<List<int>> items) {
   final sink = AccumulatorSink<Digest>();
   final converter = sha1.startChunkedConversion(sink);
   for (final item in items) {
-    converter.add(item.codeUnits);
+    converter.add(item);
   }
   converter.close();
   return sink.events.single;
