@@ -2,7 +2,6 @@ import 'dart:io';
 
 @TestOn('!browser')
 import 'package:dartle/dartle.dart';
-import 'package:logging/logging.dart' show Level;
 import 'package:path/path.dart' as path;
 import 'package:test/test.dart';
 
@@ -28,7 +27,6 @@ void main() {
     Map<String, String?> outputFilesAtStart = {};
 
     setUp(() async {
-      activateLogging(Level.FINE);
       await _deleteDartleToolDir();
       final preExistingOutput = outputsDir.list(recursive: true);
       await for (final out in preExistingOutput) {
@@ -101,19 +99,15 @@ void main() {
       expect(proc.stdout[0], contains(oneTaskExecutingMessage));
       expect(proc.stderr, isEmpty);
 
-      // FIXME does not run task again when output file changes
-      /*
       // change an output file
-      await File(outputFilesAtStart.keys.first)
+      await File(path.join(outputsDir.path, 'hello.b64.txt'))
           .writeAsString('changed this', flush: true);
 
       // run again
       proc = await runExampleDartBuild(const ['--no-colorful-log', 'base64']);
       expect(proc.exitCode, equals(0));
-
       expect(proc.stdout[0], contains(oneTaskExecutingMessage));
       expect(proc.stderr, isEmpty);
-    */
 
       // reset input so the output should go back to the expected state
       await revertInputFileChange();

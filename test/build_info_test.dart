@@ -12,8 +12,8 @@ void main() {
     var manyTasksBuild = File('');
 
     setUpAll(() async {
-      manyTasksBuild = (await createDartExe(
-          File('test/test_builds/many_tasks/dartle.dart')));
+      manyTasksBuild = await createDartExe(
+          File('test/test_builds/many_tasks/dartle.dart'));
     });
     tearDownAll(() async {
       await deleteAll(file(manyTasksBuild.path));
