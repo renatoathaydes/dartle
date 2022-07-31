@@ -145,18 +145,11 @@ FileCollection dirs(Iterable<String> directories,
                 recurse: recurse,
                 includeHidden: includeHidden)))));
 
-/// A File collection including the given [FileSystemEntity]'s.
-///
-/// Directories are included with the default options for
-/// [DirectoryEntry].
-FileCollection entities(Iterable<FileSystemEntity> entities) =>
-    _FileCollection({
-      for (var f in entities)
-        if (f is File) f.path
-    }, [
-      for (var f in entities)
-        if (f is Directory) DirectoryEntry(path: f.path)
-    ]);
+/// A File collection including the given files as well as
+/// [DirectoryEntry]'s.
+FileCollection entities(Iterable<String> files,
+    Iterable<DirectoryEntry> directoryEntries) =>
+    _FileCollection(files.toSet(), directoryEntries.toList(growable: false));
 
 /// A collection of [File] and [Directory] which can be used to declare a set
 /// of inputs or outputs for a [Task].

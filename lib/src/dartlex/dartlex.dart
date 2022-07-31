@@ -87,11 +87,13 @@ Future<bool> _runTask(TaskInvocation invocation) async {
 }
 
 Future<TaskWithDeps> _createDartCompileTask() async {
-  final buildFile = File('dartle.dart').absolute;
+  final buildFile = File('dartle.dart');
   final buildSetupFiles = [buildFile.path, 'pubspec.yaml', 'pubspec.lock'];
 
   final runCompileCondition = RunOnChanges(
-    inputs: files(buildSetupFiles),
+    inputs: entities(buildSetupFiles, [
+      DirectoryEntry(path: 'dartle-src', fileExtensions: const {'.dart'})
+    ]),
     outputs: file(_cachedDartlex.path),
   );
 

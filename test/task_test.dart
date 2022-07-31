@@ -184,8 +184,9 @@ void main() {
     final deleteTaskBad = Task(noop,
         name: 'deleteBad',
         runCondition: RunToDelete(entities([
-          Directory('out'),
-          File('out2.txt'),
+          'out2.txt',
+        ], [
+          DirectoryEntry(path: 'out')
         ])));
 
     test(

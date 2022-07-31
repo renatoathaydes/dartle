@@ -15,6 +15,7 @@
 - fixed `deleteAll` so it removes directories after emptying them.
 - improved `DartleCache` so it will not trust timestamps when diff is less than 1 second. Some file systems have low resolution timestamps.
 - `DartleCache` now hashes files by loading small buffer into memory at a time instead of whole file.
+- `DartleCache` hash now distinguishes between empty file and empty directory.
 
 > Note: the file collection change was necessary for Dartle to be able to reliably detect
 > build misconfiguration. It was previously next to impossible to determine when tasks had
