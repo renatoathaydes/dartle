@@ -2,8 +2,6 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:collection/collection.dart';
-import 'package:convert/convert.dart';
-import 'package:crypto/crypto.dart';
 import 'package:path/path.dart' as path;
 
 import '../_log.dart';
@@ -165,11 +163,10 @@ class DartleCache {
 
   Future<void> _cacheFile(File file, {required String key}) async {
     final hf = _getCacheLocation(file, key: key);
-    // TODO investigate if opening the file increases performance
     if (await file.exists()) {
       logger.fine(() => 'Caching file ${file.path} at ${hf.path}');
       await hf.parent.create(recursive: true);
-      await hf.writeAsBytes(hashBytes(await file.readAsBytes()).bytes);
+      await hf.writeAsBytes((await hashFile(file)).bytes);
     } else {
       logger.fine(() =>
           'Removing file ${file.path} from ${hf.path} as it does not exist');
@@ -237,8 +234,8 @@ class DartleCache {
   }
 
   Future<bool> _hasFileChanged(File file, {String key = ''}) async {
-    final hashFile = _getCacheLocation(file, key: key);
-    var hashExists = await hashFile.exists();
+    final hf = _getCacheLocation(file, key: key);
+    var hashExists = await hf.exists();
     if (!await file.exists()) {
       logger.fine(() => "File '${file.path}' does not exist "
           "${hashExists ? 'but was cached' : 'and was not known before'}");
@@ -250,12 +247,12 @@ class DartleCache {
       // the timestamp with sub-second precision!
       if ((await file.lastModified())
           .add(const Duration(seconds: 1))
-          .isAfter((await hashFile.lastModified()))) {
+          .isAfter((await hf.lastModified()))) {
         logger.fine(
             () => "Detected possibly stale cache for file '${file.path}', "
                 'checking file hash');
-        final previousHash = await hashFile.readAsBytes();
-        final hash = hashBytes(await file.readAsBytes()).bytes;
+        final previousHash = await hf.readAsBytes();
+        final hash = (await hashFile(file)).bytes;
         if (previousHash.equals(hash)) {
           logger.fine(
               () => "File '${file.path}' hash is still the same: '$hash'");
@@ -320,12 +317,6 @@ class _DirectoryContents {
   }
 
   List<int> encode() {
-    final sink = AccumulatorSink<Digest>();
-    final converter = sha1.startChunkedConversion(sink);
-    for (final child in children) {
-      converter.add(child.path.codeUnits);
-    }
-    converter.close();
-    return sink.events.single.bytes;
+    return hashList(children.map((e) => e.path)).bytes;
   }
 }
