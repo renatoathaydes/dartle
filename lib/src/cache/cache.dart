@@ -276,10 +276,10 @@ class DartleCache {
   Future<bool> _hasDirChanged(
       Directory dir, Iterable<FileSystemEntity> children,
       {required String key}) async {
-    final hashFile = _getCacheLocation(dir, key: key);
+    final hf = _getCacheLocation(dir, key: key);
     bool changed;
-    if (await hashFile.exists()) {
-      final previousHash = await hashFile.readAsBytes();
+    if (await hf.exists()) {
+      final previousHash = await hf.readAsBytes();
       final currentHash = _DirectoryContents(children).encode();
       if (previousHash.equals(currentHash)) {
         logger.fine(() => 'Directory hash is still the same: ${dir.path}');
@@ -288,9 +288,14 @@ class DartleCache {
         logger.fine(() => 'Directory hash has changed: ${dir.path}');
         changed = true;
       }
-    } else {
-      logger.fine(() => 'Directory hash does not exist for: ${dir.path}');
+    } else if (await dir.exists()) {
+      logger.fine(() => 'Directory hash does not exist for '
+          "existing directory: '${dir.path}'");
       changed = true;
+    } else {
+      logger.fine(() => "Directory '${dir.path}' does not exist "
+          'and was not known before');
+      changed = false;
     }
     return changed;
   }
