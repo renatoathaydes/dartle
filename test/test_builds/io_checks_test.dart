@@ -23,8 +23,18 @@ Future<void> _deleteDartleToolDir() async {
 
 void main() {
   group('IO Checks', () {
+    File buildExe = File('');
     final outputsDir = Directory(path.join(_buildDirectory, 'outputs'));
     Map<String, String?> outputFilesAtStart = {};
+
+    setUpAll(() async {
+      buildExe =
+          await createDartExe(File(path.join(_buildDirectory, 'dartle.dart')));
+    });
+
+    tearDownAll(() async {
+      await deleteAll(file(buildExe.path));
+    });
 
     setUp(() async {
       await _deleteDartleToolDir();
@@ -44,8 +54,7 @@ void main() {
 
     Future<ProcessResult> runExampleDartBuild(List<String> args) async {
       return startProcess(
-          Process.start('dart', ['dartle.dart', ...args],
-              workingDirectory: _buildDirectory),
+          runDartExe(buildExe, args: args, workingDirectory: _buildDirectory),
           'io_checks test dart build');
     }
 
