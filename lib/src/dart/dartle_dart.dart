@@ -1,7 +1,5 @@
 import 'dart:io';
 
-import 'package:path/path.dart' show join;
-
 import '../file_collection.dart';
 import '../helpers.dart';
 import '../run_condition.dart';
@@ -16,9 +14,6 @@ class DartConfig {
   /// Whether or not to include the "format" task in the build.
   final bool formatCode;
 
-  /// Whether or not to include the "runBuildRunner" task in the build.
-  final bool runBuildRunner;
-
   /// Whether or not to include the "test" task in the build.
   final bool runTests;
 
@@ -31,14 +26,20 @@ class DartConfig {
   /// The type of outputs to use for tests.
   final DartTestOutput testOutput;
 
+  /// The [RunCondition] for the buildRunner task.
+  ///
+  /// Setting this to a non-null value causes the `runBuildRunner` task to be
+  /// enabled.
+  final RunCondition? buildRunnerRunCondition;
+
   const DartConfig({
     this.runAnalyzer = true,
     this.formatCode = true,
-    this.runBuildRunner = false,
     this.runTests = true,
     this.runPubGetAtMostEvery = const Duration(days: 5),
     this.rootDir,
     this.testOutput = DartTestOutput.dartleReporter,
+    this.buildRunnerRunCondition,
   });
 }
 
@@ -71,12 +72,14 @@ class DartleDart {
       build,
       clean;
 
+  final bool _enableBuildRunner;
+
   /// Get the tasks that are configured as part of a build.
   Set<Task> get tasks {
     return {
       if (config.formatCode) formatCode,
       if (config.runAnalyzer) analyzeCode,
-      if (config.runBuildRunner) runBuildRunner,
+      if (_enableBuildRunner) runBuildRunner,
       if (config.runTests) test,
       runPubGet,
       build,
@@ -91,31 +94,35 @@ class DartleDart {
   final String rootDir;
 
   DartleDart([this.config = const DartConfig()])
-      : rootDir = config.rootDir ?? '.' {
+      : rootDir = config.rootDir ?? '.',
+        _enableBuildRunner = config.buildRunnerRunCondition != null {
     final allDartFiles = dir(rootDir, fileExtensions: const {'dart'});
-    final testDartFiles =
-        dir(join(rootDir, 'test'), fileExtensions: const {'dart'});
 
     formatCode = Task(_formatCode,
         name: 'format',
-        description: 'Formats all Dart source code',
+        dependsOn: {if (_enableBuildRunner) 'runBuildRunner'},
+        description: 'Formats all Dart source code.',
         runCondition: RunOnChanges(inputs: allDartFiles));
 
     runBuildRunner = Task(_runBuildRunner,
         name: 'runBuildRunner',
-        description: 'Runs the Dart build_runner tool',
-        dependsOn: {'generateDartSources'},
-        runCondition: RunOnChanges(inputs: testDartFiles));
+        description: 'Runs the Dart build_runner tool.',
+        dependsOn: {'runPubGet'},
+        runCondition: config.buildRunnerRunCondition ?? const AlwaysRun());
 
     analyzeCode = Task(_analyzeCode,
         name: 'analyzeCode',
-        dependsOn: {'runPubGet'},
+        dependsOn: {
+          'runPubGet',
+          if (config.formatCode) 'format',
+          if (_enableBuildRunner) 'runBuildRunner',
+        },
         description: 'Analyzes Dart source code',
         runCondition: RunOnChanges(inputs: allDartFiles));
 
     runPubGet = Task(_runPubGet,
         name: 'runPubGet',
-        description: 'Runs "pub get" in order to update dependencies',
+        description: 'Runs "pub get" in order to update dependencies.',
         runCondition: OrCondition([
           RunAtMostEvery(config.runPubGetAtMostEvery),
           RunOnChanges(inputs: files(const ['pubspec.yaml', 'pubspec.lock']))

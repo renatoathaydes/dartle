@@ -147,8 +147,8 @@ FileCollection dirs(Iterable<String> directories,
 
 /// A File collection including the given files as well as
 /// [DirectoryEntry]'s.
-FileCollection entities(Iterable<String> files,
-    Iterable<DirectoryEntry> directoryEntries) =>
+FileCollection entities(
+        Iterable<String> files, Iterable<DirectoryEntry> directoryEntries) =>
     _FileCollection(files.toSet(), directoryEntries.toList(growable: false));
 
 /// A collection of [File] and [Directory] which can be used to declare a set

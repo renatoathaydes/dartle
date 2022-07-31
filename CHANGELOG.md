@@ -4,6 +4,8 @@
 
 ## done, waiting for next release
 
+### Dartle Core
+
 - breaking change: refactored FileCollection (incl. `file`, `dir` functions). Simplified how collections may be defined.
 - added 'PROFILE' log level and logged times of each significant build step.
 - cleanup cache entries that are no long relevant after build.
@@ -23,6 +25,14 @@
 > written to. The new API is less powerful but should suffice in most cases, and it allows
 > computing the intersection between tasks inputs and outputs reliably... that lets Dartle
 > provide much more powerful diagnostics, getting it closer to providing reproduce-able builds. 
+
+### Dartle Dart
+
+- breaking change: replaced `DartConfig.runBuildRunner` with `DartConfig.buildRunnerRunCondition`.
+- improved Dart tasks dependencies to avoid errors in edge cases.
+
+> Note: the new `DartConfig.buildRunnerRunCondition` property allows better control over when
+> the `runBuildRunner` task runs, which is important as it's an expensive task.
 
 ## 0.12.1
 
