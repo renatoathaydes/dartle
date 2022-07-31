@@ -77,6 +77,14 @@ bye(_) => print("Bye!");
 clean(_) => deleteOutputs(allTasks);
 ```
 
+Notice that `dartle.dart` should be very simple (a basic invocation to Dartle's `run`, ideally), so it's clear at a
+glance what the tasks are.
+
+Put any logic you may need to write for tasks (and even the task declarations) in source file inside the
+`dartle-src` directory, as that's where Dartle looks for changes to the build (besides `dartle.dart` and `pubspec.*`).
+
+> Check [Dartle's own dartle.dart](https://github.com/renatoathaydes/dartle/blob/master/dartle.dart) file for a good example.
+
 #### Run your build!
 
 In **dev mode** (while you're setting up your build), use `dart` to run the build file directly:
