@@ -97,6 +97,7 @@ Future<void> _runWithoutErrorHandling(List<String> args, Set<Task> tasks,
 
   if (options.resetCache) {
     await DartleCache.instance.clean();
+    DartleCache.instance.init();
   }
 
   var tasksInvocation = options.tasksInvocation;
