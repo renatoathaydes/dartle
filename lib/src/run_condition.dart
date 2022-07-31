@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 
 import 'package:clock/clock.dart';
 import 'package:meta/meta.dart';
@@ -29,8 +30,14 @@ mixin RunCondition {
 ///
 /// Dartle considers these when verifying implicit dependencies between tasks.
 mixin FilesCondition on RunCondition {
-  abstract final FileCollection inputs;
-  abstract final FileCollection outputs;
+  /// Inputs which should be monitored for changes.
+  FileCollection get inputs => FileCollection.empty;
+
+  /// Outputs which should be monitored for changes.
+  FileCollection get outputs => FileCollection.empty;
+
+  /// Deletions which are expected to be performed after an action has run.
+  FileCollection get deletions => FileCollection.empty;
 }
 
 /// A [RunCondition] which is always fullfilled.
@@ -95,7 +102,7 @@ class RunOnChanges with RunCondition, FilesCondition {
       logger.fine('Changes detected on task outputs: $outputs');
       return true;
     }
-    await for (final output in outputs.files) {
+    for (final output in outputs.includedEntities()) {
       if (!await output.exists()) {
         logger.fine('Task output does not exist: ${output.path}');
         return true;
@@ -110,7 +117,7 @@ class RunOnChanges with RunCondition, FilesCondition {
     DartleException? error;
 
     if (success) {
-      if (await outputs.isNotEmpty && verifyOutputsExist) {
+      if (outputs.isNotEmpty && verifyOutputsExist) {
         logger.fine('Verifying task produced expected outputs');
         try {
           await _verifyOutputs();
@@ -123,11 +130,12 @@ class RunOnChanges with RunCondition, FilesCondition {
 
     final taskName = result.invocation.name;
     if (success) {
+      await cache.clean(key: taskName);
       await cache(inputs, key: taskName);
       await cache(outputs, key: taskName);
       await cache.cacheTaskInvocation(result.invocation);
     } else {
-      if (await outputs.isEmpty) {
+      if (outputs.isEmpty) {
         // the task failed without any outputs, so for it to run again next
         // time we need to remove its inputs
         await cache.remove(inputs, key: taskName);
@@ -143,11 +151,8 @@ class RunOnChanges with RunCondition, FilesCondition {
 
   Future<void> _verifyOutputs() async {
     final missingOutputs = <String>[];
-    await for (final file in outputs.files) {
-      if (!await file.exists()) missingOutputs.add(file.path);
-    }
-    await for (final dir in outputs.directories) {
-      if (!await dir.exists()) missingOutputs.add(dir.path);
+    for (final entity in outputs.includedEntities()) {
+      if (!await entity.exists()) missingOutputs.add(entity.path);
     }
     if (missingOutputs.isNotEmpty) {
       throw DartleException(
@@ -162,6 +167,7 @@ class RunOnChanges with RunCondition, FilesCondition {
 ///
 /// The [period] is computed at the time of checking if the task should run and
 /// starts counting from the last time the task was executed successfully.
+@sealed
 class RunAtMostEvery with RunCondition {
   final Duration period;
   final DartleCache cache;
@@ -189,17 +195,71 @@ class RunAtMostEvery with RunCondition {
   }
 }
 
+/// A [RunCondition] that indicates that a [Task] will delete certain files
+/// and directories if they exist.
+///
+/// Build cleaning tasks should use this condition so that Dartle will know how
+/// to enforce the correct execution of tasks whose inputs/outputs may be
+/// affected by deletion tasks.
+@sealed
+class RunToDelete with RunCondition, FilesCondition {
+  @override
+  final FileCollection deletions;
+  final DartleCache cache;
+
+  /// Whether to verify that all declared deletions have been performed
+  /// after the task has run.
+  final bool verifyDeletions;
+
+  RunToDelete(
+    this.deletions, {
+    this.verifyDeletions = true,
+    DartleCache? cache,
+  }) : cache = cache ?? DartleCache.instance;
+
+  @override
+  FileCollection get inputs => FileCollection.empty;
+
+  @override
+  FileCollection get outputs => FileCollection.empty;
+
+  @override
+  FutureOr<bool> shouldRun(TaskInvocation invocation) async {
+    return await deletions.resolve().asyncAny((f) => f.entity.exists());
+  }
+
+  @override
+  FutureOr<void> postRun(TaskResult result) async {
+    if (verifyDeletions) {
+      final failedToDelete = await _collectNotDeleted().toList();
+      if (failedToDelete.isNotEmpty) {
+        throw DartleException(
+            message: 'task did not delete the following expected entities:\n' +
+                failedToDelete.map((f) => '  * $f').join('\n'));
+      }
+    }
+  }
+
+  Stream<FileSystemEntity> _collectNotDeleted() async* {
+    await for (final entry in deletions.resolve()) {
+      if (await entry.entity.exists()) {
+        yield entry.entity;
+      }
+    }
+  }
+}
+
 /// Base mixin for a [RunCondition] that combines other [RunCondition]s.
 mixin RunConditionCombiner implements RunCondition {
   abstract final List<RunCondition> conditions;
 
   @override
   FutureOr<void> postRun(TaskResult result) async {
-    final errors = [];
+    final errors = <Exception>[];
     for (var cond in conditions) {
       try {
         await cond.postRun(result);
-      } catch (e) {
+      } on Exception catch (e) {
         errors.add(e);
       }
     }

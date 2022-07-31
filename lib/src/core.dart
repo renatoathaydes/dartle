@@ -1,10 +1,10 @@
 import 'dart:async';
-import 'dart:io';
 
+import 'helpers.dart';
 import 'package:logging/logging.dart' as log;
 
 import '_log.dart';
-import '_new_project.dart';
+import '_project.dart';
 import '_task_graph.dart';
 import '_utils.dart';
 import 'cache/cache.dart';
@@ -16,6 +16,9 @@ import 'task.dart';
 import 'task_invocation.dart';
 import 'task_run.dart';
 
+const dartleFileMissingMessage = 'Missing dartle.dart file. '
+    'Please create one to be able to use Dartle.';
+
 /// Initializes the dartle library and runs the tasks selected by the user
 /// (or in the provided [args]).
 ///
@@ -25,7 +28,7 @@ Future<void> run(List<String> args,
     {required Set<Task> tasks,
     Set<Task> defaultTasks = const {},
     bool doNotExit = false}) async {
-  await abortIfNotDartleProject();
+  await checkDartleFileExists(doNotExit);
 
   await runSafely(args, doNotExit, (stopWatch, options) async {
     if (options.showHelp) {
@@ -46,23 +49,6 @@ Future<void> run(List<String> args,
   });
 }
 
-Future<void> abortIfNotDartleProject() async {
-  final dartleFile = File('dartle.dart');
-  if (await dartleFile.exists()) {
-    logger.fine('Dartle file exists.');
-  } else {
-    stdout.write('There is no dartle.dart file in the current directory.\n'
-        'Would you like to create one [y/N]? ');
-    final answer = stdin.readLineSync()?.toLowerCase();
-    if (answer == 'y' || answer == 'yes') {
-      await createNewProject();
-    } else {
-      logger.severe('dartle.dart file does not exist. Aborting!');
-      exit(4);
-    }
-  }
-}
-
 /// Run the given action in a safe try/catch block, allowing Dartle to handle
 /// any errors by logging the appropriate build failure.
 ///
@@ -70,14 +56,14 @@ Future<void> abortIfNotDartleProject() async {
 /// completion, re-throwing Exceptions. Otherwise, the process will exit with
 /// 0 on success, or the appropriate error code on error.
 Future<void> runSafely(List<String> args, bool doNotExit,
-    FutureOr<Object?> Function(Stopwatch, Options) action) async {
+    FutureOr<void> Function(Stopwatch, Options) action) async {
   final stopWatch = Stopwatch()..start();
   var options = const Options();
 
   try {
     options = parseOptions(args);
     await action(stopWatch, options);
-    if (!doNotExit) exit(0);
+    if (!doNotExit) abort(0);
   } on DartleException catch (e) {
     activateLogging(log.Level.SEVERE);
     logger.severe(e.message);
@@ -88,11 +74,11 @@ Future<void> runSafely(List<String> args, bool doNotExit,
     if (doNotExit) {
       rethrow;
     } else {
-      exit(e.exitCode);
+      abort(e.exitCode);
     }
-  } on Exception catch (e) {
+  } on Exception catch (e, st) {
     activateLogging(log.Level.SEVERE);
-    logger.severe('Unexpected error: $e');
+    logger.severe('Unexpected error', e, st);
     if (options.logBuildTime) {
       logger.severe(ColoredLogMessage(
           '✗ Build failed in ${elapsedTime(stopWatch)}', LogColor.red));
@@ -100,7 +86,7 @@ Future<void> runSafely(List<String> args, bool doNotExit,
     if (doNotExit) {
       rethrow;
     } else {
-      exit(22);
+      abort(22);
     }
   }
 }
@@ -111,6 +97,7 @@ Future<void> _runWithoutErrorHandling(List<String> args, Set<Task> tasks,
 
   if (options.resetCache) {
     await DartleCache.instance.clean();
+    DartleCache.instance.init();
   }
 
   var tasksInvocation = options.tasksInvocation;
@@ -121,10 +108,11 @@ Future<void> _runWithoutErrorHandling(List<String> args, Set<Task> tasks,
     tasksInvocation = defaultTasks.map((t) => t.name).toList();
   }
   final taskMap = createTaskMap(tasks);
-  await verifyTaskInputsAndOutputsConsistency(taskMap);
+  final tasksAffectedByDeletion =
+      await verifyTaskInputsAndOutputsConsistency(taskMap);
   await verifyTaskPhasesConsistency(taskMap);
-  final executableTasks =
-      await _getExecutableTasks(taskMap, tasksInvocation, options);
+  final executableTasks = await _getExecutableTasks(
+      taskMap, tasksInvocation, options, tasksAffectedByDeletion);
   if (options.showInfoOnly) {
     print('======== Showing build information only, no tasks will '
         'be executed ========\n');
@@ -135,8 +123,25 @@ Future<void> _runWithoutErrorHandling(List<String> args, Set<Task> tasks,
           defaultTasks);
     }
 
-    await _runAll(executableTasks, options);
+    try {
+      await _runAll(executableTasks, options);
+    } finally {
+      await _cleanCache(DartleCache.instance,
+          taskMap.keys.followedBy(const ['_compileDartleFile']).toSet());
+    }
   }
+}
+
+FutureOr<void> _cleanCache(DartleCache cache, Set<String> taskNames) {
+  return ignoreExceptions(() {
+    final stopWatch = Stopwatch()..start();
+    try {
+      return cache.removeNotMatching(taskNames, taskNames);
+    } finally {
+      logger.log(
+          profile, 'Garbage-collected cache in ${elapsedTime(stopWatch)}');
+    }
+  });
 }
 
 void _logTasksInfo(
@@ -183,24 +188,24 @@ void _logTasksInfo(
 
 Future<void> _runAll(
     List<ParallelTasks> executableTasks, Options options) async {
-  final allErrors = <Exception>[];
-
   final results =
       await runTasks(executableTasks, parallelize: options.parallelizeTasks);
-  final postRunFailures = await runTasksPostRun(results);
 
-  allErrors.addAll(results.map((f) => f.error).whereType<Exception>());
-  allErrors.addAll(postRunFailures);
+  final taskErrors = results
+      .map((f) => f.error)
+      .whereType<Exception>()
+      .toList(growable: false);
 
-  if (allErrors.isNotEmpty) {
-    _throwAggregateErrors(allErrors);
+  if (taskErrors.isNotEmpty) {
+    throw MultipleExceptions(taskErrors);
   }
 }
 
 Future<List<ParallelTasks>> _getExecutableTasks(
     Map<String, TaskWithDeps> taskMap,
     List<String> tasksInvocation,
-    Options options) async {
+    Options options,
+    DeletionTasksByTask tasksAffectedByDeletion) async {
   if (tasksInvocation.isEmpty) {
     if (!options.showInfoOnly) {
       logger.warning('No tasks were requested and no default tasks exist.');
@@ -209,8 +214,8 @@ Future<List<ParallelTasks>> _getExecutableTasks(
   }
   final invocations = parseInvocation(tasksInvocation, taskMap, options);
 
-  return await getInOrderOfExecution(
-      invocations, options.forceTasks, options.showTasks);
+  return await getInOrderOfExecution(invocations, options.forceTasks,
+      options.showTasks, tasksAffectedByDeletion);
 }
 
 /// Get the tasks in the order that they should be executed, taking into account
@@ -224,7 +229,8 @@ Future<List<ParallelTasks>> _getExecutableTasks(
 Future<List<ParallelTasks>> getInOrderOfExecution(
     List<TaskInvocation> invocations,
     [bool forceTasks = false,
-    bool showTasks = false]) async {
+    bool showTasks = false,
+    DeletionTasksByTask tasksAffectedByDeletion = const {}]) async {
   // first of all, re-order tasks so that dependencies are in order
   invocations.sort((a, b) => a.task.compareTo(b.task));
 
@@ -247,15 +253,15 @@ Future<List<ParallelTasks>> getInOrderOfExecution(
     for (final dep in inv.task.dependencies) {
       if (seenTasks.add(dep.name)) {
         final invocation = TaskInvocation(dep);
-        final taskWithStatus =
-            await _createTaskWithStatus(invocation, taskStatuses, false);
+        final taskWithStatus = await _createTaskWithStatus(
+            invocation, taskStatuses, false, tasksAffectedByDeletion);
         taskStatuses[dep.name] = taskWithStatus;
         addTaskToParallelTasks(taskWithStatus);
       }
     }
     if (seenTasks.add(inv.name)) {
-      final taskWithStatus =
-          await _createTaskWithStatus(inv, taskStatuses, forceTasks);
+      final taskWithStatus = await _createTaskWithStatus(
+          inv, taskStatuses, forceTasks, tasksAffectedByDeletion);
       taskStatuses[inv.name] = taskWithStatus;
       addTaskToParallelTasks(taskWithStatus);
     }
@@ -273,6 +279,7 @@ Future<TaskWithStatus> _createTaskWithStatus(
   TaskInvocation invocation,
   Map<String, TaskWithStatus> taskStatuses,
   bool forceTask,
+  DeletionTasksByTask tasksAffectedByDeletion,
 ) async {
   final task = invocation.task;
   TaskStatus status;
@@ -280,9 +287,12 @@ Future<TaskWithStatus> _createTaskWithStatus(
     status = TaskStatus.forced;
   } else if (task.runCondition == const AlwaysRun()) {
     status = TaskStatus.alwaysRuns;
+  } else if (_isAffectedByDeletionTask(
+      task, taskStatuses, tasksAffectedByDeletion)) {
+    status = TaskStatus.affectedByDeletionTask;
   } else if (_anyDepMustRun(task, taskStatuses)) {
     status = TaskStatus.dependencyIsOutOfDate;
-  } else if (await task.runCondition.shouldRun(invocation)) {
+  } else if (await _shouldRun(invocation)) {
     status = TaskStatus.outOfDate;
   } else {
     status = TaskStatus.upToDate;
@@ -290,27 +300,24 @@ Future<TaskWithStatus> _createTaskWithStatus(
   return TaskWithStatus(task, status, invocation);
 }
 
-void _throwAggregateErrors(List<Exception> errors) {
-  if (errors.isEmpty) return;
-  if (errors.length == 1) throw errors[0];
+Future<bool> _shouldRun(TaskInvocation invocation) async {
+  final stopWatch = Stopwatch()..start();
+  final result = await invocation.task.runCondition.shouldRun(invocation);
+  logger.log(
+      profile,
+      "Checked task '${invocation.name}'"
+      ' runCondition in ${elapsedTime(stopWatch)}');
+  return result;
+}
 
-  var exitCode = 1;
-  for (final dartleException in errors.whereType<DartleException>()) {
-    exitCode = dartleException.exitCode;
-    break;
+bool _isAffectedByDeletionTask(
+    TaskWithDeps task,
+    Map<String, TaskWithStatus> taskStatuses,
+    DeletionTasksByTask tasksAffectedByDeletion) {
+  final deletionTasks = tasksAffectedByDeletion[task.name] ?? const {};
+  for (final delTask in deletionTasks) {
+    final status = taskStatuses[delTask];
+    if (status?.mustRun == true) return true;
   }
-  // TODO use MultipleExceptions and move this code to exception handler
-  final messageBuilder = StringBuffer('Several errors have occurred:\n');
-  for (final error in errors) {
-    String errorMessage;
-    if (error is DartleException) {
-      errorMessage = error.message;
-    } else {
-      errorMessage = error.toString();
-    }
-    messageBuilder
-      ..write('  * ')
-      ..writeln(errorMessage);
-  }
-  throw DartleException(message: messageBuilder.toString(), exitCode: exitCode);
+  return false;
 }

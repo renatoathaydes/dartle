@@ -2,6 +2,40 @@
 
 - forbid tasks from accessing IO resources not declared in inputs/outputs.
 
+## done, waiting for next release
+
+## 0.14.0
+
+### Dartle Core
+
+- breaking change: refactored FileCollection (incl. `file`, `dir` functions). Simplified how collections may be defined.
+- added 'PROFILE' log level and logged times of each significant build step.
+- cleanup cache entries that are no long relevant after build.
+- run post-run actions at end of each TaskPhase instead of only at the end of the build.
+- better reporting of which tasks failed at end of build.
+- cancel all pending tasks immediately on first build failure.
+- `deleteOutputs` function now works with all instances of `FileCondition`, not only `RunOnChanges`.
+- new `RunCondition` implementation: `RunToDelete` (used to implement _cleaning_ tasks).
+- fixed `deleteAll` so it removes directories after emptying them.
+- improved `DartleCache` so it will not trust timestamps when diff is less than 1 second. Some file systems have low resolution timestamps.
+- `DartleCache` now hashes files by loading small buffer into memory at a time instead of whole file.
+- `DartleCache` hash now distinguishes between empty file and empty directory.
+
+> Note: the file collection change was necessary for Dartle to be able to reliably detect
+> build misconfiguration. It was previously next to impossible to determine when tasks had
+> clashing outputs or were missing dependencies given the order in which files are read and
+> written to. The new API is less powerful but should suffice in most cases, and it allows
+> computing the intersection between tasks inputs and outputs reliably... that lets Dartle
+> provide much more powerful diagnostics, getting it closer to providing reproduce-able builds. 
+
+### Dartle Dart
+
+- breaking change: replaced `DartConfig.runBuildRunner` with `DartConfig.buildRunnerRunCondition`.
+- improved Dart tasks dependencies to avoid errors in edge cases.
+
+> Note: the new `DartConfig.buildRunnerRunCondition` property allows better control over when
+> the `runBuildRunner` task runs, which is important as it's an expensive task.
+
 ## 0.12.1
 
 - include custom task phases in information about tasks.

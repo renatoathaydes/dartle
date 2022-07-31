@@ -14,7 +14,7 @@ class DartleImportChecker {
   }
 
   Future<void> _checkImports(FileCollection libDirDartFiles) async {
-    await for (final file in libDirDartFiles.files) {
+    await for (final file in libDirDartFiles.resolveFiles()) {
       var lineNumber = 1;
       final illegalImports = <String>[];
       for (var line in await file.readAsLines()) {

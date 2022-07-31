@@ -3,7 +3,7 @@ import 'dart:io';
 import '../_log.dart';
 import '../_utils.dart';
 import '../core.dart';
-import '../exec.dart';
+import '../io/exec.dart';
 import '../file_collection.dart';
 import '../run_condition.dart';
 import '../task.dart';
@@ -17,7 +17,6 @@ final _cachedDartlex = getExeLocation(File('dartle.dart'));
 Future<void> dartlexMain(List<String> args) async {
   await runSafely(args, false, (stopWatch, options) async {
     activateLogging(options.logLevel, colorfulLog: options.colorfulLog);
-    await abortIfNotDartleProject();
     await runDartlex(args);
   });
 }
@@ -27,6 +26,8 @@ Future<void> dartlexMain(List<String> args) async {
 /// This method will normally not return as Dartle will exit with the
 /// appropriate code. To avoid that, set [doNotExit] to [true].
 Future<void> runDartlex(List<String> args, {bool doNotExit = false}) async {
+  await checkDartleFileExists(doNotExit);
+
   final compileTask = await _createDartCompileTask();
   final recompileCondition = compileTask.runCondition as RunOnChanges;
   final compileDartlexInvocation = TaskInvocation(compileTask);
@@ -86,11 +87,13 @@ Future<bool> _runTask(TaskInvocation invocation) async {
 }
 
 Future<TaskWithDeps> _createDartCompileTask() async {
-  final buildFile = File('dartle.dart').absolute;
+  final buildFile = File('dartle.dart');
   final buildSetupFiles = [buildFile.path, 'pubspec.yaml', 'pubspec.lock'];
 
   final runCompileCondition = RunOnChanges(
-    inputs: files(buildSetupFiles),
+    inputs: entities(buildSetupFiles, [
+      DirectoryEntry(path: 'dartle-src', fileExtensions: const {'.dart'})
+    ]),
     outputs: file(_cachedDartlex.path),
   );
 

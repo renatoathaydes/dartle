@@ -1,8 +1,11 @@
 import 'dart:io';
 
+import 'package:logging/logging.dart' as log;
+
 import '_log.dart';
-import 'dartle_version.g.dart';
 import 'error.dart';
+import 'core.dart' show dartleFileMissingMessage;
+import 'dartle_version.g.dart';
 import 'helpers.dart';
 
 const _basicDartleFile = r'''
@@ -55,7 +58,27 @@ dev_dependencies:
   dartle: ^$dartleVersion
 ''';
 
-Future<void> createNewProject() async {
+Never abort(int code) {
+  exit(code);
+}
+
+Future<void> onNoDartleFile(bool doNotExit) async {
+  if (logger.isLoggable(log.Level.INFO)) {
+    stdout.write('There is no dartle.dart file in the current directory.\n'
+        'Would you like to create one [y/N]? ');
+  } else {}
+  final answer = stdin.readLineSync()?.toLowerCase();
+  if (answer == 'y' || answer == 'yes') {
+    await _createNewProject();
+  } else if (doNotExit) {
+    throw DartleException(message: dartleFileMissingMessage, exitCode: 4);
+  } else {
+    logger.severe(dartleFileMissingMessage);
+    abort(4);
+  }
+}
+
+Future<void> _createNewProject() async {
   logger.fine('Creating new Dartle project');
   final pubspecFile = File('pubspec.yaml');
   if (await pubspecFile.exists()) {

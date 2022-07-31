@@ -11,11 +11,10 @@ void main() {
 
   setUpAll(() async {
     parallelTasksBuild = (await createDartExe(
-            File('test/test_builds/parallel_tasks/dartle.dart')))
-        .absolute;
+        File('test/test_builds/parallel_tasks/dartle.dart')));
   });
   tearDownAll(() async {
-    await deleteAll(FileCollection([parallelTasksBuild]));
+    await deleteAll(files([parallelTasksBuild.path]));
   });
 
   Future<ProcessResult> runBuild(List<String> args) async {
@@ -36,9 +35,6 @@ void main() {
       expect(tasksOutput, contains("Running task 'sayHi'"));
       expect(tasksOutput, contains("Running task 'sayHo'"));
       expect(tasksOutput, contains("Running task 'sayArgs'"));
-      expect(tasksOutput, contains('\nHi'));
-      expect(tasksOutput, contains('\nHo'));
-      expect(tasksOutput, contains('\n[]'));
     });
 
     test('run in separate Isolates with -p flag', () async {

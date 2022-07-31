@@ -123,11 +123,11 @@ Future<int> execProc(Future<Process> process,
 /// Deletes the outputs of all [tasks].
 ///
 /// This method only works if the task's [RunCondition]s are instances of
-/// [RunOnChanges].
+/// [FilesCondition].
 Future<void> deleteOutputs(Iterable<Task> tasks) async {
   for (final task in tasks) {
     final cond = task.runCondition;
-    if (cond is RunOnChanges) {
+    if (cond is FilesCondition) {
       await deleteAll(cond.outputs);
     }
   }
@@ -141,30 +141,11 @@ Future<void> deleteOutputs(Iterable<Task> tasks) async {
 /// directories are deleted as long as no filters belonging to the given
 /// [FileCollection] exclude files or sub-directories within such directory.
 Future<void> deleteAll(FileCollection fileCollection) async {
-  await for (final file in fileCollection.files) {
-    logger.fine('Deleting file ${file.path}');
-    await ignoreExceptions(file.delete);
-  }
-  await for (final dir in fileCollection.directories) {
-    if (await dir.exists()) {
-      if (await dir.list().isEmpty) {
-        logger.fine('Deleting directory ${dir.path}');
-        await ignoreExceptions(dir.delete);
-      }
-    }
-  }
-}
-
-/// Check if the system responds to the given command.
-Future<bool> isValidCommand(
-  String command, {
-  List<String> args = const [],
-  bool runInShell = false,
-}) async {
-  try {
-    await Process.run(command, args, runInShell: runInShell);
-    return true;
-  } on ProcessException {
-    return false;
+  final toDelete = await fileCollection.resolve().toList();
+  // the list is in listed-files order, so we must reverse it to delete
+  // directories last.
+  for (final entry in toDelete.reversed) {
+    logger.fine('Deleting ${entry.path}');
+    await ignoreExceptions(entry.entity.delete);
   }
 }

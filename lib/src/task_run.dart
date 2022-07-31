@@ -1,10 +1,12 @@
 import 'dart:async';
 
 import 'package:logging/logging.dart';
+import 'package:structured_async/structured_async.dart';
 
 import '_actor_task.dart';
 import '_log.dart';
 import '_utils.dart';
+import 'error.dart';
 import 'task.dart';
 import 'task_invocation.dart';
 
@@ -15,15 +17,35 @@ class TaskResult {
 
   TaskResult(this.invocation, [this.error]);
 
+  /// Whether this task result is successful.
   bool get isSuccess => error == null;
 
+  /// Whether this task result is a failure.
   bool get isFailure => !isSuccess;
+
+  /// Whether this task result is due to a task having been cancelled.
+  /// If this is `true`, [isFailure] will also be `true`.
+  bool get isCancelled => error is FutureCancelled;
+
+  @override
+  String toString() {
+    return 'TaskResult{invocation: $invocation, error: $error}';
+  }
 }
 
 /// Calls [runTask] with each given task that must run.
 ///
+/// At the end of each [TaskPhase], the executed
+/// tasks' [RunCondition.postRun] actions are also run.
+///
 /// Returns the result of each executed task. If a task fails, execution
 /// stops and only the results thus far accumulated are returned.
+///
+/// If a task's [RunCondition.postRun] action fails, a [MultipleExceptions]
+/// is thrown with all accumulated errors up to the end of the phase the task
+/// belongs to, including from other task's actions and `postRun`s.
+/// Notice that [MultipleExceptions] is not thrown in case there are
+/// task failures, but no post-run action failures.
 ///
 /// Tasks within each [ParallelTasks] entry are always called "simultaneously",
 /// then their [Future] results are awaited in order. If [parallelize] is true,
@@ -40,28 +62,61 @@ Future<List<TaskResult>> runTasks(List<ParallelTasks> tasks,
         : 'on main Isolate as no parallelization was enabled';
     logger.fine('Will execute tasks $execMode');
   }
+
+  return await _run(tasks, parallelize);
+}
+
+Future<List<TaskResult>> _run(
+    List<ParallelTasks> tasks, bool parallelize) async {
   final results = <TaskResult>[];
+  final phaseResults = <TaskResult>[];
+  final phaseErrors = <Exception>[];
+  TaskPhase? currentPhase;
+
   for (final parTasks in tasks) {
+    if (parTasks.tasks.isEmpty) continue;
+    final isNewPhase = parTasks.phase != currentPhase;
+    if (isNewPhase) {
+      phaseErrors.addAll(await _onNewPhaseStarted(phaseResults, currentPhase));
+      currentPhase = parTasks.phase;
+      if (phaseErrors.isNotEmpty) {
+        logger.fine('Aborting task execution due to task post-run error');
+        break;
+      }
+    }
     final useIsolate = parallelize && parTasks.mustRunCount > 1;
-    final futureResults = parTasks.tasks
-        .where((pTask) {
-          final willRun = pTask.mustRun;
-          logger.fine(() => "Task '${pTask.task.name}' will "
-              "${willRun ? 'run' : 'be skipped'} because it has status "
-              '${pTask.status}');
-          return willRun;
-        })
-        .map((pTask) => runTask(pTask.invocation, runInIsolate: useIsolate))
-        .toList(growable: false);
-    for (final futureResult in futureResults) {
-      results.add(await futureResult);
+
+    logger.fine(() =>
+        "Scheduling tasks ${parTasks.tasks.map((t) => t.task.name)}"
+        " to run ${useIsolate ? 'in parallel using isolates' : 'concurrently'}");
+
+    final futureResults = CancellableFuture.stream(parTasks.tasks
+        .where(_taskMustRun)
+        .map((pTask) =>
+            () => runTask(pTask.invocation, runInIsolate: useIsolate)));
+
+    await for (final result in futureResults) {
+      results.add(result);
+      phaseResults.add(result);
     }
 
     if (results.any((r) => r.isFailure)) {
-      logger.fine('Aborting task execution due to failure');
-      return results;
+      logger.fine('Aborting task execution');
+      break;
     }
   }
+
+  phaseErrors.addAll(await _onNewPhaseStarted(phaseResults, currentPhase));
+
+  if (results.any((r) => r.isFailure) || phaseErrors.isNotEmpty) {
+    final all = results
+        .map(_toDisplayError)
+        .followedBy(phaseErrors)
+        .whereNotNull()
+        .toList(growable: false);
+    throw MultipleExceptions(all);
+  }
+
   return results;
 }
 
@@ -83,21 +138,67 @@ Future<TaskResult> runTask(TaskInvocation invocation,
     await action(args);
     stopwatch.stop();
     result = TaskResult(invocation);
-  } on Exception catch (e) {
+  } catch (e) {
     stopwatch.stop();
-    result = TaskResult(invocation, e);
+    result = TaskResult(invocation, e is Exception ? e : Exception(e));
+
+    // other tasks should be cancelled if there's a failure
+    currentCancellableContext()?.cancel();
   }
-  logger.fine("Task '${task.name}' completed "
-      "${result.isSuccess ? 'successfully' : 'with errors'}"
-      ' in ${elapsedTime(stopwatch)}');
+  if (logger.isLoggable(profile)) {
+    final completionReason = result.isSuccess
+        ? 'successfully'
+        : result.isCancelled
+            ? 'due to being cancelled'
+            : 'with errors';
+    logger.log(
+        profile,
+        "Task '${task.name}' completed "
+        '$completionReason in ${elapsedTime(stopwatch)}');
+  }
   return result;
 }
 
-Function(List<String>) _createTaskAction(Task task, bool runInIsolate) {
-  logger.fine("Scheduling task '${task.name}'" +
-      (runInIsolate ? ' to run in parallel' : ''));
+bool _taskMustRun(TaskWithStatus pTask) {
+  final willRun = pTask.mustRun;
+  logger.fine(() => "Task '${pTask.task.name}' will "
+      "${willRun ? 'run' : 'be skipped'} because it has status "
+      '${pTask.status}');
+  return willRun;
+}
 
-  return runInIsolate ? actorAction(task.action) : task.action;
+Future Function(List<String>) _createTaskAction(Task task, bool runInIsolate) {
+  return runInIsolate
+      ? actorAction(task.action)
+      : (args) async => await task.action(args);
+}
+
+Future<List<Exception>> _onNewPhaseStarted(
+    List<TaskResult> phaseResults, TaskPhase? phaseEnded) async {
+  if (phaseResults.isEmpty) return const [];
+  logger.fine(() {
+    final phaseMsg =
+        phaseEnded == null ? '' : " after phase '${phaseEnded.name}' ended";
+    return 'Running post-run actions$phaseMsg.';
+  });
+  try {
+    return await runTasksPostRun(phaseResults);
+  } finally {
+    phaseResults.clear();
+  }
+}
+
+Exception? _toDisplayError(TaskResult result) {
+  final error = result.error;
+  if (error == null) return null;
+  final prefix = "Task '${result.invocation.name}'";
+  if (error is FutureCancelled) {
+    return DartleException(message: '$prefix was cancelled', exitCode: 4);
+  }
+  if (error is DartleException) {
+    return error.withMessage('$prefix failed: ${error.message}');
+  }
+  return DartleException(message: '$prefix failed: $error', exitCode: 2);
 }
 
 Future<List<Exception>> runTasksPostRun(List<TaskResult> results) async {
@@ -125,7 +226,9 @@ Future<void> runTaskPostRun(TaskResult taskResult) async {
     isError = true;
     rethrow;
   } finally {
-    logger.fine("Post-run action of task '${task.name}' completed "
+    logger.log(
+        profile,
+        "Post-run action of task '${task.name}' completed "
         "${!isError ? 'successfully' : 'with errors'}"
         ' in ${elapsedTime(stopwatch)}');
   }

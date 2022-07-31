@@ -5,7 +5,7 @@ import 'package:io/ansi.dart' as ansi;
 import 'package:logging/logging.dart' as log;
 
 /// Supported log colors.
-enum LogColor { red, green, blue, yellow, gray }
+enum LogColor { red, green, blue, yellow, gray, magenta }
 
 /// Supported log styles.
 enum LogStyle { bold, dim, italic }
@@ -35,11 +35,14 @@ class ColoredLogMessage {
 
 enum LogLevel { debug, info, warn, error }
 
+const profile = log.Level('PROFILE', 550);
+
 const levelByName = <String, log.Level>{
   'debug': log.Level.FINE,
   'info': log.Level.INFO,
   'warn': log.Level.WARNING,
   'error': log.Level.SEVERE,
+  'profile': profile,
 };
 
 final _nameByLevel = <log.Level, String>{
@@ -47,6 +50,7 @@ final _nameByLevel = <log.Level, String>{
   log.Level.INFO: 'INFO',
   log.Level.WARNING: 'WARN',
   log.Level.SEVERE: 'ERROR',
+  profile: 'PROFILE',
 };
 
 final _logByLevel = <log.Level, _Log>{
@@ -54,6 +58,7 @@ final _logByLevel = <log.Level, _Log>{
   log.Level.INFO: const _Log(null),
   log.Level.WARNING: const _Log(LogColor.yellow),
   log.Level.SEVERE: const _Log(LogColor.red),
+  profile: const _Log(LogColor.magenta),
 };
 
 ansi.AnsiCode _ansiCode(LogColor color) {
@@ -68,6 +73,8 @@ ansi.AnsiCode _ansiCode(LogColor color) {
       return ansi.yellow;
     case LogColor.gray:
       return ansi.darkGray;
+    case LogColor.magenta:
+      return ansi.magenta;
   }
 }
 
@@ -115,34 +122,53 @@ bool activateLogging(log.Level level, {bool colorfulLog = true}) {
     _loggingActivated = true;
     _colorfulLog = colorfulLog;
     log.Logger.root.level = level;
-    log.Logger.root.onRecord
-        .listen((log.LogRecord rec) => _log(rec, colorfulLog));
+    log.Logger.root.onRecord.listen(colorfulLog ? _logColored : _log);
     return true;
   }
   return false;
 }
 
-void _log(log.LogRecord rec, bool colorfulLog) {
+void _logColored(log.LogRecord rec) {
   _Log log;
   String? msg;
-  if (colorfulLog) {
-    final obj = rec.object;
-    if (obj is ColoredLogMessage) {
-      log = _Log(obj.color);
-      msg = rec.message;
-    } else {
-      log = _logByLevel[rec.level] ?? const _Log(null);
-    }
+  final obj = rec.object;
+  if (obj is ColoredLogMessage) {
+    log = _Log(obj.color);
+    msg = rec.message;
   } else {
-    log = const _Log(null);
-    if (rec.object is ColoredLogMessage) {
-      msg = rec.message;
-    }
+    log = _logByLevel[rec.level] ?? const _Log(null);
   }
 
-  msg ??=
-      '${rec.time} - ${rec.loggerName}[${Isolate.current.debugName} $pid] - '
-      '${_nameByLevel[rec.level] ?? rec.level} - ${rec.message}';
+  log(msg ?? _createLogMessage(rec));
+}
 
-  log(msg);
+void _log(log.LogRecord rec) {
+  _Log log = const _Log(null);
+
+  String? msg;
+  if (rec.object is ColoredLogMessage) {
+    msg = rec.message;
+  }
+
+  log(msg ?? _createLogMessage(rec));
+}
+
+String _createLogMessage(log.LogRecord rec) {
+  return '${rec.time} - ${rec.loggerName}[${Isolate.current.debugName} $pid] - '
+      '${_nameByLevel[rec.level] ?? rec.level} - ${rec.message}${_error(rec)}';
+}
+
+String _error(log.LogRecord rec) {
+  final err = rec.error;
+  final st = rec.stackTrace;
+  if (err == null && st == null) return '';
+  final parts = [];
+  if (err?.toString().isNotEmpty == true) {
+    parts.add('Cause: $err');
+  }
+  if (st != null) {
+    parts.addAll(st.toString().split('\n'));
+  }
+  if (parts.isEmpty) return '';
+  return '\n  ${parts.join('\n  ')}';
 }

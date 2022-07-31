@@ -1,8 +1,23 @@
 import 'dart:convert';
+import 'dart:io';
+import 'dart:typed_data';
 
+import 'package:convert/convert.dart';
 import 'package:crypto/crypto.dart';
 
+import '_log.dart';
+import '_project.dart';
+
 final _capitalLetterPattern = RegExp(r'[A-Z]');
+
+Future<void> checkDartleFileExists(bool doNotExit) async {
+  final dartleFile = File('dartle.dart');
+  if (await dartleFile.exists()) {
+    logger.fine('Dartle file exists.');
+  } else {
+    await onNoDartleFile(doNotExit);
+  }
+}
 
 String decapitalize(String text) {
   if (text.startsWith(_capitalLetterPattern)) {
@@ -56,9 +71,40 @@ String? findMatchingByWords(String searchText, List<String> options) {
   return result.isEmpty ? null : result;
 }
 
-String hash(String text) => hashBytes(utf8.encode(text));
+Digest hash(String text) => hashBytes(utf8.encode(text));
 
-String hashBytes(List<int> bytes) => sha1.convert(bytes).toString();
+Digest hashBytes(List<int> bytes) => sha1.convert(bytes);
+
+const _bufferLength = 4096;
+
+Future<Digest> hashFile(File file) async {
+  final sink = AccumulatorSink<Digest>();
+  final converter = sha1.startChunkedConversion(sink);
+  final fileHandle = await file.open(mode: FileMode.read);
+  try {
+    final buffer = Uint8List(_bufferLength);
+    var isLast = false;
+    while (!isLast) {
+      final count = await fileHandle.readInto(buffer);
+      isLast = count < _bufferLength;
+      converter.addSlice(buffer, 0, count, isLast);
+    }
+    converter.close();
+    return sink.events.single;
+  } finally {
+    await fileHandle.close();
+  }
+}
+
+Digest hashAll(Iterable<List<int>> items) {
+  final sink = AccumulatorSink<Digest>();
+  final converter = sha1.startChunkedConversion(sink);
+  for (final item in items) {
+    converter.add(item);
+  }
+  converter.close();
+  return sink.events.single;
+}
 
 String elapsedTime(Stopwatch stopwatch) {
   final millis = stopwatch.elapsedMilliseconds;
@@ -70,13 +116,37 @@ String elapsedTime(Stopwatch stopwatch) {
   }
 }
 
-class MultipleExceptions with Exception {
-  final List exceptions;
+extension AsyncUtil<T> on Stream<T> {
+  Future<bool> asyncAny(Future<bool> Function(T) predicate) async {
+    await for (final element in this) {
+      if (await predicate(element)) return true;
+    }
+    return false;
+  }
+}
 
-  MultipleExceptions(this.exceptions);
+extension MultiMapUtils<K, V> on Map<K, Set<V>> {
+  void accumulate(K key, V value) {
+    var current = this[key];
+    if (current == null) {
+      current = <V>{};
+      this[key] = current;
+    }
+    current.add(value);
+  }
+}
 
-  @override
-  String toString() {
-    return 'MultipleExceptions{exceptions: $exceptions}';
+extension StreamUtils<T> on Stream<T> {
+  Stream<T> followedBy(Stream<T> next) async* {
+    yield* this;
+    yield* next;
+  }
+}
+
+extension IterableUtils<T> on Iterable<T?> {
+  Iterable<T> whereNotNull() sync* {
+    for (final item in this) {
+      if (item != null) yield item;
+    }
   }
 }

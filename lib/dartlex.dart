@@ -5,3 +5,4 @@
 library dartlex;
 
 export 'src/dartlex/dartlex.dart';
+export 'src/io/exec.dart';

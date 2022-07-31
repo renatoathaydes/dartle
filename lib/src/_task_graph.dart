@@ -66,6 +66,8 @@ extension StatusDescribe on TaskStatus? {
         return colorize(' [up-to-date]', LogColor.green);
       case TaskStatus.alwaysRuns:
         return style(' [always-runs]', LogStyle.dim);
+      case TaskStatus.affectedByDeletionTask:
+        return colorize(' [affected-by-deletion-task]', LogColor.yellow);
       case TaskStatus.dependencyIsOutOfDate:
         return colorize(' [dependency-out-of-date]', LogColor.yellow);
       case TaskStatus.outOfDate:

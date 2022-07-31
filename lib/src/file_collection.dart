@@ -3,420 +3,379 @@ import 'dart:io';
 
 import 'package:path/path.dart' as p;
 
-/// Function that filters files, returning true to keep a file,
-/// false to exclude it.
-typedef FileFilter = FutureOr<bool> Function(File);
+/// A directory entry, usually used within a [FileCollection].
+///
+/// See [file], [files], [dir], [dirs], [entities].
+class DirectoryEntry {
+  final String path;
+  final bool recurse;
+  final bool includeHidden;
+  final Set<String> fileExtensions;
 
-/// Function that filters directories, returning true to keep a directory,
-/// false to exclude it.
-typedef DirectoryFilter = FutureOr<bool> Function(Directory);
+  DirectoryEntry(
+      {required this.path,
+      this.recurse = true,
+      this.includeHidden = false,
+      Set<String> fileExtensions = const {}})
+      : fileExtensions = {
+          for (var e in fileExtensions) e.startsWith('.') ? e : '.$e'
+        };
 
-bool _noFileFilter(File f) => true;
+  bool isWithin(String otherPath, {required bool isDir}) {
+    final otherPathPosix = p.posix.canonicalize(otherPath);
+    final isWithin = recurse
+        ? path == otherPathPosix || p.isWithin(path, otherPathPosix)
+        : path == (isDir ? path == otherPathPosix : p.dirname(otherPathPosix));
+    return isWithin && (isDir || includesExtension(otherPathPosix));
+  }
 
-bool _noDirFilter(Directory f) => true;
+  bool includesExtension(String otherPath) {
+    // don't use path.extension() because we want to support extensions
+    // containing more than one dot, e.g. "foo.bar.txt"
+    return fileExtensions.isEmpty || fileExtensions.any(otherPath.endsWith);
+  }
+
+  @override
+  String toString() => 'DirectoryEntry{path: $path, '
+      'recurse: $recurse, '
+      'fileExtensions: $fileExtensions}';
+}
+
+mixin ResolvedEntity {
+  FileSystemEntity get entity;
+
+  String get path => entity.path;
+
+  FutureOr<T> use<T>(FutureOr<T> Function(File) onFile,
+      FutureOr<T> Function(Directory, Iterable<FileSystemEntity>) onDir);
+}
+
+class _ResolvedFileEntry with ResolvedEntity {
+  final File file;
+
+  @override
+  FileSystemEntity get entity => file;
+
+  _ResolvedFileEntry(this.file);
+
+  @override
+  FutureOr<T> use<T>(FutureOr<T> Function(File p1) onFile,
+      FutureOr<T> Function(Directory, Iterable<FileSystemEntity>) onDir) {
+    return onFile(file);
+  }
+}
+
+class _ResolvedDirEntry with ResolvedEntity {
+  final Directory dir;
+  final Iterable<FileSystemEntity> children;
+
+  @override
+  FileSystemEntity get entity => dir;
+
+  _ResolvedDirEntry(this.dir, this.children);
+
+  @override
+  FutureOr<T> use<T>(FutureOr<T> Function(File) onFile,
+      FutureOr<T> Function(Directory, Iterable<FileSystemEntity>) onDir) {
+    return onDir(dir, children);
+  }
+}
 
 /// Create a [FileCollection] consisting of a single file.
-FileCollection file(String path) => _SingleFileCollection(File(path));
+FileCollection file(String path) =>
+    _FileCollection({_ensurePosixPath(path)}, const []);
 
 /// Create a [FileCollection] consisting of multiple files.
 FileCollection files(Iterable<String> paths) =>
-    _FileCollection(_sortAndDistinct(paths.map((f) => File(f))));
+    _FileCollection({for (var f in paths) _ensurePosixPath(f)}, const []);
 
 /// Create a [FileCollection] consisting of a directory, possibly filtering
-/// sub-directories and specific files.
+/// which files within that directory may be included.
 ///
-/// The provided [DirectoryFilter] can only be used to filter sub-directories
-/// of the given directory.
+/// If `fileExtensions` is not empty, only files with such extensions are
+/// resolved.
 ///
-/// The contents of directories are included recursively. To not include any
-/// sub-directories, simply provide a [DirectoryFilter] that always returns
-/// false for all sub-directories.
-FileCollection dir(String directory,
-        {FileFilter fileFilter = _noFileFilter,
-        DirectoryFilter dirFilter = _noDirFilter}) =>
-    _FileSystemEntityCollection(
-        [Directory(directory)], const [], fileFilter, dirFilter);
+/// If `recurse` is set to `true` (the default), child directories are included.
+///
+/// If `includeHidden` is set to `true` (default is `false`), files and
+/// directories starting with a `.` are included, otherwise they are ignored.
+///
+/// Only relative (to the root project directory) directories are allowed.
+FileCollection dir(
+  String directory, {
+  Set<String> fileExtensions = const {},
+  bool recurse = true,
+  bool includeHidden = false,
+}) =>
+    _FileCollection(
+        const {},
+        List.unmodifiable(_ensureValidDirs([
+          DirectoryEntry(
+              path: directory,
+              fileExtensions: fileExtensions,
+              recurse: recurse,
+              includeHidden: includeHidden)
+        ])));
 
 /// Create a [FileCollection] consisting of multiple directories, possibly
-/// filtering sub-directories and specific files.
+/// filtering which files within each directory may be included.
 ///
-/// The provided [DirectoryFilter] can only be used to filter sub-directories
-/// of the given directories.
+/// If `fileExtensions` is not empty, only files with such extensions are
+/// resolved.
 ///
-/// The contents of directories are included recursively. To not include any
-/// sub-directories, simply provide a [DirectoryFilter] that always returns
-/// false for all sub-directories.
+/// If `recurse` is set to `true` (the default), child directories are included.
 ///
-/// The provided directories should not interleave.
+/// If `includeHidden` is set to `true` (default is `false`), files and
+/// directories starting with a `.` are included, otherwise they are ignored.
+///
+/// The provided directories must be disjoint and unique, otherwise an
+/// [ArgumentError] is thrown.
+///
+/// Only relative (to the root project directory) directories are allowed.
 FileCollection dirs(Iterable<String> directories,
-        {FileFilter fileFilter = _noFileFilter,
-        DirectoryFilter dirFilter = _noDirFilter}) =>
-    _FileSystemEntityCollection(
-        directories.map((d) => Directory(d)).toList(growable: false),
-        const [],
-        fileFilter,
-        dirFilter);
+        {Set<String> fileExtensions = const {},
+        bool recurse = true,
+        bool includeHidden = false}) =>
+    _FileCollection(
+        const {},
+        List.unmodifiable(_ensureValidDirs(directories.map((d) =>
+            DirectoryEntry(
+                path: d,
+                fileExtensions: fileExtensions,
+                recurse: recurse,
+                includeHidden: includeHidden)))));
+
+/// A File collection including the given files as well as
+/// [DirectoryEntry]'s.
+FileCollection entities(
+        Iterable<String> files, Iterable<DirectoryEntry> directoryEntries) =>
+    _FileCollection(files.toSet(), directoryEntries.toList(growable: false));
 
 /// A collection of [File] and [Directory] which can be used to declare a set
 /// of inputs or outputs for a [Task].
 abstract class FileCollection {
   /// Get the empty [FileCollection].
-  static const FileCollection empty = _FileCollection([]);
+  static const FileCollection empty = _FileCollection({}, []);
 
-  /// Create a [FileCollection] consisting of multiple files and directories,
-  /// possibly filtering sub-directories and specific files.
+  const FileCollection();
+
+  /// File paths configured in this collection.
   ///
-  /// The provided [DirectoryFilter] can only be used to filter sub-directories
-  /// of the given directories.
+  /// Does not include directory-based collection's inclusion pattern.
+  Set<String> get files;
+
+  /// All directory paths included in this collection.
+  List<DirectoryEntry> get directories;
+
+  /// Returns true if this collection does not contain any file entity,
+  /// false otherwise.
   ///
-  /// The contents of directories are included recursively. To not include any
-  /// sub-directories, simply provide a [DirectoryFilter] that always returns
-  /// false for all sub-directories.
+  /// Notice that this method does not resolve the inclusions, it only checks
+  /// if there is any potential inclusion.
+  bool get isEmpty => files.isEmpty && directories.isEmpty;
+
+  /// Returns true if this collection contains at least one file entity,
+  /// false otherwise.
   ///
-  /// The provided directories should not interleave.
-  factory FileCollection(Iterable<FileSystemEntity> fsEntities,
-      {FileFilter fileFilter = _noFileFilter,
-      DirectoryFilter dirFilter = _noDirFilter}) {
-    final dirs = fsEntities.whereType<Directory>().toList(growable: false);
-    final files = fsEntities.whereType<File>().toList(growable: false);
-    if (dirs.isEmpty && files.isEmpty) {
-      return empty;
-    } else if (dirs.isEmpty) {
-      return _FileCollection(_sortAndDistinct(files));
+  /// Notice that this method does not resolve the inclusions, it only checks
+  /// if there is any potential inclusion.
+  bool get isNotEmpty => files.isNotEmpty || directories.isNotEmpty;
+
+  /// Check if this collection includes a file path.
+  bool includesFile(String file) {
+    return files.contains(file) ||
+        directories.any((d) => d.isWithin(file, isDir: false));
+  }
+
+  /// Check if this collection includes a directory path.
+  bool includesDir(String dir) {
+    return directories.any((d) => d.isWithin(dir, isDir: true));
+  }
+
+  /// All included entities in this collection.
+  ///
+  /// Does not _resolve_ files and directories, which mean they may not
+  /// exist.
+  Iterable<FileSystemEntity> includedEntities() => files
+      .map((f) => File(f))
+      .cast<FileSystemEntity>()
+      .followedBy(directories.map((e) => Directory(e.path)));
+
+  /// Resolve all [FileSystemEntity]s inside this collection.
+  ///
+  /// Included files are only returned if they exist at the time of resolving.
+  Stream<ResolvedEntity> resolve() async* {
+    for (final file in files) {
+      final f = File(file);
+      if (await f.exists()) yield _ResolvedFileEntry(f);
+    }
+    await for (final resolved in _resolveDirectoryEntries()) {
+      yield resolved;
+      for (final file in resolved.children.whereType<File>()) {
+        yield _ResolvedFileEntry(file);
+      }
+    }
+  }
+
+  /// Resolve the [File]s inside this collection.
+  ///
+  /// Included files are only returned if they exist at the time of resolving.
+  Stream<File> resolveFiles() async* {
+    await for (final entry in resolve()) {
+      final entity = entry.entity;
+      if (entity is File) yield entity;
+    }
+  }
+
+  /// Resolve the [Directory]s inside this collection.
+  ///
+  /// To include also files within each directory, use [resolve] instead.
+  ///
+  /// Included directories are only returned if they exist at the
+  /// time of resolving.
+  Stream<Directory> resolveDirectories() {
+    return _resolveDirectoryEntries().map((e) => Directory(e.path));
+  }
+
+  Stream<_ResolvedDirEntry> _resolveDirectoryEntries() async* {
+    for (final entry in directories) {
+      final includeHidden = entry.includeHidden;
+      final dir = Directory(entry.path);
+      if (await dir.exists()) {
+        if (entry.recurse) {
+          final dirsToVisit = [dir];
+          do {
+            final nextDir = dirsToVisit.removeLast();
+            if (includeHidden || nextDir.path.isNotHidden()) {
+              final children = await nextDir.list(followLinks: false).toList();
+              yield _ResolvedDirEntry(nextDir,
+                  children.where((f) => f is! File || _includeFile(entry, f)));
+              dirsToVisit.addAll(children.whereType<Directory>());
+            }
+          } while (dirsToVisit.isNotEmpty);
+        } else if (includeHidden || entry.path.isNotHidden()) {
+          final children = await dir.list(followLinks: false).toList();
+          yield _ResolvedDirEntry(
+              dir, children.where((f) => f is! File || _includeFile(entry, f)));
+        }
+      }
+    }
+  }
+
+  bool _includeFile(DirectoryEntry entry, File file) {
+    return (entry.includeHidden || file.path.isNotHidden()) &&
+        entry.isWithin(file.path, isDir: false);
+  }
+
+  /// Compute the intersection between this collection and another.
+  Set<String> intersection(FileCollection other) {
+    final otherDirsInDirs = directories
+        .expand((d) =>
+            other.directories.where((od) => d.isWithin(od.path, isDir: true)))
+        .map((e) => e.path);
+    final dirsInOtherDirs = other.directories
+        .expand(
+            (od) => directories.where((d) => od.isWithin(d.path, isDir: true)))
+        .map((e) => e.path);
+    final filesInOtherDirs = other.directories
+        .expand((d) => files.where((f) => d.isWithin(f, isDir: false)));
+    final otherFilesInDirs = directories
+        .expand((d) => other.files.where((f) => d.isWithin(f, isDir: false)));
+    final filesIntersection = files
+        .where((f) => other.includesFile(f))
+        .toSet()
+        .intersection(other.files.where((f) => includesFile(f)).toSet());
+
+    // all files must be acceptable by all collection's filters now
+    final filters = directories
+        .followedBy(other.directories)
+        .where((d) => d.fileExtensions.isNotEmpty)
+        .map((d) => d.fileExtensions);
+
+    bool Function(String) filter;
+    if (filters.isNotEmpty) {
+      final extensions = filters.fold(
+          filters.first, (Set<String> a, Set<String> b) => a.intersection(b));
+      filter = (s) => extensions.any(s.endsWith);
     } else {
-      return _FileSystemEntityCollection(dirs, files, fileFilter, dirFilter);
+      filter = (s) => true;
     }
-  }
 
-  /// The [FileFilter] associated with this collection.
-  FileFilter get fileFilter;
-
-  /// The [DirectoryFilter] associated with this collection.
-  DirectoryFilter get dirFilter;
-
-  /// The included file-system entities.
-  ///
-  /// The difference from [files] and [directories] is that this method does not
-  /// actually resolve anything, it simply lists the entities that were
-  /// explicitly included in this collection on creation, ignoring
-  /// [fileFilter] and [dirFilter].
-  List<FileSystemEntity> get inclusions;
-
-  /// All files in this collection.
-  ///
-  /// Explicitly included [File]s are always returned, even when they do not
-  /// exist.
-  /// If this is a directory-based collection, all files in all sub-directories
-  /// of the included directories are returned, subject to the provided filters.
-  Stream<File> get files;
-
-  /// All directories included in this collection (non-recursive).
-  Stream<Directory> get directories;
-
-  /// Returns true if this collection does not contain any files,
-  /// false otherwise.
-  ///
-  /// Notice that if this collection only contains empty directories, then it
-  /// is considered empty.
-  FutureOr<bool> get isEmpty;
-
-  /// Returns true if this collection contains at least one file,
-  /// false otherwise.
-  ///
-  /// Notice that if this collection only contains empty directories, then it
-  /// is considered empty.
-  FutureOr<bool> get isNotEmpty;
-
-  /// Check if the given [FileSystemEntity] is included in this collection.
-  ///
-  /// Directories include files under its tree even if the files do not (yet)
-  /// exist.
-  FutureOr<bool> includes(FileSystemEntity entity);
-
-  /// Returns the intersection between this and the given [FileCollection].
-  ///
-  /// Exclusions are added together.
-  FileCollection intersection(FileCollection collection);
-}
-
-class _SingleFileCollection implements FileCollection {
-  final File file;
-
-  const _SingleFileCollection(this.file);
-
-  @override
-  List<FileSystemEntity> get inclusions => [file];
-
-  @override
-  Stream<File> get files => Stream.fromIterable([file]);
-
-  @override
-  Stream<Directory> get directories => Stream.empty();
-
-  @override
-  bool get isEmpty => false;
-
-  @override
-  bool get isNotEmpty => true;
-
-  @override
-  String toString() => 'FileCollection{file=${file.path.posix()}}';
-
-  @override
-  bool includes(FileSystemEntity entity) => filesEqual(file, entity);
-
-  @override
-  FileCollection intersection(FileCollection collection) {
-    for (final entity in collection.inclusions) {
-      if (entity is File && includes(entity)) {
-        return this;
-      }
-      if (entity is Directory) {
-        if (entity.includes(file)) {
-          return this;
-        }
-      }
-    }
-    return FileCollection.empty;
-  }
-
-  @override
-  DirectoryFilter get dirFilter => _noDirFilter;
-
-  @override
-  FileFilter get fileFilter => _noFileFilter;
-}
-
-class _FileCollection implements FileCollection {
-  final List<File> _files;
-
-  /// Creates a _FileCollection.
-  ///
-  /// The caller must make sure to pass the argument through _sortAndDistinct.
-  const _FileCollection(List<File> files) : _files = files;
-
-  @override
-  List<FileSystemEntity> get inclusions => List.unmodifiable(_files);
-
-  @override
-  Stream<File> get files => Stream.fromIterable(_files);
-
-  @override
-  Stream<Directory> get directories => Stream.empty();
-
-  @override
-  bool get isEmpty => _files.isEmpty;
-
-  @override
-  bool get isNotEmpty => _files.isNotEmpty;
-
-  @override
-  String toString() =>
-      'FileCollection{files=${_files.map((f) => f.path.posix()).join(', ')}}';
-
-  @override
-  bool includes(FileSystemEntity entity) =>
-      _files.any((f) => filesEqual(f, entity));
-
-  @override
-  FileCollection intersection(FileCollection collection) {
-    final commonFiles = _filesIntersection(collection, _files);
-    if (commonFiles.isNotEmpty) {
-      return _FileCollection(commonFiles.map((p) => File(p)).toList());
-    }
-    return FileCollection.empty;
-  }
-
-  @override
-  DirectoryFilter get dirFilter => _noDirFilter;
-
-  @override
-  FileFilter get fileFilter => _noFileFilter;
-}
-
-class _FileSystemEntityCollection implements FileCollection {
-  final List<File> _extraFiles;
-  final List<Directory> _dirs;
-  @override
-  final FileFilter fileFilter;
-  @override
-  final DirectoryFilter dirFilter;
-
-  const _FileSystemEntityCollection(
-      List<Directory> dirs, List<File> files, this.fileFilter, this.dirFilter)
-      : _dirs = dirs,
-        _extraFiles = files;
-
-  @override
-  List<FileSystemEntity> get inclusions => [..._dirs, ..._extraFiles];
-
-  @override
-  Stream<File> get files async* {
-    final seenPaths = <String>{};
-    final result = <File>[];
-    for (final file in _extraFiles) {
-      if (await fileFilter(file) && seenPaths.add(file.path)) {
-        result.add(file);
-      }
-    }
-    for (final dir in _dirs) {
-      await for (final file in _listRecursive(dir, seenPaths)) {
-        result.add(file);
-      }
-    }
-    for (final file in _sortAndDistinct(result)) {
-      yield file;
-    }
-  }
-
-  @override
-  Stream<Directory> get directories =>
-      Stream.fromIterable(_sortAndDistinct(_dirs));
-
-  @override
-  Future<bool> get isEmpty => files.isEmpty;
-
-  @override
-  Future<bool> get isNotEmpty async => !await isEmpty;
-
-  @override
-  String toString() =>
-      'FileCollection{directories=${_dirs.map((d) => d.path.posix())}, '
-      'files=${_extraFiles.map((f) => f.path.posix())}}';
-
-  @override
-  Future<bool> includes(FileSystemEntity entity) async {
-    if (entity is Directory) {
-      if (!await dirFilter(entity)) {
-        return false;
-      }
-      for (final dir in _dirs) {
-        if (dir.includes(entity)) return true;
-      }
-    } else if (entity is File) {
-      if (!await fileFilter(entity) || !await dirFilter(entity.parent)) {
-        return false;
-      }
-      for (final dir in _dirs) {
-        if (dir.includes(entity)) return true;
-      }
-      for (final file in _extraFiles) {
-        if (filesEqual(file, entity)) return true;
-      }
-    }
-    return false;
-  }
-
-  @override
-  FileCollection intersection(FileCollection collection) {
-    final commonFiles = _filesIntersection(collection, _extraFiles, _dirs)
-        .map<FileSystemEntity>((path) => File(path));
-    final dirs = inclusions.dirSet();
-    final collectionDirs = collection.inclusions.dirSet();
-    final commonDirs = _dirsIntersecting(dirs, collectionDirs);
-    if (commonFiles.isEmpty && commonDirs.isEmpty) {
-      return FileCollection.empty;
-    }
-    final otherFileFilter = collection.fileFilter;
-    final otherDirFilter = collection.dirFilter;
-    return FileCollection(commonFiles.followedBy(commonDirs),
-        fileFilter: (f) async =>
-            await fileFilter(f) && await otherFileFilter(f),
-        dirFilter: (d) async => await dirFilter(d) && await otherDirFilter(d));
-  }
-
-  Iterable<Directory> _dirsIntersecting(
-      Set<String> dirs, Set<String> otherDirs) {
-    final commonDirs = <String>{};
-    for (final dir in dirs) {
-      for (final otherDir in otherDirs) {
-        if (p.isWithin(dir, otherDir)) {
-          commonDirs.add(otherDir);
-        } else if (p.isWithin(otherDir, dir) || p.equals(dir, otherDir)) {
-          commonDirs.add(dir);
-        }
-      }
-    }
-    return commonDirs.map((path) => Directory(path));
-  }
-
-  Stream<File> _listRecursive(Directory dir, Set<String> seenPaths) async* {
-    if (!await dir.exists() || !await dirFilter(dir)) {
-      return;
-    }
-    await for (final entity in dir.list()) {
-      if (entity is File) {
-        if (await fileFilter(entity) && seenPaths.add(entity.path)) {
-          yield entity;
-        }
-      } else if (entity is Directory) {
-        if (await dirFilter(entity) && seenPaths.add(entity.path)) {
-          yield* _listRecursive(entity, seenPaths);
-        }
-      }
-    }
+    return filesIntersection
+        .followedBy(filesInOtherDirs)
+        .followedBy(otherFilesInDirs)
+        .where(filter)
+        .followedBy(otherDirsInDirs)
+        .followedBy(dirsInOtherDirs)
+        .toSet();
   }
 }
 
-Set<String> _filesIntersection(FileCollection collection, Iterable<File> files,
-    [Iterable<Directory> dirs = const []]) {
-  final commonFiles = <String>{};
-  for (final entity in collection.inclusions) {
-    if (entity is File &&
-        (files.any((f) => filesEqual(f, entity)) ||
-            dirs.any((d) => d.includes(entity)))) {
-      commonFiles.add(entity.path.posix());
-    }
-    if (entity is Directory) {
-      final dirName = entity.path.posix() + '/';
-      files.map((e) => e.path.posix()).forEach((path) {
-        if (path.startsWith(dirName)) {
-          commonFiles.add(path);
-        }
-      });
-    }
-  }
-  return commonFiles;
-}
+class _FileCollection extends FileCollection {
+  @override
+  final Set<String> files;
 
-bool filesEqual(FileSystemEntity e1, FileSystemEntity e2) =>
-    e1.runtimeType.toString() == e2.runtimeType.toString() &&
-    p.equals(e1.path, e2.path);
+  @override
+  final List<DirectoryEntry> directories;
 
-List<F> _sortAndDistinct<F extends FileSystemEntity>(Iterable<F> files,
-    {bool sortByPathLengthFirst = true}) {
-  final seenPaths = <String>{};
-  final list = files.where((f) => seenPaths.add(f.path)).toList();
-  var sortFun = sortByPathLengthFirst
-      ? (F a, F b) {
-          // shorter paths must come first
-          final depthA = p.split(a.path).length;
-          final depthB = p.split(b.path).length;
-          final depthComparison = depthA.compareTo(depthB);
-          return depthComparison == 0
-              ? a.path.posix().compareTo(b.path.posix())
-              : depthComparison;
-        }
-      : (F a, F b) => a.path.posix().compareTo(b.path.posix());
-  list.sort(sortFun);
-  return list;
-}
+  const _FileCollection(this.files, this.directories);
 
-extension _FileCollectionExt on Directory {
-  bool includes(FileSystemEntity other) {
-    final posixPath = path.posix();
-    final otherPath = other.path.posix();
-    return posixPath == otherPath || p.isWithin(posixPath, otherPath);
+  @override
+  String toString() {
+    return '_FileCollection{files: $files, directories: $directories}';
   }
 }
 
-extension _FileSystemEntityListExt on List<FileSystemEntity> {
-  Set<String> dirSet() =>
-      whereType<Directory>().map((d) => d.path.posix()).toSet();
+String _ensurePosixPath(String path) {
+  final posixPath = p.posix.canonicalize(path);
+  if (!p.equals('.', posixPath) && !p.isWithin('.', posixPath)) {
+    throw ArgumentError('Path outside project not allowed: $path');
+  }
+  return posixPath;
 }
 
-extension PlatformIndependentPaths on String {
-  String posix() {
-    return replaceAll("\\", "/");
+Iterable<DirectoryEntry> _ensureValidDirs(Iterable<DirectoryEntry> dirs) sync* {
+  final seenDirs = <String>{};
+  for (final dir in dirs) {
+    final pdir = _ensurePosixPath(dir.path);
+    if (p.isAbsolute(pdir)) {
+      throw ArgumentError('Absolute directory not allowed: ${dir.path}');
+    }
+    for (final seen in seenDirs) {
+      if (p.isWithin(seen, pdir)) {
+        throw ArgumentError(
+            'Non disjoint-directories: $seen includes ${dir.path}');
+      }
+    }
+    if (!seenDirs.add(pdir)) {
+      throw ArgumentError('Duplicate directory: ${dir.path}');
+    }
+    yield DirectoryEntry(
+        path: pdir,
+        recurse: dir.recurse,
+        includeHidden: dir.includeHidden,
+        fileExtensions: dir.fileExtensions);
+  }
+}
+
+extension _PathHelper on String {
+  static final pathSeparator =
+      Platform.isWindows ? RegExp(r'[/\\]') : RegExp(r'/');
+
+  /// check if this path represents a hidden location without allocating
+  /// a new string (which the path package would force us to do).
+  bool isNotHidden() {
+    final h = isHidden();
+    return !h;
+  }
+
+  bool isHidden() {
+    if (this == '.' || isEmpty) return false;
+    return this[_firstEffectiveIndex()] == '.';
+  }
+
+  int _firstEffectiveIndex() {
+    final index = lastIndexOf(pathSeparator);
+    return index > 0 && index < length - 1 ? index + 1 : 0;
   }
 }

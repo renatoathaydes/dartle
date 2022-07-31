@@ -3,17 +3,18 @@ import 'dart:io';
 
 import 'package:path/path.dart' as path;
 
-import '_log.dart';
-import '_utils.dart';
-import 'error.dart';
-import 'helpers.dart';
+import '../_log.dart';
+import '../_utils.dart';
+import '../error.dart';
+import '../helpers.dart';
 
 const _executablesDir = '$dartleDir/executables';
 
 /// Get the location Dartle would store binaries created with the [createDartExe]
 /// method.
 File getExeLocation(File dartFile) {
-  return File(path.join(_executablesDir, hash(dartFile.absolute.path)));
+  return File(
+      path.join(_executablesDir, hash(dartFile.absolute.path).toString()));
 }
 
 /// Compiles the given [dartFile] to an executable.
