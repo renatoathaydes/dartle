@@ -4,6 +4,10 @@
 
 ## done, waiting for next release
 
+## 0.14.1
+
+- fixed the version in distribution.
+
 ## 0.14.0
 
 ### Dartle Core
