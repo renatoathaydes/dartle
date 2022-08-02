@@ -40,7 +40,7 @@ Future<void> run(List<String> args,
 
     activateLogging(options.logLevel, colorfulLog: options.colorfulLog);
 
-    await _runWithoutErrorHandling(args, tasks, defaultTasks, options);
+    await runBasic(tasks, defaultTasks, options);
     stopWatch.stop();
     if (!options.showInfoOnly && options.logBuildTime) {
       logger.info(ColoredLogMessage(
@@ -91,7 +91,13 @@ Future<void> runSafely(List<String> args, bool doNotExit,
   }
 }
 
-Future<void> _runWithoutErrorHandling(List<String> args, Set<Task> tasks,
+/// Run a Dartle build with a "basic" setup.
+///
+/// Unlike [run], this function does not handle errors, times the build
+/// or initializes the logging system.
+///
+/// It is only appropriate for embedding Dartle within another system.
+Future<void> runBasic(Set<Task> tasks,
     Set<Task> defaultTasks, Options options) async {
   logger.fine(() => 'Dartle version: $dartleVersion\nOptions: $options');
 

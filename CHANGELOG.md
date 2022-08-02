@@ -4,6 +4,8 @@
 
 ## done, waiting for next release
 
+- expose `runBasic` function to allow embedding Dartle in other CLI tools.
+
 ## 0.14.1
 
 - fixed the version in distribution.
