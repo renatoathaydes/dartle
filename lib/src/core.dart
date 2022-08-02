@@ -40,7 +40,7 @@ Future<void> run(List<String> args,
 
     activateLogging(options.logLevel, colorfulLog: options.colorfulLog);
 
-    await runBasic(tasks, defaultTasks, options);
+    await runBasic(tasks, defaultTasks, options, DartleCache.instance);
     stopWatch.stop();
     if (!options.showInfoOnly && options.logBuildTime) {
       logger.info(ColoredLogMessage(
@@ -97,13 +97,13 @@ Future<void> runSafely(List<String> args, bool doNotExit,
 /// or initializes the logging system.
 ///
 /// It is only appropriate for embedding Dartle within another system.
-Future<void> runBasic(Set<Task> tasks,
-    Set<Task> defaultTasks, Options options) async {
+Future<void> runBasic(Set<Task> tasks, Set<Task> defaultTasks, Options options,
+    DartleCache cache) async {
   logger.fine(() => 'Dartle version: $dartleVersion\nOptions: $options');
 
   if (options.resetCache) {
-    await DartleCache.instance.clean();
-    DartleCache.instance.init();
+    await cache.clean();
+    cache.init();
   }
 
   var tasksInvocation = options.tasksInvocation;
@@ -132,8 +132,8 @@ Future<void> runBasic(Set<Task> tasks,
     try {
       await _runAll(executableTasks, options);
     } finally {
-      await _cleanCache(DartleCache.instance,
-          taskMap.keys.followedBy(const ['_compileDartleFile']).toSet());
+      await _cleanCache(
+          cache, taskMap.keys.followedBy(const ['_compileDartleFile']).toSet());
     }
   }
 }

@@ -1,31 +1,27 @@
 import 'dart:async';
 import 'dart:io';
 
-import 'package:path/path.dart' as path;
-
 import '../_log.dart';
-import '../_utils.dart';
+import '../cache/cache.dart';
 import '../error.dart';
 import '../helpers.dart';
 
-const _executablesDir = '$dartleDir/executables';
-
 /// Get the location Dartle would store binaries created with the [createDartExe]
 /// method.
-File getExeLocation(File dartFile) {
-  return File(
-      path.join(_executablesDir, hash(dartFile.absolute.path).toString()));
+File getExeLocation(File dartFile, [DartleCache? dartleCache]) {
+  final cache = dartleCache ?? DartleCache.instance;
+  return cache.getExecutablesLocation(dartFile);
 }
 
 /// Compiles the given [dartFile] to an executable.
 ///
 /// If [destination] is given, the executable is saved in its location,
-/// otherwise it's saved in the `.dartle_tools/executables` directory.
+/// otherwise it's saved in the [DartleCache]'s executables directory.
 ///
 /// Returns the executable [File].
-Future<File> createDartExe(File dartFile, [File? destination]) async {
-  await Directory(_executablesDir).create(recursive: true);
-  var exeLocation = destination ?? getExeLocation(dartFile);
+Future<File> createDartExe(File dartFile,
+    [File? destination, DartleCache? dartleCache]) async {
+  var exeLocation = destination ?? getExeLocation(dartFile, dartleCache);
   await _dart2exe(dartFile, exeLocation);
   return exeLocation;
 }

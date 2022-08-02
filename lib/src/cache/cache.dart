@@ -11,9 +11,6 @@ import '../helpers.dart';
 import '../task.dart';
 import '../task_invocation.dart';
 
-final _hashesDir = path.join(dartleDir, 'hashes');
-final _tasksDir = path.join(dartleDir, 'tasks');
-
 /// The cache used by dartle to figure out when files change between checks,
 /// typically between two builds.
 ///
@@ -21,20 +18,32 @@ final _tasksDir = path.join(dartleDir, 'tasks');
 /// directories, it only associates a cache to them so that it can tell whether
 /// their contents have changed between two checks in a very efficient manner.
 class DartleCache {
-  static final DartleCache instance = DartleCache._create();
+  static final DartleCache instance = DartleCache._defaultInstance();
 
-  DartleCache._create() {
+  final String rootDir;
+  final String _hashesDir;
+  final String _tasksDir;
+  final String _executablesDir;
+
+  /// Create an instance of [DartleCache] at the given root directory.
+  DartleCache(this.rootDir)
+      : _hashesDir = path.join(dartleDir, 'hashes'),
+        _tasksDir = path.join(dartleDir, 'tasks'),
+        _executablesDir = path.join(dartleDir, 'executables') {
     init();
   }
+
+  DartleCache._defaultInstance() : this(dartleDir);
 
   /// Initialize the cache directories.
   ///
   /// This method does not normally need to be called explicitly as the
   /// constructor will call it.
   void init() {
-    Directory(dartleDir).createSync(recursive: true);
+    Directory(rootDir).createSync(recursive: true);
     Directory(_hashesDir).createSync();
     Directory(_tasksDir).createSync();
+    Directory(_executablesDir).createSync();
   }
 
   /// Clean the Dartle cache.
@@ -300,13 +309,15 @@ class DartleCache {
     return changed;
   }
 
-  static String _locationHash(FileSystemEntity fe) => hash(fe.path).toString();
+  File getExecutablesLocation(File file) =>
+      File(path.join(_executablesDir, hash(file.path).toString()));
 
-  static File _getCacheLocation(FileSystemEntity entity,
-      {required String key}) {
+  File _getCacheLocation(FileSystemEntity entity, {required String key}) {
     final locationHash = _locationHash(entity);
     return File(path.join(_hashesDir, key, locationHash));
   }
+
+  static String _locationHash(FileSystemEntity fe) => hash(fe.path).toString();
 }
 
 class _DirectoryContents {

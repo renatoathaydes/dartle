@@ -5,6 +5,7 @@
 ## done, waiting for next release
 
 - expose `runBasic` function to allow embedding Dartle in other CLI tools.
+- made it possible to create `DartleCache` on a non-default location.
 
 ## 0.14.1
 

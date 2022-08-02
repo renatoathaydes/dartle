@@ -9,6 +9,9 @@ class CacheMock implements DartleCache {
   Map<String, List<bool>> invocationChanges = {};
 
   @override
+  String get rootDir => throw UnimplementedError();
+
+  @override
   Future<void> cacheTaskInvocation(TaskInvocation invocation) {
     throw UnimplementedError();
   }
@@ -70,5 +73,10 @@ class CacheMock implements DartleCache {
   Future<void> removeNotMatching(
       Set<String> taskNames, Set<String> keys) async {
     invocationTimes.removeWhere((name, value) => !taskNames.contains(name));
+  }
+
+  @override
+  File getExecutablesLocation(File file) {
+    throw UnimplementedError();
   }
 }
