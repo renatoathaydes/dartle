@@ -27,9 +27,9 @@ class DartleCache {
 
   /// Create an instance of [DartleCache] at the given root directory.
   DartleCache(this.rootDir)
-      : _hashesDir = path.join(dartleDir, 'hashes'),
-        _tasksDir = path.join(dartleDir, 'tasks'),
-        _executablesDir = path.join(dartleDir, 'executables') {
+      : _hashesDir = path.join(rootDir, 'hashes'),
+        _tasksDir = path.join(rootDir, 'tasks'),
+        _executablesDir = path.join(rootDir, 'executables') {
     init();
   }
 
