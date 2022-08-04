@@ -1,5 +1,8 @@
 import 'dart:io';
 
+import 'package:path/path.dart';
+import 'package:yaml/yaml.dart';
+
 import '../file_collection.dart';
 import '../helpers.dart';
 import '../run_condition.dart';
@@ -16,6 +19,9 @@ class DartConfig {
 
   /// Whether or not to include the "test" task in the build.
   final bool runTests;
+
+  /// Whether or not to include the "compileExe" task in the build.
+  final bool compileExe;
 
   /// Project's root directory (location of dartle.dart file, by default).
   final String? rootDir;
@@ -36,6 +42,7 @@ class DartConfig {
     this.runAnalyzer = true,
     this.formatCode = true,
     this.runTests = true,
+    this.compileExe = true,
     this.runPubGetAtMostEvery = const Duration(days: 5),
     this.rootDir,
     this.testOutput = DartTestOutput.dartleReporter,
@@ -70,6 +77,7 @@ class DartleDart {
       runPubGet,
       test,
       build,
+      compileExe,
       clean;
 
   final bool _enableBuildRunner;
@@ -79,6 +87,7 @@ class DartleDart {
     return {
       if (config.formatCode) formatCode,
       if (config.runAnalyzer) analyzeCode,
+      if (config.compileExe) compileExe,
       if (_enableBuildRunner) runBuildRunner,
       if (config.runTests) test,
       runPubGet,
@@ -96,7 +105,8 @@ class DartleDart {
   DartleDart([this.config = const DartConfig()])
       : rootDir = config.rootDir ?? '.',
         _enableBuildRunner = config.buildRunnerRunCondition != null {
-    final allDartFiles = dir(rootDir, fileExtensions: const {'dart'});
+    final allDartFiles = dir(rootDir,
+        exclusions: const {'build'}, fileExtensions: const {'dart'});
 
     formatCode = Task(_formatCode,
         name: 'format',
@@ -120,12 +130,22 @@ class DartleDart {
         description: 'Analyzes Dart source code',
         runCondition: RunOnChanges(inputs: allDartFiles));
 
+    compileExe = Task(_compileExe,
+        name: 'compileExe',
+        description: 'Compiles Dart executables declared in pubspec. '
+            'Argument may specify the name(s) of the executable(s) to compile.',
+        dependsOn: {'analyzeCode'},
+        argsValidator: const AcceptAnyArgs(),
+        runCondition: RunOnChanges(
+            inputs: allDartFiles, outputs: dir('$rootDir/build/bin')));
+
     runPubGet = Task(_runPubGet,
         name: 'runPubGet',
         description: 'Runs "pub get" in order to update dependencies.',
         runCondition: OrCondition([
           RunAtMostEvery(config.runPubGetAtMostEvery),
-          RunOnChanges(inputs: files(const ['pubspec.yaml', 'pubspec.lock']))
+          RunOnChanges(
+              inputs: files(['$rootDir/pubspec.yaml', '$rootDir/pubspec.lock']))
         ]));
 
     test = Task(_test,
@@ -135,7 +155,8 @@ class DartleDart {
         dependsOn: {if (config.runAnalyzer) 'analyzeCode'},
         argsValidator: const AcceptAnyArgs(),
         runCondition: RunOnChanges(
-            inputs: dirs(const ['lib', 'bin', 'test', 'example'])));
+            inputs: dirs(['lib', 'bin', 'test', 'example']
+                .map((e) => join(rootDir, e)))));
 
     clean = Task(
         (_) async => await ignoreExceptions(() => deleteOutputs(tasks)),
@@ -148,7 +169,7 @@ class DartleDart {
         description: 'Runs all enabled tasks.');
 
     build.dependsOn(tasks
-        .where((t) => t != build && t != clean)
+        .where((t) => t != build && t != clean && t != compileExe)
         .map((t) => t.name)
         .toSet());
   }
@@ -177,6 +198,41 @@ class DartleDart {
     final code = await execProc(Process.start('dart', const ['analyze', '.']),
         name: 'Dart Analyzer', successMode: StreamRedirectMode.stdoutAndStderr);
     if (code != 0) failBuild(reason: 'Dart Analyzer failed');
+  }
+
+  Future<void> _compileExe(List<String> args) async {
+    bool Function(String) filter =
+        args.isEmpty ? ((String s) => true) : args.contains;
+    final yaml = loadYaml(await File('pubspec.yaml').readAsString());
+    final executables = yaml['executables'] as Map;
+    final srcDir = join(rootDir, 'bin');
+    final targetDir = join(rootDir, 'build', 'bin');
+    await Directory(targetDir).create(recursive: true);
+    final futures = executables.map((name, file) {
+      name as String;
+      file as String?;
+      if (!filter(name)) return MapEntry('', Future.value(0));
+      final src = join(
+          srcDir, file == null || file.isEmpty ? '$name.dart' : '$file.dart');
+      final executable =
+          join(targetDir, '$name${Platform.isWindows ? '.exe' : ''}');
+      final future = execProc(
+          Process.start('dart', ['compile', 'exe', src, '-o', executable]),
+          name: 'Dart compile exe',
+          successMode: StreamRedirectMode.stdoutAndStderr);
+      return MapEntry(name, future);
+    });
+    final compilable = futures.entries.where((e) => e.key.isNotEmpty).toList();
+    if (compilable.isEmpty) {
+      if (args.isEmpty) {
+        failBuild(reason: 'No executables found in pubspec');
+      }
+      failBuild(reason: 'No executables named $args were found');
+    }
+    for (final entry in futures.entries) {
+      final code = await entry.value;
+      if (code != 0) failBuild(reason: 'Failed to compile ${entry.key}');
+    }
   }
 
   Future<void> _runPubGet(_) async {

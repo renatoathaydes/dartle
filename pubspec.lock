@@ -359,7 +359,7 @@ packages:
     source: hosted
     version: "1.0.0"
   yaml:
-    dependency: "direct dev"
+    dependency: "direct main"
     description:
       name: yaml
       url: "https://pub.dartlang.org"

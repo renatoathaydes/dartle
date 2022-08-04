@@ -1,6 +1,6 @@
 name: dartle
 description: A simple build system written in Dart. Tasks are declared in a regular Dart file.
-version: 0.14.1
+version: 0.14.2
 homepage: https://github.com/renatoathaydes/dartle
 
 environment:
@@ -20,10 +20,10 @@ dependencies:
   file: ^6.1.0
   test_report_parser: ^1.1.0
   convert: ^3.0.2
+  yaml: ^3.1.0
 
 dev_dependencies:
   test: ^1.16.8
-  yaml: ^3.1.0
   lints: ^1.0.1
 
 executables:

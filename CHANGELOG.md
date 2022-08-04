@@ -4,8 +4,16 @@
 
 ## done, waiting for next release
 
+### Dartle Core
+
 - expose `runBasic` function to allow embedding Dartle in other CLI tools.
 - made it possible to create `DartleCache` on a non-default location.
+- added support for _exclusions_ in `FileCollection` for directories.
+
+### Dartle Dart
+
+- fixed tasks inputs/outputs to respect `DartleDart.rootDir`.
+- added new task, `compileExe` to compile executables declared in pubspec.
 
 ## 0.14.1
 
