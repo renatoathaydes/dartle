@@ -10,12 +10,14 @@ class DirectoryEntry {
   final String path;
   final bool recurse;
   final bool includeHidden;
+  final Set<String> exclusions;
   final Set<String> fileExtensions;
 
   DirectoryEntry(
       {required this.path,
       this.recurse = true,
       this.includeHidden = false,
+      this.exclusions = const {},
       Set<String> fileExtensions = const {}})
       : fileExtensions = {
           for (var e in fileExtensions) e.startsWith('.') ? e : '.$e'
@@ -26,7 +28,30 @@ class DirectoryEntry {
     final isWithin = recurse
         ? path == otherPathPosix || p.isWithin(path, otherPathPosix)
         : path == (isDir ? path == otherPathPosix : p.dirname(otherPathPosix));
-    return isWithin && (isDir || includesExtension(otherPathPosix));
+    return isWithin && includes(otherPathPosix, isDir: isDir);
+  }
+
+  bool includes(String otherPath, {required bool isDir}) {
+    final other = otherPath == '.' ? '' : otherPath;
+    final self = path == '.' ? '' : path;
+    if (exclusions.isNotEmpty) {
+      if (isDir) {
+        // check every sub-path of other path, not just the last one
+        if (other.startsWith(self)) {
+          for (final part in p.split(other.substring(self.length))) {
+            if (exclusions.contains(part)) {
+              return false;
+            }
+          }
+        }
+      } else if (exclusions.contains(p.basename(other))) {
+        return false;
+      }
+    }
+    if (!includeHidden && other.isHidden()) {
+      return false;
+    }
+    return isDir || includesExtension(other);
   }
 
   bool includesExtension(String otherPath) {
@@ -38,6 +63,7 @@ class DirectoryEntry {
   @override
   String toString() => 'DirectoryEntry{path: $path, '
       'recurse: $recurse, '
+      'exclusions: $exclusions, '
       'fileExtensions: $fileExtensions}';
 }
 
@@ -104,6 +130,7 @@ FileCollection files(Iterable<String> paths) =>
 FileCollection dir(
   String directory, {
   Set<String> fileExtensions = const {},
+  Set<String> exclusions = const {},
   bool recurse = true,
   bool includeHidden = false,
 }) =>
@@ -113,6 +140,7 @@ FileCollection dir(
           DirectoryEntry(
               path: directory,
               fileExtensions: fileExtensions,
+              exclusions: exclusions,
               recurse: recurse,
               includeHidden: includeHidden)
         ])));
@@ -134,6 +162,7 @@ FileCollection dir(
 /// Only relative (to the root project directory) directories are allowed.
 FileCollection dirs(Iterable<String> directories,
         {Set<String> fileExtensions = const {},
+        Set<String> exclusions = const {},
         bool recurse = true,
         bool includeHidden = false}) =>
     _FileCollection(
@@ -142,6 +171,7 @@ FileCollection dirs(Iterable<String> directories,
             DirectoryEntry(
                 path: d,
                 fileExtensions: fileExtensions,
+                exclusions: exclusions,
                 recurse: recurse,
                 includeHidden: includeHidden)))));
 
@@ -239,21 +269,20 @@ abstract class FileCollection {
 
   Stream<_ResolvedDirEntry> _resolveDirectoryEntries() async* {
     for (final entry in directories) {
-      final includeHidden = entry.includeHidden;
       final dir = Directory(entry.path);
       if (await dir.exists()) {
         if (entry.recurse) {
           final dirsToVisit = [dir];
           do {
             final nextDir = dirsToVisit.removeLast();
-            if (includeHidden || nextDir.path.isNotHidden()) {
+            if (entry.includes(nextDir.path, isDir: true)) {
               final children = await nextDir.list(followLinks: false).toList();
               yield _ResolvedDirEntry(nextDir,
                   children.where((f) => f is! File || _includeFile(entry, f)));
               dirsToVisit.addAll(children.whereType<Directory>());
             }
           } while (dirsToVisit.isNotEmpty);
-        } else if (includeHidden || entry.path.isNotHidden()) {
+        } else if (entry.includes(dir.path, isDir: true)) {
           final children = await dir.list(followLinks: false).toList();
           yield _ResolvedDirEntry(
               dir, children.where((f) => f is! File || _includeFile(entry, f)));
@@ -263,8 +292,7 @@ abstract class FileCollection {
   }
 
   bool _includeFile(DirectoryEntry entry, File file) {
-    return (entry.includeHidden || file.path.isNotHidden()) &&
-        entry.isWithin(file.path, isDir: false);
+    return entry.includes(file.path, isDir: false);
   }
 
   /// Compute the intersection between this collection and another.
@@ -354,6 +382,7 @@ Iterable<DirectoryEntry> _ensureValidDirs(Iterable<DirectoryEntry> dirs) sync* {
         path: pdir,
         recurse: dir.recurse,
         includeHidden: dir.includeHidden,
+        exclusions: dir.exclusions,
         fileExtensions: dir.fileExtensions);
   }
 }
@@ -364,11 +393,6 @@ extension _PathHelper on String {
 
   /// check if this path represents a hidden location without allocating
   /// a new string (which the path package would force us to do).
-  bool isNotHidden() {
-    final h = isHidden();
-    return !h;
-  }
-
   bool isHidden() {
     if (this == '.' || isEmpty) return false;
     return this[_firstEffectiveIndex()] == '.';

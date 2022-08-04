@@ -77,6 +77,18 @@ void main() {
     });
 
     test(
+        'can be created for a single, non-empty directory (recurse, exclusions)',
+        () async {
+      final files = dir('A/B/D', recurse: true, exclusions: const {'e.txt'});
+      await _expectFileCollection(
+        fs,
+        files,
+        dirs: const {'A/B/D', 'A/B/D/E'},
+        files: const {'A/B/D/d.txt'},
+      );
+    });
+
+    test(
         'can be created for a single, non-empty directory (recurse, include hidden)',
         () async {
       final files = dir('A/B/D', recurse: true, includeHidden: true);
@@ -88,7 +100,7 @@ void main() {
           'A/B/D/d.txt',
           'A/B/D/E/e.txt',
           'A/B/D/.hide.txt',
-          'A/B/D/E/.hide.txt'
+          'A/B/D/E/.hide.txt',
         },
       );
     });
@@ -119,6 +131,31 @@ void main() {
           './A/B/C/c.txt',
           './A/B/D/d.txt',
           './A/B/D/E/e.txt',
+        },
+      );
+    });
+
+    test('can be created for dir, with exclusions (recurse, include hidden)',
+        () async {
+      final files = dir('A',
+          exclusions: {'C', 'd.txt'},
+          fileExtensions: {'.txt'},
+          recurse: true,
+          includeHidden: true);
+      await _expectFileCollection(
+        fs,
+        files,
+        dirs: const {
+          'A',
+          'A/B',
+          'A/B/D',
+          'A/B/D/.git',
+          'A/B/D/E',
+        },
+        files: const {
+          'A/B/D/.hide.txt',
+          'A/B/D/E/e.txt',
+          'A/B/D/E/.hide.txt',
         },
       );
     });
@@ -258,6 +295,12 @@ void main() {
               .intersection(dirs(['b', 'c'],
                   fileExtensions: {'txt', 'foo'}, recurse: true)),
           equals({'b/c.txt', 'c/g/e.foo'}));
+    });
+
+    test('dir intersection with exclusions', () {
+      expect(dir('A', exclusions: {'B'}).intersection(dir('A/B')), isEmpty);
+      expect(dir('A/B/C').intersection(dir('A', exclusions: {'B'})), isEmpty);
+      expect(dir('A', exclusions: {'B'}).intersection(dir('A/B/C')), isEmpty);
     });
   }, timeout: Timeout(Duration(milliseconds: 250)));
 }
