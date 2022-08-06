@@ -1,47 +1,33 @@
 import 'package:args/args.dart';
 import 'package:logging/logging.dart' as log;
+import 'package:freezed_annotation/freezed_annotation.dart';
 
 import '_log.dart';
 import 'dartle_version.g.dart';
 import 'error.dart';
 
-class Options {
-  final log.Level logLevel;
-  final bool colorfulLog;
-  final bool forceTasks;
-  final bool parallelizeTasks;
-  final bool showHelp;
-  final bool showVersion;
-  final bool showTasks;
-  final bool showTaskGraph;
-  final bool resetCache;
-  final bool logBuildTime;
-  final List<String> tasksInvocation;
+part 'options.freezed.dart';
 
-  const Options(
-      {this.logLevel = log.Level.INFO,
-      this.colorfulLog = true,
-      this.showHelp = false,
-      this.showVersion = false,
-      this.showTasks = false,
-      this.showTaskGraph = false,
-      this.forceTasks = false,
-      this.parallelizeTasks = true,
-      this.resetCache = false,
-      this.logBuildTime = true,
-      this.tasksInvocation = const []});
+@freezed
+class Options with _$Options {
+  const Options._();
+
+  const factory Options({
+    @Default(log.Level.INFO) log.Level logLevel,
+    @Default(true) bool colorfulLog,
+    @Default(false) bool showHelp,
+    @Default(false) bool showVersion,
+    @Default(false) bool showTasks,
+    @Default(false) bool showTaskGraph,
+    @Default(false) bool forceTasks,
+    @Default(true) bool parallelizeTasks,
+    @Default(false) bool resetCache,
+    @Default(true) bool logBuildTime,
+    @Default([]) List<String> tasksInvocation,
+  }) = _Options;
 
   bool get showInfoOnly =>
       showTasks || showTaskGraph || showHelp || showVersion;
-
-  @override
-  String toString() =>
-      'Options{logLevel: $logLevel, colorfulLog: $colorfulLog, '
-      'forceTasks: $forceTasks, parallelizeTasks: $parallelizeTasks, '
-      'showHelp: $showHelp, showVersion: $showVersion, '
-      'showTasks: $showTasks, showTaskGraph: $showTaskGraph, '
-      'resetCache: $resetCache, logBuildTime: $logBuildTime, '
-      'tasksInvocation: $tasksInvocation}';
 }
 
 final _parser = ArgParser()
@@ -126,6 +112,9 @@ default tasks are run.
 Options:
 ${_parser.usage}
 ''';
+
+/// String describing Dartle's command-line options.
+String optionsDescription = _parser.usage;
 
 /// Parse the given args, setting the options as appropriate and returning the
 /// tasks the user requested to run.

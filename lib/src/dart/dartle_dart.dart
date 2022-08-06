@@ -107,6 +107,8 @@ class DartleDart {
         _enableBuildRunner = config.buildRunnerRunCondition != null {
     final allDartFiles = dir(rootDir,
         exclusions: const {'build'}, fileExtensions: const {'dart'});
+    final productionDartFiles =
+        dirs(['lib', 'bin'], fileExtensions: const {'dart'});
 
     formatCode = Task(_formatCode,
         name: 'format',
@@ -137,7 +139,7 @@ class DartleDart {
         dependsOn: {'analyzeCode'},
         argsValidator: const AcceptAnyArgs(),
         runCondition: RunOnChanges(
-            inputs: allDartFiles, outputs: dir('$rootDir/build/bin')));
+            inputs: productionDartFiles, outputs: dir('$rootDir/build/bin')));
 
     runPubGet = Task(_runPubGet,
         name: 'runPubGet',
