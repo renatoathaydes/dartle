@@ -2,7 +2,7 @@ import 'package:dartle/dartle.dart';
 import 'package:test/test.dart';
 
 import 'cache_mock.dart';
-import 'io_test.dart';
+import 'file_collection_test.dart';
 import 'test_utils.dart';
 
 final _invocation = taskInvocation('name');
