@@ -302,6 +302,15 @@ void main() {
       expect(dir('A/B/C').intersection(dir('A', exclusions: {'B'})), isEmpty);
       expect(dir('A', exclusions: {'B'}).intersection(dir('A/B/C')), isEmpty);
     });
+
+    test('output dir intersection with file extensions', () {
+      final dartOutputs =
+          dir('.', exclusions: const {'build'}, fileExtensions: const {'dart'});
+      final javaOutputs =
+          dir('test/java', fileExtensions: const {'.pom', '.jar'});
+      expect(dartOutputs.intersection(javaOutputs), isEmpty);
+      expect(javaOutputs.intersection(dartOutputs), isEmpty);
+    });
   }, timeout: Timeout(Duration(milliseconds: 250)));
 }
 

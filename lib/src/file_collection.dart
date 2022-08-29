@@ -298,12 +298,16 @@ abstract class FileCollection {
   /// Compute the intersection between this collection and another.
   Set<String> intersection(FileCollection other) {
     final otherDirsInDirs = directories
-        .expand((d) =>
-            other.directories.where((od) => d.isWithin(od.path, isDir: true)))
+        .expand((d) => other.directories.where((od) =>
+            d.isWithin(od.path, isDir: true) &&
+            (od.fileExtensions.isEmpty ||
+                od.fileExtensions.intersection(d.fileExtensions).isNotEmpty)))
         .map((e) => e.path);
     final dirsInOtherDirs = other.directories
-        .expand(
-            (od) => directories.where((d) => od.isWithin(d.path, isDir: true)))
+        .expand((od) => directories.where((d) =>
+            od.isWithin(d.path, isDir: true) &&
+            (d.fileExtensions.isEmpty ||
+                d.fileExtensions.intersection(od.fileExtensions).isNotEmpty)))
         .map((e) => e.path);
     final filesInOtherDirs = other.directories
         .expand((d) => files.where((f) => d.isWithin(f, isDir: false)));
