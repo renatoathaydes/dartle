@@ -296,6 +296,12 @@ abstract class FileCollection {
   }
 
   /// Compute the intersection between this collection and another.
+  ///
+  /// The result is a Set of all paths that, in theory, could contain
+  /// overlapping files or directories, taking into consideration all
+  /// settings of this and the [other] collection.
+  ///
+  /// Notice that this operation does not require looking at the file system.
   Set<String> intersection(FileCollection other) {
     final otherDirsInDirs = directories
         .expand((d) => other.directories.where((od) =>
