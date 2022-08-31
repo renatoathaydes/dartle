@@ -74,6 +74,15 @@ mixin ResolvedEntity {
 
   FutureOr<T> use<T>(FutureOr<T> Function(File) onFile,
       FutureOr<T> Function(Directory, Iterable<FileSystemEntity>) onDir);
+
+  @override
+  bool operator ==(Object other) {
+    return other.runtimeType == runtimeType &&
+        (other as ResolvedEntity).path == path;
+  }
+
+  @override
+  int get hashCode => entity.hashCode;
 }
 
 class _ResolvedFileEntry with ResolvedEntity {
@@ -121,6 +130,8 @@ FileCollection files(Iterable<String> paths) =>
 /// If `fileExtensions` is not empty, only files with such extensions are
 /// resolved.
 ///
+/// Files and directory names can be excluded by providing `exclusions`.
+///
 /// If `recurse` is set to `true` (the default), child directories are included.
 ///
 /// If `includeHidden` is set to `true` (default is `false`), files and
@@ -150,6 +161,8 @@ FileCollection dir(
 ///
 /// If `fileExtensions` is not empty, only files with such extensions are
 /// resolved.
+///
+/// Files and directory names can be excluded by providing `exclusions`.
 ///
 /// If `recurse` is set to `true` (the default), child directories are included.
 ///
@@ -295,6 +308,19 @@ abstract class FileCollection {
     return entry.includes(file.path, isDir: false);
   }
 
+  /// The union between this file collection and [other].
+  ///
+  /// All files and directories included in this or other is also
+  /// included in the returned collection. If one collection excludes some
+  /// file entity but the other does not, the file entity is included in the
+  /// resulting collection.
+  ///
+  /// To create a union between many collections, use
+  /// [MultiFileCollection] directly.
+  FileCollection union(FileCollection other) {
+    return MultiFileCollection([this, other]);
+  }
+
   /// Compute the intersection between this collection and another.
   ///
   /// The result is a Set of all paths that, in theory, could contain
@@ -361,6 +387,40 @@ class _FileCollection extends FileCollection {
   @override
   String toString() {
     return '_FileCollection{files: $files, directories: $directories}';
+  }
+}
+
+/// A [FileCollection] representing the union between multiple file collections.
+///
+/// All files and directories included in any of the member collections is also
+/// included in the returned collection. If one collection excludes some
+/// file entity but another member does not, the file entity is included in
+/// this collection.
+class MultiFileCollection extends FileCollection {
+  final List<FileCollection> members;
+
+  const MultiFileCollection(this.members);
+
+  @override
+  List<DirectoryEntry> get directories {
+    return members.expand((e) => e.directories).toList(growable: false);
+  }
+
+  @override
+  Set<String> get files {
+    return members.expand((e) => e.files).toSet();
+  }
+
+  @override
+  Stream<ResolvedEntity> resolve() async* {
+    final seen = <ResolvedEntity>{};
+    for (final member in members) {
+      await for (final entity in member.resolve()) {
+        if (seen.add(entity)) {
+          yield entity;
+        }
+      }
+    }
   }
 }
 
