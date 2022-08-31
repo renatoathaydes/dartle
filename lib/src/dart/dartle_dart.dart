@@ -160,10 +160,9 @@ class DartleDart {
             inputs: dirs(['lib', 'bin', 'test', 'example']
                 .map((e) => join(rootDir, e)))));
 
-    clean = Task(
-        (_) async => await ignoreExceptions(() => deleteOutputs(tasks)),
+    clean = createCleanTask(
+        tasks: () => tasks,
         name: 'clean',
-        phase: TaskPhase.setup,
         description: 'Deletes the outputs of all other tasks in this build.');
 
     build = Task((_) => null, // no action, just grouping other tasks

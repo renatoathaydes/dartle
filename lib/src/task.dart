@@ -3,8 +3,10 @@ import 'dart:async';
 import 'package:collection/collection.dart';
 
 import '_utils.dart';
+import 'cache/cache.dart';
 import 'error.dart';
 import 'file_collection.dart';
+import 'helpers.dart';
 import 'run_condition.dart';
 import 'task_invocation.dart';
 
@@ -643,4 +645,15 @@ Future<void> verifyTaskPhasesConsistency(
             "the current Dart Zone, which are $phaseNames}:\n"
             '${errors.map((e) => '  * $e.').join('\n')}\n');
   }
+}
+
+/// Create a "clean" task that removes all outputs of the given tasks.
+Task createCleanTask(
+    {required String name,
+    String description = '',
+    required Iterable<Task> Function() tasks,
+    TaskPhase phase = TaskPhase.setup,
+    DartleCache? cache}) {
+  return Task((_) async => await ignoreExceptions(() => deleteOutputs(tasks())),
+      name: name, phase: phase, description: description);
 }
