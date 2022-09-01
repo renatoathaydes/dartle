@@ -18,10 +18,13 @@ void main() {
       await deleteAll(file(manyTasksBuild.path));
     });
 
-    Future<ProcessResult> runExampleDartBuild(List<String> args) async {
+    Future<ProcessResult> runExampleDartBuild(List<String> args,
+        {bool noColorEnv = false}) async {
       return startProcess(
           runDartExe(manyTasksBuild,
-              args: args, workingDirectory: 'test/test_builds/many_tasks'),
+              environment: noColorEnv ? const {'NO_COLOR': '1'} : null,
+              args: args,
+              workingDirectory: 'test/test_builds/many_tasks'),
           'many_tasks test dart build');
     }
 
@@ -29,8 +32,9 @@ void main() {
       var proc = await runExampleDartBuild(const []);
       expect(
           proc.stdout[0],
-          contains('Executing 9 tasks out of a total of 15 tasks:'
-              ' 3 tasks (default), 6 dependencies'));
+          contains(
+              'Executing \x1B[1m9 tasks\x1B[22m out of a total of 15 tasks:'
+              ' 3 tasks (\x1B[90mdefault\x1B[0m), 6 dependencies'));
       expect(proc.stdout[1], contains("Running task 'd'"));
       expect(proc.stdout[2], contains("Running task 'e'"));
       expect(proc.stdout[3], contains("Running task 'm'"));
@@ -48,7 +52,7 @@ void main() {
       proc = await runExampleDartBuild(['l']);
       expect(
           proc.stdout[0],
-          contains('Executing 1 task out of a total of 15 tasks:'
+          contains('Executing \x1B[1m1 task\x1B[22m out of a total of 15 tasks:'
               ' 1 task selected'));
       expect(proc.stdout[1], contains("Running task 'l'"));
       expect(proc.stdout[2], startsWith('\x1B[32m✔ Build succeeded in '));

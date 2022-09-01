@@ -21,7 +21,8 @@ void main() {
             Future<void> hello(_) async => print('hello');
       ''');
 
-      final result = await _runDartle(const ['hello'], projectDir);
+      final result =
+          await _runDartle(const ['hello', '--no-color'], projectDir);
 
       expect(result.exitCode, equals(0), reason: result.toString());
       expect(result.stdout, hasLength(equals(6)));
@@ -81,7 +82,8 @@ void main() {
       // some OS's like to keep file change time resolution in the seconds
       await Future.delayed(Duration(seconds: 1));
 
-      final result3 = await _runDartle(const ['hello'], projectDir);
+      final result3 =
+          await _runDartle(const ['hello', '--no-color'], projectDir);
 
       expect(result3.exitCode, equals(0), reason: result3.stdout.toString());
       expect(result3.stdout, hasLength(equals(4)));

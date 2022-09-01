@@ -26,7 +26,8 @@ void main() {
 
   group('Parallel Tasks', () {
     test('can run with -p flag', () async {
-      var proc = await runBuild(const ['-p', 'sayHi', 'sayHo', 'sayArgs']);
+      var proc = await runBuild(
+          const ['-p', '--no-color', 'sayHi', 'sayHo', 'sayArgs']);
       expect(
           proc.stdout[0],
           contains('Executing 3 tasks out of a total of 4 tasks:'
@@ -41,7 +42,7 @@ void main() {
       // the showEnv task depends on the others, so will run in the main Isolate,
       // hence it should not see the env modifications the other tasks made
       // because with the -p flag, they should run in different Isolates.
-      var proc = await runBuild(const ['-p', 'showEnv']);
+      var proc = await runBuild(const ['-p', 'showEnv', '--no-color']);
 
       expect(
           proc.stdout[0],
@@ -53,7 +54,8 @@ void main() {
 
     test('run in the same Isolate with the --no-parallel flag', () async {
       // without the -p flag, all tasks run in the main Isolate
-      var proc = await runBuild(const ['showEnv', '--no-parallel-tasks']);
+      var proc = await runBuild(
+          const ['showEnv', '--no-parallel-tasks', '--no-color']);
 
       expect(
           proc.stdout[0],

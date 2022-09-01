@@ -48,7 +48,7 @@ void main() {
     }
 
     test('logs expected output', () async {
-      var proc = await runExampleDartBuild(['hello']);
+      var proc = await runExampleDartBuild(['--no-color', 'hello']);
       expect(
           proc.stdout[0],
           contains('Executing 1 task out of a total of 4 tasks:'
@@ -61,7 +61,7 @@ void main() {
       expect(proc.stderr, isEmpty);
 
       // run with one argument now
-      proc = await runExampleDartBuild(['hello', ':Elvis']);
+      proc = await runExampleDartBuild(['--no-color', 'hello', ':Elvis']);
       expect(
           proc.stdout[0],
           contains('Executing 1 task out of a total of 4 tasks:'
@@ -73,7 +73,7 @@ void main() {
       expect(proc.exitCode, equals(0));
       expect(proc.stderr, isEmpty);
 
-      proc = await runExampleDartBuild(['bye']);
+      proc = await runExampleDartBuild(['--no-color', 'bye']);
       expect(
           proc.stdout[0],
           contains('Executing 2 tasks out of a total of 4 tasks:'
@@ -89,7 +89,7 @@ void main() {
     });
 
     test('runs only tasks that are required, unless forced', () async {
-      var proc = await runExampleDartBuild(['encode']);
+      var proc = await runExampleDartBuild(['--no-color', 'encode']);
       expect(
           proc.stdout[0],
           contains('Executing 1 task out of a total of 4 tasks:'
@@ -105,7 +105,7 @@ void main() {
       expect(await outputFile.readAsString(), equals('SGVsbG8gRGFydGxlIQ=='));
 
       // now the output exists, it should not run again
-      proc = await runExampleDartBuild(['encode']);
+      proc = await runExampleDartBuild(['--no-color', 'encode']);
       expect(
           proc.stdout[0],
           contains('Executing 0 tasks out of a total of 4 tasks:'
@@ -116,7 +116,7 @@ void main() {
       expect(proc.stderr, isEmpty);
 
       // when we force the task to run, it must run again
-      proc = await runExampleDartBuild(['encode', '-f']);
+      proc = await runExampleDartBuild(['--no-color', 'encode', '-f']);
       expect(
           proc.stdout[0],
           contains('Executing 1 task out of a total of 4 tasks:'

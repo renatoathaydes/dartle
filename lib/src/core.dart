@@ -160,13 +160,14 @@ void _logTasksInfo(
     Set<Task> defaultTasks) {
   String taskPhrase(int count,
           [String singular = 'task', String plural = 'tasks']) =>
-      count == 1 ? '$count $singular' : '$count $plural';
+      '$count ${count == 1 ? singular : plural}';
 
   // collect counts
   final totalTasksCount = tasks.length;
 
   if (directTasksCount == 0 && defaultTasks.isEmpty) {
-    return logger.info('Executing 0 tasks out of a total of $totalTasksCount '
+    return logger.info('Executing ${style('0 tasks', LogStyle.bold)}'
+        ' out of a total of $totalTasksCount '
         '${taskPhrase(totalTasksCount)}.');
   }
 
@@ -181,13 +182,17 @@ void _logTasksInfo(
   // build log phrases
   final totalTasksPhrase = taskPhrase(totalTasksCount);
   final requestedTasksPhrase = directTasksCount == 0
-      ? taskPhrase(defaultTasks.length) + ' (default)'
+      ? taskPhrase(defaultTasks.length) +
+          ' (${colorize('default', LogColor.gray)})'
       : taskPhrase(directTasksCount) + ' selected';
-  final runnableTasksPhrase = taskPhrase(runnableTasksCount);
+  final runnableTasksPhrase =
+      style(taskPhrase(runnableTasksCount), LogStyle.bold);
   final dependenciesPhrase = dependentTasksCount == 0
       ? ''
       : ', ' + taskPhrase(dependentTasksCount, 'dependency', 'dependencies');
-  final upToDatePhrase = upToDateCount > 0 ? ', $upToDateCount up-to-date' : '';
+  final upToDatePhrase = upToDateCount > 0
+      ? ', $upToDateCount ${colorize('up-to-date', LogColor.green)}'
+      : '';
 
   logger.info('Executing $runnableTasksPhrase out of a total of '
       '$totalTasksPhrase: $requestedTasksPhrase'
