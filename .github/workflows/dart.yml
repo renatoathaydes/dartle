@@ -16,8 +16,8 @@ jobs:
           sdk: ${{ matrix.sdk }}
       - name: Install dependencies
         run: dart pub get
-      - name: Build
-        run: dart dartle.dart
+      - name: Build # run "clean" to re-generate generated files
+        run: dart dartle.dart clean build
       - name: Test Report
         uses: dorny/test-reporter@v1
         if: success() || failure()
