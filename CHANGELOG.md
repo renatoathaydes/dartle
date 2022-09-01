@@ -9,6 +9,9 @@
 - expose `runBasic` function to allow embedding Dartle in other CLI tools.
 - made it possible to create `DartleCache` on a non-default location.
 - added support for _exclusions_ in `FileCollection` for directories.
+- added `union` method to `FileCollection`.
+- added `MultiFileCollection` type.
+- added `createCleanTask` function to make it easier to clean builds.
 
 ### Dartle Dart
 
