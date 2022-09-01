@@ -1,5 +1,7 @@
 import 'dart:async';
 
+import 'package:collection/collection.dart';
+
 import 'helpers.dart';
 import 'package:logging/logging.dart' as log;
 
@@ -171,13 +173,10 @@ void _logTasksInfo(
         '${taskPhrase(totalTasksCount)}.');
   }
 
-  final runnableTasksCount =
-      executableTasks.map((t) => t.mustRunCount).fold<int>(0, (a, b) => a + b);
+  final runnableTasksCount = executableTasks.map((t) => t.mustRunCount).sum;
   final dependentTasksCount =
-      executableTasks.map((t) => t.length).fold<int>(0, (a, b) => a + b) -
-          tasksInvocation.length;
-  final upToDateCount =
-      executableTasks.map((t) => t.upToDateCount).fold<int>(0, (a, b) => a + b);
+      executableTasks.map((t) => t.length).sum - tasksInvocation.length;
+  final upToDateCount = executableTasks.map((t) => t.upToDateCount).sum;
 
   // build log phrases
   final totalTasksPhrase = taskPhrase(totalTasksCount);
