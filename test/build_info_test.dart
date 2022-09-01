@@ -1,6 +1,5 @@
 import 'dart:io';
 
-@TestOn('!browser')
 import 'package:dartle/dartle.dart';
 import 'package:test/test.dart';
 
