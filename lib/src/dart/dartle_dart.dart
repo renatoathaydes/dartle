@@ -83,18 +83,9 @@ class DartleDart {
   final bool _enableBuildRunner;
 
   /// Get the tasks that are configured as part of a build.
-  Set<Task> get tasks {
-    return {
-      if (config.formatCode) formatCode,
-      if (config.runAnalyzer) analyzeCode,
-      if (config.compileExe) compileExe,
-      if (_enableBuildRunner) runBuildRunner,
-      if (config.runTests) test,
-      runPubGet,
-      build,
-      clean,
-    };
-  }
+  ///
+  /// The returned Set is immutable.
+  late final Set<Task> tasks;
 
   /// The project's root directory.
   ///
@@ -160,8 +151,17 @@ class DartleDart {
             inputs: dirs(['lib', 'bin', 'test', 'example']
                 .map((e) => join(rootDir, e)))));
 
+    final buildTasks = {
+      if (config.formatCode) formatCode,
+      if (config.runAnalyzer) analyzeCode,
+      if (config.compileExe) compileExe,
+      if (_enableBuildRunner) runBuildRunner,
+      if (config.runTests) test,
+      runPubGet,
+    };
+
     clean = createCleanTask(
-        tasks: () => tasks,
+        tasks: buildTasks,
         name: 'clean',
         description: 'Deletes the outputs of all other tasks in this build.');
 
@@ -169,10 +169,17 @@ class DartleDart {
         name: 'build',
         description: 'Runs all enabled tasks.');
 
-    build.dependsOn(tasks
-        .where((t) => t != build && t != clean && t != compileExe)
+    build.dependsOn(buildTasks
+        // exclude tasks already added into buildTasks but that
+        // should not run by default
+        .where((t) => t != compileExe)
         .map((t) => t.name)
         .toSet());
+
+    buildTasks.add(clean);
+    buildTasks.add(build);
+
+    tasks = Set.unmodifiable(buildTasks);
   }
 
   Future<void> _test(List<String> platforms) async {
