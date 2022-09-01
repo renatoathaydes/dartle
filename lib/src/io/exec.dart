@@ -29,14 +29,16 @@ Future<File> createDartExe(File dartFile,
 /// Run a Dart binary created via the [createDartExe]
 /// method.
 Future<Process> runDartExe(File dartExec,
-    {List<String> args = const [], String? workingDirectory}) async {
+    {List<String> args = const [],
+    String? workingDirectory,
+    Map<String, String>? environment}) async {
   if (!await dartExec.exists()) {
     throw DartleException(
         message: 'Cannot run Dart executable as it does '
             'not exist: ${dartExec.path}');
   }
   final proc = Process.start(dartExec.absolute.path, args,
-      workingDirectory: workingDirectory);
+      workingDirectory: workingDirectory, environment: environment);
 
   logger.fine('Running compiled Dartle build: ${dartExec.path}');
 
