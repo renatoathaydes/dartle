@@ -34,7 +34,9 @@ void showAll(List<ParallelTasks> executableTasks, Map<String, Task> taskMap,
       (TaskWithStatus t) => t.task.name);
 
   void show(TaskPhase phase, Iterable<Task> taskList) {
-    print(style('==> ${phase.name.capitalized} Phase:', LogStyle.italic));
+    print(colorize(
+        style('==> ${phase.name.capitalized} Phase:', LogStyle.italic),
+        LogColor.blue));
     if (taskList.isEmpty) {
       print('  No tasks in this phase.');
     } else {

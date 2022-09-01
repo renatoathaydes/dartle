@@ -57,7 +57,7 @@ void main() {
     });
 
     test('logs expected output for single task, without colors', () async {
-      var proc = await runExampleDartBuild(const ['--no-colorful-log', 'd']);
+      var proc = await runExampleDartBuild(const ['--no-color', 'd']);
       expect(
           proc.stdout[0],
           contains('Executing 1 task out of a total of 15 tasks:'
@@ -71,7 +71,7 @@ void main() {
     });
 
     test('can show all tasks', () async {
-      var proc = await runExampleDartBuild(const ['-s', '--no-colorful-log']);
+      var proc = await runExampleDartBuild(const ['-s', '--no-color']);
 
       final expectedOutput = r'''
 ======== Showing build information only, no tasks will be executed ========
@@ -114,7 +114,7 @@ The following tasks were selected to run, in order:
     });
 
     test('can show task graph', () async {
-      var proc = await runExampleDartBuild(const ['-g']);
+      var proc = await runExampleDartBuild(const ['-g', '--no-color']);
 
       final expectedOutput = r'''
 ======== Showing build information only, no tasks will be executed ========

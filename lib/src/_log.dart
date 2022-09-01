@@ -86,7 +86,7 @@ void _printColorized(String message, [LogColor? color]) {
 }
 
 /// Returns the given [message] with a [color] unless dartle is executed with
-/// the no-colorful-log option, in which case the message is returned unchanged.
+/// the 'no-color' option, in which case the message is returned unchanged.
 String colorize(String message, LogColor color) {
   return ansi.overrideAnsiOutput(_colorfulLog, () {
     return _ansiCode(color).wrap(message) ?? '';
@@ -94,7 +94,7 @@ String colorize(String message, LogColor color) {
 }
 
 /// Returns the given [message] with a [LogStyle] unless dartle is executed with
-/// the no-colorful-log option, in which case the message is returned unchanged.
+/// the 'no-color' option, in which case the message is returned unchanged.
 String style(String message, LogStyle style) {
   return ansi.overrideAnsiOutput(_colorfulLog, () {
     switch (style) {

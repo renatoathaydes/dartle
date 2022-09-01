@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:args/args.dart';
 import 'package:logging/logging.dart' as log;
 import 'package:freezed_annotation/freezed_annotation.dart';
@@ -39,11 +41,11 @@ final _parser = ArgParser()
     allowed: levelByName.keys,
   )
   ..addFlag(
-    'colorful-log',
+    'color',
     abbr: 'c',
     negatable: true,
     defaultsTo: true,
-    help: 'Use ANSI colors to colorize log output.',
+    help: 'Use ANSI colors to colorize output.',
   )
   ..addFlag(
     'force-tasks',
@@ -140,10 +142,14 @@ Options parseOptions(List<String> args) {
   if (parseResult.wasParsed('version')) {
     return const Options(showVersion: true);
   }
+  var colorOption = parseResult['color'] as bool;
+  if (!parseResult.wasParsed('color') && isNoColorEnvVarSet()) {
+    colorOption = false;
+  }
 
   return Options(
     logLevel: _parseLogLevel(parseResult['log-level'].toString()),
-    colorfulLog: parseResult['colorful-log'] as bool,
+    colorfulLog: colorOption,
     forceTasks: parseResult['force-tasks'] as bool,
     parallelizeTasks: parseResult['parallel-tasks'] as bool,
     showTasks: parseResult['show-tasks'] as bool,
@@ -152,6 +158,14 @@ Options parseOptions(List<String> args) {
     logBuildTime: parseResult['log-build-time'] as bool,
     tasksInvocation: parseResult.rest,
   );
+}
+
+/// Checks if the NO_COLOR environment variable is set.
+///
+/// See https://no-color.org/
+bool isNoColorEnvVarSet() {
+  final noColor = Platform.environment['NO_COLOR'];
+  return noColor != null && noColor.isNotEmpty;
 }
 
 log.Level _parseLogLevel(String value) {

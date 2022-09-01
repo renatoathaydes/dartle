@@ -120,8 +120,10 @@ Future<void> runBasic(Set<Task> tasks, Set<Task> defaultTasks, Options options,
   final executableTasks = await _getExecutableTasks(
       taskMap, tasksInvocation, options, tasksAffectedByDeletion);
   if (options.showInfoOnly) {
-    print('======== Showing build information only, no tasks will '
-        'be executed ========\n');
+    print(colorize(
+        '======== Showing build information only, no tasks will '
+        'be executed ========\n',
+        LogColor.blue));
     showTasksInfo(executableTasks, taskMap, defaultTasks, options);
   } else {
     if (logger.isLoggable(log.Level.INFO)) {

@@ -58,8 +58,7 @@ void main() {
     }
 
     test('can run simple task and produce expected outputs', () async {
-      var proc =
-          await runExampleDartBuild(const ['--no-colorful-log', 'base64']);
+      var proc = await runExampleDartBuild(const ['--no-color', 'base64']);
       expect(proc.exitCode, equals(0));
       expect(proc.stdout[0], contains(oneTaskExecutingMessage));
       expect(proc.stderr, isEmpty);
@@ -68,12 +67,11 @@ void main() {
     });
 
     test('running second time skips the cached task', () async {
-      var proc =
-          await runExampleDartBuild(const ['--no-colorful-log', 'base64']);
+      var proc = await runExampleDartBuild(const ['--no-color', 'base64']);
       expect(proc.exitCode, equals(0));
 
       // run again
-      proc = await runExampleDartBuild(const ['--no-colorful-log', 'base64']);
+      proc = await runExampleDartBuild(const ['--no-color', 'base64']);
       expect(proc.exitCode, equals(0));
 
       expect(proc.stdout[0], contains(noTasksExecutingMessage));
@@ -88,8 +86,7 @@ void main() {
           _buildDirectory, inputs.directories.first.path, 'more', 'foo.txt'));
       final originalInputFileContents = await inputFile.readAsString();
 
-      var proc =
-          await runExampleDartBuild(const ['--no-colorful-log', 'base64']);
+      var proc = await runExampleDartBuild(const ['--no-color', 'base64']);
       expect(proc.exitCode, equals(0));
 
       // change an input file
@@ -102,7 +99,7 @@ void main() {
       addTearDown(revertInputFileChange);
 
       // run again
-      proc = await runExampleDartBuild(const ['--no-colorful-log', 'base64']);
+      proc = await runExampleDartBuild(const ['--no-color', 'base64']);
       expect(proc.exitCode, equals(0));
       expect(proc.stdout[0], contains(oneTaskExecutingMessage));
       expect(proc.stderr, isEmpty);
@@ -112,7 +109,7 @@ void main() {
           .writeAsString('changed this', flush: true);
 
       // run again
-      proc = await runExampleDartBuild(const ['--no-colorful-log', 'base64']);
+      proc = await runExampleDartBuild(const ['--no-color', 'base64']);
       expect(proc.exitCode, equals(0));
       expect(proc.stdout[0], contains(oneTaskExecutingMessage));
       expect(proc.stderr, isEmpty);
@@ -121,7 +118,7 @@ void main() {
       await revertInputFileChange();
 
       // run again
-      proc = await runExampleDartBuild(const ['--no-colorful-log', 'base64']);
+      proc = await runExampleDartBuild(const ['--no-color', 'base64']);
       expect(proc.exitCode, equals(0));
 
       // finally, the outputs should be as expected after running the task again

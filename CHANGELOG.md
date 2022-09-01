@@ -12,6 +12,8 @@
 - added `union` method to `FileCollection`.
 - added `MultiFileCollection` type.
 - added `createCleanTask` function to make it easier to clean builds.
+- changed CLI option `--colorful-log` to `--color`.
+- respect `NO_COLOR` environment variable (https://no-color.org/).
 
 ### Dartle Dart
 
