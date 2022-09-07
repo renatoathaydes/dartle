@@ -30,6 +30,24 @@ class Options with _$Options {
 
   bool get showInfoOnly =>
       showTasks || showTaskGraph || showHelp || showVersion;
+
+  /// Convert this options object to the equivalent command-line arguments.
+  List<String> toArgs({bool includeTasks = true}) {
+    return [
+      '-l',
+      logLevel.name,
+      if (!colorfulLog) '--no-color',
+      if (forceTasks) '-f',
+      if (!parallelizeTasks) '--no-parallel-tasks',
+      if (showTasks) '-s',
+      if (showTaskGraph) '-g',
+      if (resetCache) '-z',
+      if (showVersion) '-v',
+      if (showHelp) '-h',
+      if (!logBuildTime) '--no-log-build-time',
+      if (includeTasks) ...tasksInvocation,
+    ];
+  }
 }
 
 final _parser = ArgParser()
