@@ -35,7 +35,7 @@ class Options with _$Options {
   List<String> toArgs({bool includeTasks = true}) {
     return [
       '-l',
-      logLevel.name,
+      (nameByLevel[logLevel] ?? 'info').toLowerCase(),
       if (!colorfulLog) '--no-color',
       if (forceTasks) '-f',
       if (!parallelizeTasks) '--no-parallel-tasks',

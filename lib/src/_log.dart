@@ -46,7 +46,7 @@ const levelByName = <String, log.Level>{
   'profile': profile,
 };
 
-final _nameByLevel = <log.Level, String>{
+final nameByLevel = <log.Level, String>{
   log.Level.FINE: 'DEBUG',
   log.Level.INFO: 'INFO',
   log.Level.WARNING: 'WARN',
@@ -111,6 +111,7 @@ String style(String message, LogStyle style) {
 
 bool _loggingActivated = false;
 bool _colorfulLog = true;
+String _logName = Isolate.current.debugName ?? 'main';
 
 /// Activate logging.
 ///
@@ -118,10 +119,13 @@ bool _colorfulLog = true;
 ///
 /// If this call was accepted (i.e. first call), this method returns true,
 /// otherwise it returns false.
-bool activateLogging(log.Level level, {bool colorfulLog = true}) {
+bool activateLogging(log.Level level, {bool colorfulLog = true, String? logName}) {
   if (!_loggingActivated) {
     _loggingActivated = true;
     _colorfulLog = colorfulLog;
+    if (logName != null) {
+      _logName = logName;
+    }
     log.Logger.root.level = level;
     log.Logger.root.onRecord.listen(colorfulLog ? _logColored : _log);
     return true;
@@ -155,8 +159,8 @@ void _log(log.LogRecord rec) {
 }
 
 String _createLogMessage(log.LogRecord rec) {
-  return '${rec.time} - ${rec.loggerName}[${Isolate.current.debugName} $pid] - '
-      '${_nameByLevel[rec.level] ?? rec.level} - ${rec.message}${_error(rec)}';
+  return '${rec.time} - ${rec.loggerName}[$_logName $pid] - '
+      '${nameByLevel[rec.level] ?? rec.level} - ${rec.message}${_error(rec)}';
 }
 
 String _error(log.LogRecord rec) {
