@@ -9,7 +9,8 @@
 /// used in build files.
 library dartle;
 
-export 'src/_log.dart' show activateLogging, LogColor, ColoredLogMessage;
+export 'src/_log.dart'
+    show activateLogging, profile, LogColor, ColoredLogMessage;
 export 'src/_utils.dart' show elapsedTime;
 export 'src/core.dart';
 export 'src/io/exec.dart';

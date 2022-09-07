@@ -35,6 +35,7 @@ class ColoredLogMessage {
 
 enum LogLevel { debug, info, warn, error }
 
+/// Custom log level used to report profiling results.
 const profile = log.Level('PROFILE', 550);
 
 const levelByName = <String, log.Level>{
