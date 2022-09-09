@@ -59,6 +59,9 @@ class AlwaysRun with RunCondition {
 
   @override
   int get hashCode => 46;
+
+  @override
+  String toString() => 'AlwaysRun';
 }
 
 /// A [RunCondition] which reports that a task should run whenever its inputs
@@ -160,6 +163,11 @@ class RunOnChanges with RunCondition, FilesCondition {
               missingOutputs.map((f) => '  * $f').join('\n'));
     }
   }
+
+  @override
+  String toString() {
+    return 'RunOnChanges{inputs: $inputs, outputs: $outputs}';
+  }
 }
 
 /// A [RunCondition] which reports that a task should run at most every
@@ -193,6 +201,9 @@ class RunAtMostEvery with RunCondition {
     }
     return clock.now().isAfter(lastTime.add(period));
   }
+
+  @override
+  String toString() => 'RunAtMostEvery{$period}';
 }
 
 /// A [RunCondition] that indicates that a [Task] will delete certain files
@@ -247,6 +258,12 @@ class RunToDelete with RunCondition, FilesCondition {
       }
     }
   }
+
+  @override
+  String toString() {
+    if (deletions.isEmpty) return 'EmptyRunToDelete';
+    return 'RunToDelete{$deletions}';
+  }
 }
 
 /// Base mixin for a [RunCondition] that combines other [RunCondition]s.
@@ -288,6 +305,9 @@ class OrCondition with RunConditionCombiner {
     }
     return false;
   }
+
+  @override
+  String toString() => conditions.join(' OR ');
 }
 
 /// A [RunCondition] that runs if all of its conditions runs.
@@ -309,4 +329,7 @@ class AndCondition with RunConditionCombiner {
     }
     return true;
   }
+
+  @override
+  String toString() => conditions.join(' AND ');
 }

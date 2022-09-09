@@ -61,10 +61,15 @@ class DirectoryEntry {
   }
 
   @override
-  String toString() => 'DirectoryEntry{path: $path, '
-      'recurse: $recurse, '
-      'exclusions: $exclusions, '
-      'fileExtensions: $fileExtensions}';
+  String toString() =>
+      '(' +
+      [
+        'path: $path${recurse ? '/**' : ''}',
+        if (exclusions.isNotEmpty) 'exclusions: [${exclusions.join(', ')}]',
+        if (fileExtensions.isNotEmpty)
+          'fileExtensions: [${fileExtensions.join(', ')}]',
+      ].join(', ') +
+      ')';
 }
 
 mixin ResolvedEntity {
@@ -373,6 +378,15 @@ abstract class FileCollection {
         .followedBy(dirsInOtherDirs)
         .toSet();
   }
+
+  @override
+  String toString() {
+    final filesString = files.isEmpty ? '' : 'files: ${files.join(', ')}';
+    final dirsString = directories.isEmpty
+        ? ''
+        : '${filesString.isEmpty ? '' : ', '}dirs: ${directories.join(', ')}';
+    return '($filesString$dirsString)';
+  }
 }
 
 class _FileCollection extends FileCollection {
@@ -383,11 +397,6 @@ class _FileCollection extends FileCollection {
   final List<DirectoryEntry> directories;
 
   const _FileCollection(this.files, this.directories);
-
-  @override
-  String toString() {
-    return '_FileCollection{files: $files, directories: $directories}';
-  }
 }
 
 /// A [FileCollection] representing the union between multiple file collections.

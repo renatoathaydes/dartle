@@ -43,11 +43,13 @@ void showAll(List<ParallelTasks> executableTasks, Map<String, Task> taskMap,
       for (final task in taskList) {
         final desc =
             task.description.isEmpty ? '' : '\n      ${task.description}';
+        final io = '\n      runCondition: ${task.runCondition}';
         final isDefault = defaultSet.contains(task.name)
             ? style(' [default]', LogStyle.dim)
             : '';
         final status = (tasksByName[task.name]?.first.status).describe();
-        print('  * ${style(task.name, LogStyle.bold)}$isDefault$status$desc');
+        print('  * ${style(task.name, LogStyle.bold)}$isDefault$status'
+            '$desc$io');
       }
     }
   }
