@@ -15,6 +15,8 @@
 - changed CLI option `--colorful-log` to `--color`.
 - respect `NO_COLOR` environment variable (https://no-color.org/).
 - added `environment` argument to `runDartExe` function.
+- removed restriction on tasks ins/outs having to be within the project root dir.
+- display tasks' runCondition when displaying task information (-s option).
 
 ### Dartle Dart
 
