@@ -98,7 +98,8 @@ Tasks declared in this build:
   * j
   * k
   * l
-  * m [always-runs]
+  * m [up-to-date]
+      runCondition: RunAtMostEvery{0:00:04.000000}
   * n [always-runs]
   * o
       Task O

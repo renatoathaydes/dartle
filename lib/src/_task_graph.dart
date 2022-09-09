@@ -2,6 +2,7 @@ import 'dart:io';
 import 'dart:math' show max;
 
 import 'package:collection/collection.dart';
+import 'package:dartle/src/run_condition.dart';
 
 import '_log.dart';
 import 'options.dart';
@@ -43,7 +44,9 @@ void showAll(List<ParallelTasks> executableTasks, Map<String, Task> taskMap,
       for (final task in taskList) {
         final desc =
             task.description.isEmpty ? '' : '\n      ${task.description}';
-        final io = '\n      runCondition: ${task.runCondition}';
+        final io = task.runCondition == const AlwaysRun()
+            ? ''
+            : '\n      runCondition: ${task.runCondition}';
         final isDefault = defaultSet.contains(task.name)
             ? style(' [default]', LogStyle.dim)
             : '';
