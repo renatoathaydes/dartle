@@ -434,11 +434,7 @@ class MultiFileCollection extends FileCollection {
 }
 
 String _ensurePosixPath(String path) {
-  final posixPath = p.posix.canonicalize(path);
-  if (!p.equals('.', posixPath) && !p.isWithin('.', posixPath)) {
-    throw ArgumentError('Path outside project not allowed: $path');
-  }
-  return posixPath;
+  return p.posix.canonicalize(path);
 }
 
 Iterable<DirectoryEntry> _ensureValidDirs(Iterable<DirectoryEntry> dirs) sync* {
