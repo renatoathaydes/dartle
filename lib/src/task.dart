@@ -201,6 +201,11 @@ class Task {
     _dependsOn = {...taskNames, ..._dependsOn};
   }
 
+  /// Get this task's dependencies.
+  ///
+  /// The returned Set is immutable. To add dependencies, use [dependsOn].
+  Set<String> get depends => Set.unmodifiable(_dependsOn);
+
   /// The action this task performs.
   ///
   /// This function is meant to be called by Dartle, so that certain guarantees
@@ -266,6 +271,9 @@ class TaskWithDeps implements Task, Comparable<TaskWithDeps> {
   /// All transitive dependencies of this task.
   @override
   Set<String> get _dependsOn => dependencySet;
+
+  @override
+  Set<String> get depends => Set.unmodifiable(_dependsOn);
 
   /// The direct dependencies of this task.
   Set<String> get directDependencies => _task._dependsOn;
