@@ -136,8 +136,8 @@ void showExecutableTasks(List<ParallelTasks> executableTasks) {
         executableTasks.map((t) => t.invocations.length).fold(0, max);
     final rows = List<List<String>>.filled(rowCount, const []);
     for (var r = 0; r < rowCount; r++) {
-      final row = executableTasks.map(
-          (t) => r < t.invocations.length ? t.invocations[r].task.name : '');
+      final row = executableTasks
+          .map((t) => r < t.invocations.length ? t.invocations[r].name : '');
       rows[r] = row.toList(growable: false);
     }
 

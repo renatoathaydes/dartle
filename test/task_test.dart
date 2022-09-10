@@ -87,7 +87,7 @@ void main() {
       var tasksInOrder = await getInOrderOfExecution(
           [_aw].map((t) => TaskInvocation(t)).toList());
       expect(
-          tasksInOrder.map((t) => t.invocations.map((i) => i.task.name)),
+          tasksInOrder.map((t) => t.invocations.map((i) => i.name)),
           equals([
             ['b', 'c'],
             ['a']
@@ -96,7 +96,7 @@ void main() {
       tasksInOrder = await getInOrderOfExecution(
           [_aw, _bw, _cw, _dw].map((t) => TaskInvocation(t)).toList());
       expect(
-          tasksInOrder.map((t) => t.invocations.map((i) => i.task.name)),
+          tasksInOrder.map((t) => t.invocations.map((i) => i.name)),
           equals([
             ['b', 'c'],
             ['a'],
@@ -106,7 +106,7 @@ void main() {
       tasksInOrder = await getInOrderOfExecution(
           [_dw].map((t) => TaskInvocation(t)).toList());
       expect(
-          tasksInOrder.map((t) => t.invocations.map((i) => i.task.name)),
+          tasksInOrder.map((t) => t.invocations.map((i) => i.name)),
           equals([
             ['b', 'c'],
             ['a'],
@@ -118,7 +118,7 @@ void main() {
       var tasksInOrder = await getInOrderOfExecution(
           [_cw, _bw, _aw].map((t) => TaskInvocation(t)).toList());
       expect(
-          tasksInOrder.map((t) => t.invocations.map((i) => i.task.name)),
+          tasksInOrder.map((t) => t.invocations.map((i) => i.name)),
           equals([
             ['c', 'b'],
             ['a']
@@ -127,7 +127,7 @@ void main() {
       tasksInOrder = await getInOrderOfExecution(
           [_aw, _cw, _bw, _dw].map((t) => TaskInvocation(t)).toList());
       expect(
-          tasksInOrder.map((t) => t.invocations.map((i) => i.task.name)),
+          tasksInOrder.map((t) => t.invocations.map((i) => i.name)),
           equals([
             ['c', 'b'],
             ['a'],

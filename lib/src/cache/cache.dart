@@ -100,7 +100,7 @@ class DartleCache {
 
   /// Cache the given task invocation.
   Future<void> cacheTaskInvocation(TaskInvocation invocation) async {
-    await File(path.join(_tasksDir, invocation.task.name))
+    await File(path.join(_tasksDir, invocation.name))
         .writeAsString(invocation.args.toString());
   }
 
@@ -109,7 +109,7 @@ class DartleCache {
   /// This time is only known if the [TaskInvocation] was previously cached via
   /// [cacheTaskInvocation].
   Future<DateTime?> getLatestInvocationTime(TaskInvocation invocation) async {
-    final file = File(path.join(_tasksDir, invocation.task.name));
+    final file = File(path.join(_tasksDir, invocation.name));
     if (await file.exists()) {
       return await file.lastModified();
     }
@@ -121,21 +121,20 @@ class DartleCache {
   /// Only successful task invocations are normally cached, hence this method
   /// will normally return `true` when the previous invocation of [Task] failed.
   Future<bool> hasTaskInvocationChanged(TaskInvocation invocation) async {
-    final taskFile = File(path.join(_tasksDir, invocation.task.name));
+    final taskFile = File(path.join(_tasksDir, invocation.name));
     if (await taskFile.exists()) {
       final taskArgs = await taskFile.readAsString();
       final isChanged = invocation.args.toString() != taskArgs;
       if (isChanged) {
-        logger.fine(() => 'Task "${invocation.task.name}" invocation changed '
+        logger.fine(() => 'Task "${invocation.name}" invocation changed '
             'because args were $taskArgs, but is now ${invocation.args}.');
       } else {
-        logger.fine(() => 'Task "${invocation.task.name}" invocation has not '
+        logger.fine(() => 'Task "${invocation.name}" invocation has not '
             'changed, args are $taskArgs');
       }
       return isChanged;
     } else {
-      logger.fine(
-          () => 'Task "${invocation.task.name}" has not been executed yet');
+      logger.fine(() => 'Task "${invocation.name}" has not been executed yet');
       return true;
     }
   }

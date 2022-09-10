@@ -13,7 +13,7 @@ void main() {
     setUp(() {
       cache = CacheMock()
         ..invocationChanges = {
-          _invocation.task.name: [false, false]
+          _invocation.name: [false, false]
         };
     });
 

@@ -12,7 +12,7 @@ void main() {
     test('always runs if never executed before', () async {
       var cache = CacheMock()
         ..invocationChanges = {
-          _invocation.task.name: [false, false, true]
+          _invocation.name: [false, false, true]
         };
 
       final condition = RunAtMostEvery(Duration(seconds: 10), cache);
@@ -25,10 +25,10 @@ void main() {
     test('runs only after the period has passed', () async {
       var cache = CacheMock()
         ..invocationChanges = {
-          _invocation.task.name: [false, false, false, false]
+          _invocation.name: [false, false, false, false]
         }
         ..invocationTimes = {
-          _invocation.task.name: DateTime.parse('2012-02-27 13:27:00')
+          _invocation.name: DateTime.parse('2012-02-27 13:27:00')
         };
 
       final condition = RunAtMostEvery(Duration(seconds: 10), cache);
@@ -61,10 +61,10 @@ void main() {
     test('always runs if invocation changed', () async {
       var cache = CacheMock()
         ..invocationChanges = {
-          _invocation.task.name: [true, true, true, true]
+          _invocation.name: [true, true, true, true]
         }
         ..invocationTimes = {
-          _invocation.task.name: DateTime.parse('2012-02-27 13:27:00')
+          _invocation.name: DateTime.parse('2012-02-27 13:27:00')
         };
 
       final condition = RunAtMostEvery(Duration(seconds: 10), cache);

@@ -43,7 +43,7 @@ class CacheMock implements DartleCache {
 
   @override
   Future<bool> hasTaskInvocationChanged(TaskInvocation invocation) async {
-    final changes = invocationChanges[invocation.task.name];
+    final changes = invocationChanges[invocation.name];
     if (changes == null) {
       throw 'invocation not mocked';
     }
@@ -66,7 +66,7 @@ class CacheMock implements DartleCache {
 
   @override
   Future<DateTime?> getLatestInvocationTime(TaskInvocation invocation) async {
-    return invocationTimes[invocation.task.name];
+    return invocationTimes[invocation.name];
   }
 
   @override

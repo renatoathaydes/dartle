@@ -188,7 +188,7 @@ class RunAtMostEvery with RunCondition {
     if (result.isSuccess) {
       await cache.cacheTaskInvocation(result.invocation);
     } else {
-      await cache.removeTaskInvocation(result.invocation.task.name);
+      await cache.removeTaskInvocation(result.invocation.name);
     }
   }
 

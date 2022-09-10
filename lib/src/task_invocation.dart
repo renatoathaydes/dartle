@@ -10,13 +10,17 @@ class TaskInvocation {
   final TaskWithDeps task;
   final List<String> args;
 
-  TaskInvocation(this.task, [this.args = const <String>[]]);
+  final String _name;
 
-  String get name => task.name;
+  TaskInvocation(this.task, [this.args = const <String>[], String? name])
+      : _name = name ?? task.name;
+
+  /// The invocation task name (may be different from the actual task's name).
+  String get name => _name;
 
   @override
   String toString() {
-    return 'TaskInvocation{task: ${task.name}, args: $args}';
+    return 'TaskInvocation{task: $name, args: $args}';
   }
 }
 
