@@ -119,7 +119,8 @@ String _logName = Isolate.current.debugName ?? 'main';
 ///
 /// If this call was accepted (i.e. first call), this method returns true,
 /// otherwise it returns false.
-bool activateLogging(log.Level level, {bool colorfulLog = true, String? logName}) {
+bool activateLogging(log.Level level,
+    {bool colorfulLog = true, String? logName}) {
   if (!_loggingActivated) {
     _loggingActivated = true;
     _colorfulLog = colorfulLog;
