@@ -2,10 +2,10 @@ import 'dart:io';
 import 'dart:math' show max;
 
 import 'package:collection/collection.dart';
-import 'package:dartle/src/run_condition.dart';
 
 import '_log.dart';
 import 'options.dart';
+import 'run_condition.dart';
 import 'task.dart';
 
 void showTasksInfo(

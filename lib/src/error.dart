@@ -44,7 +44,7 @@ class MultipleExceptions extends DartleException {
     final messageBuilder = StringBuffer('Several errors have occurred:\n');
     for (final error in errors) {
       messageBuilder
-        ..write('  * ')
+        ..write('    - ')
         ..writeln(_messageOf(error));
     }
 
