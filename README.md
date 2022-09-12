@@ -142,7 +142,7 @@ Bye!
 To provide arguments to a task, provide the argument immediately following the task invocation, prefixing it with `:`:
 
 ```bash
-./dartlex hello :Joe
+./dartle hello :Joe
 ```
 
 Prints:
