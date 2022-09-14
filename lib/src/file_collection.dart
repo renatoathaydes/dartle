@@ -326,6 +326,11 @@ abstract class FileCollection {
     return MultiFileCollection([this, other]);
   }
 
+  /// Alias operator for the [union] method.
+  FileCollection operator +(FileCollection other) {
+    return union(other);
+  }
+
   /// Compute the intersection between this collection and another.
   ///
   /// The result is a Set of all paths that, in theory, could contain

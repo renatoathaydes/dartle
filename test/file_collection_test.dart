@@ -321,7 +321,7 @@ void main() {
 
     test('union of files and files', () async {
       final union =
-          files(const ['A/B/C/c.txt']).union(files(['dartle.dart', 'b/b.txt']));
+          files(const ['A/B/C/c.txt']) + files(['dartle.dart', 'b/b.txt']);
       _expectFileCollection(fs, union,
           files: const {'A/B/C/c.txt', 'dartle.dart', 'b/b.txt'});
     });
