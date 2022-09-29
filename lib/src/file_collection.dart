@@ -68,6 +68,7 @@ class DirectoryEntry {
         if (exclusions.isNotEmpty) 'exclusions: [${exclusions.join(', ')}]',
         if (fileExtensions.isNotEmpty)
           'fileExtensions: [${fileExtensions.join(', ')}]',
+        if (includeHidden) 'includeHidden: true',
       ].join(', ') +
       ')';
 }
