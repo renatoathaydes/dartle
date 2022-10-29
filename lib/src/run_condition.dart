@@ -132,6 +132,7 @@ class RunOnChanges with RunCondition, FilesCondition {
     }
 
     final taskName = result.invocation.name;
+    logger.fine(() => "Updating cached artifacts for task '$taskName'");
     if (success) {
       await cache.clean(key: taskName);
       await cache(inputs, key: taskName);
