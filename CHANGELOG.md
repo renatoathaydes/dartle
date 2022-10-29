@@ -4,6 +4,8 @@
 
 ## done, waiting for next release
 
+## 0.16.0
+
 - improved new projects created when 'dartle.dart' file is not found.
 - only log task's runCondition when `debug` logging is enabled.
 - log executable tasks in a more compact way to better support large number of tasks.

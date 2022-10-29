@@ -35,7 +35,8 @@ mixin _$Options {
 /// @nodoc
 abstract class $OptionsCopyWith<$Res> {
   factory $OptionsCopyWith(Options value, $Res Function(Options) then) =
-      _$OptionsCopyWithImpl<$Res>;
+      _$OptionsCopyWithImpl<$Res, Options>;
+  @useResult
   $Res call(
       {log.Level logLevel,
       bool colorfulLog,
@@ -51,73 +52,76 @@ abstract class $OptionsCopyWith<$Res> {
 }
 
 /// @nodoc
-class _$OptionsCopyWithImpl<$Res> implements $OptionsCopyWith<$Res> {
+class _$OptionsCopyWithImpl<$Res, $Val extends Options>
+    implements $OptionsCopyWith<$Res> {
   _$OptionsCopyWithImpl(this._value, this._then);
 
-  final Options _value;
   // ignore: unused_field
-  final $Res Function(Options) _then;
+  final $Val _value;
+  // ignore: unused_field
+  final $Res Function($Val) _then;
 
+  @pragma('vm:prefer-inline')
   @override
   $Res call({
-    Object? logLevel = freezed,
-    Object? colorfulLog = freezed,
-    Object? showHelp = freezed,
-    Object? showVersion = freezed,
-    Object? showTasks = freezed,
-    Object? showTaskGraph = freezed,
-    Object? forceTasks = freezed,
-    Object? parallelizeTasks = freezed,
-    Object? resetCache = freezed,
-    Object? logBuildTime = freezed,
-    Object? tasksInvocation = freezed,
+    Object? logLevel = null,
+    Object? colorfulLog = null,
+    Object? showHelp = null,
+    Object? showVersion = null,
+    Object? showTasks = null,
+    Object? showTaskGraph = null,
+    Object? forceTasks = null,
+    Object? parallelizeTasks = null,
+    Object? resetCache = null,
+    Object? logBuildTime = null,
+    Object? tasksInvocation = null,
   }) {
     return _then(_value.copyWith(
-      logLevel: logLevel == freezed
+      logLevel: null == logLevel
           ? _value.logLevel
           : logLevel // ignore: cast_nullable_to_non_nullable
               as log.Level,
-      colorfulLog: colorfulLog == freezed
+      colorfulLog: null == colorfulLog
           ? _value.colorfulLog
           : colorfulLog // ignore: cast_nullable_to_non_nullable
               as bool,
-      showHelp: showHelp == freezed
+      showHelp: null == showHelp
           ? _value.showHelp
           : showHelp // ignore: cast_nullable_to_non_nullable
               as bool,
-      showVersion: showVersion == freezed
+      showVersion: null == showVersion
           ? _value.showVersion
           : showVersion // ignore: cast_nullable_to_non_nullable
               as bool,
-      showTasks: showTasks == freezed
+      showTasks: null == showTasks
           ? _value.showTasks
           : showTasks // ignore: cast_nullable_to_non_nullable
               as bool,
-      showTaskGraph: showTaskGraph == freezed
+      showTaskGraph: null == showTaskGraph
           ? _value.showTaskGraph
           : showTaskGraph // ignore: cast_nullable_to_non_nullable
               as bool,
-      forceTasks: forceTasks == freezed
+      forceTasks: null == forceTasks
           ? _value.forceTasks
           : forceTasks // ignore: cast_nullable_to_non_nullable
               as bool,
-      parallelizeTasks: parallelizeTasks == freezed
+      parallelizeTasks: null == parallelizeTasks
           ? _value.parallelizeTasks
           : parallelizeTasks // ignore: cast_nullable_to_non_nullable
               as bool,
-      resetCache: resetCache == freezed
+      resetCache: null == resetCache
           ? _value.resetCache
           : resetCache // ignore: cast_nullable_to_non_nullable
               as bool,
-      logBuildTime: logBuildTime == freezed
+      logBuildTime: null == logBuildTime
           ? _value.logBuildTime
           : logBuildTime // ignore: cast_nullable_to_non_nullable
               as bool,
-      tasksInvocation: tasksInvocation == freezed
+      tasksInvocation: null == tasksInvocation
           ? _value.tasksInvocation
           : tasksInvocation // ignore: cast_nullable_to_non_nullable
               as List<String>,
-    ));
+    ) as $Val);
   }
 }
 
@@ -127,6 +131,7 @@ abstract class _$$_OptionsCopyWith<$Res> implements $OptionsCopyWith<$Res> {
           _$_Options value, $Res Function(_$_Options) then) =
       __$$_OptionsCopyWithImpl<$Res>;
   @override
+  @useResult
   $Res call(
       {log.Level logLevel,
       bool colorfulLog,
@@ -142,70 +147,69 @@ abstract class _$$_OptionsCopyWith<$Res> implements $OptionsCopyWith<$Res> {
 }
 
 /// @nodoc
-class __$$_OptionsCopyWithImpl<$Res> extends _$OptionsCopyWithImpl<$Res>
+class __$$_OptionsCopyWithImpl<$Res>
+    extends _$OptionsCopyWithImpl<$Res, _$_Options>
     implements _$$_OptionsCopyWith<$Res> {
   __$$_OptionsCopyWithImpl(_$_Options _value, $Res Function(_$_Options) _then)
-      : super(_value, (v) => _then(v as _$_Options));
+      : super(_value, _then);
 
-  @override
-  _$_Options get _value => super._value as _$_Options;
-
+  @pragma('vm:prefer-inline')
   @override
   $Res call({
-    Object? logLevel = freezed,
-    Object? colorfulLog = freezed,
-    Object? showHelp = freezed,
-    Object? showVersion = freezed,
-    Object? showTasks = freezed,
-    Object? showTaskGraph = freezed,
-    Object? forceTasks = freezed,
-    Object? parallelizeTasks = freezed,
-    Object? resetCache = freezed,
-    Object? logBuildTime = freezed,
-    Object? tasksInvocation = freezed,
+    Object? logLevel = null,
+    Object? colorfulLog = null,
+    Object? showHelp = null,
+    Object? showVersion = null,
+    Object? showTasks = null,
+    Object? showTaskGraph = null,
+    Object? forceTasks = null,
+    Object? parallelizeTasks = null,
+    Object? resetCache = null,
+    Object? logBuildTime = null,
+    Object? tasksInvocation = null,
   }) {
     return _then(_$_Options(
-      logLevel: logLevel == freezed
+      logLevel: null == logLevel
           ? _value.logLevel
           : logLevel // ignore: cast_nullable_to_non_nullable
               as log.Level,
-      colorfulLog: colorfulLog == freezed
+      colorfulLog: null == colorfulLog
           ? _value.colorfulLog
           : colorfulLog // ignore: cast_nullable_to_non_nullable
               as bool,
-      showHelp: showHelp == freezed
+      showHelp: null == showHelp
           ? _value.showHelp
           : showHelp // ignore: cast_nullable_to_non_nullable
               as bool,
-      showVersion: showVersion == freezed
+      showVersion: null == showVersion
           ? _value.showVersion
           : showVersion // ignore: cast_nullable_to_non_nullable
               as bool,
-      showTasks: showTasks == freezed
+      showTasks: null == showTasks
           ? _value.showTasks
           : showTasks // ignore: cast_nullable_to_non_nullable
               as bool,
-      showTaskGraph: showTaskGraph == freezed
+      showTaskGraph: null == showTaskGraph
           ? _value.showTaskGraph
           : showTaskGraph // ignore: cast_nullable_to_non_nullable
               as bool,
-      forceTasks: forceTasks == freezed
+      forceTasks: null == forceTasks
           ? _value.forceTasks
           : forceTasks // ignore: cast_nullable_to_non_nullable
               as bool,
-      parallelizeTasks: parallelizeTasks == freezed
+      parallelizeTasks: null == parallelizeTasks
           ? _value.parallelizeTasks
           : parallelizeTasks // ignore: cast_nullable_to_non_nullable
               as bool,
-      resetCache: resetCache == freezed
+      resetCache: null == resetCache
           ? _value.resetCache
           : resetCache // ignore: cast_nullable_to_non_nullable
               as bool,
-      logBuildTime: logBuildTime == freezed
+      logBuildTime: null == logBuildTime
           ? _value.logBuildTime
           : logBuildTime // ignore: cast_nullable_to_non_nullable
               as bool,
-      tasksInvocation: tasksInvocation == freezed
+      tasksInvocation: null == tasksInvocation
           ? _value._tasksInvocation
           : tasksInvocation // ignore: cast_nullable_to_non_nullable
               as List<String>,
@@ -279,23 +283,26 @@ class _$_Options extends _Options {
     return identical(this, other) ||
         (other.runtimeType == runtimeType &&
             other is _$_Options &&
-            const DeepCollectionEquality().equals(other.logLevel, logLevel) &&
-            const DeepCollectionEquality()
-                .equals(other.colorfulLog, colorfulLog) &&
-            const DeepCollectionEquality().equals(other.showHelp, showHelp) &&
-            const DeepCollectionEquality()
-                .equals(other.showVersion, showVersion) &&
-            const DeepCollectionEquality().equals(other.showTasks, showTasks) &&
-            const DeepCollectionEquality()
-                .equals(other.showTaskGraph, showTaskGraph) &&
-            const DeepCollectionEquality()
-                .equals(other.forceTasks, forceTasks) &&
-            const DeepCollectionEquality()
-                .equals(other.parallelizeTasks, parallelizeTasks) &&
-            const DeepCollectionEquality()
-                .equals(other.resetCache, resetCache) &&
-            const DeepCollectionEquality()
-                .equals(other.logBuildTime, logBuildTime) &&
+            (identical(other.logLevel, logLevel) ||
+                other.logLevel == logLevel) &&
+            (identical(other.colorfulLog, colorfulLog) ||
+                other.colorfulLog == colorfulLog) &&
+            (identical(other.showHelp, showHelp) ||
+                other.showHelp == showHelp) &&
+            (identical(other.showVersion, showVersion) ||
+                other.showVersion == showVersion) &&
+            (identical(other.showTasks, showTasks) ||
+                other.showTasks == showTasks) &&
+            (identical(other.showTaskGraph, showTaskGraph) ||
+                other.showTaskGraph == showTaskGraph) &&
+            (identical(other.forceTasks, forceTasks) ||
+                other.forceTasks == forceTasks) &&
+            (identical(other.parallelizeTasks, parallelizeTasks) ||
+                other.parallelizeTasks == parallelizeTasks) &&
+            (identical(other.resetCache, resetCache) ||
+                other.resetCache == resetCache) &&
+            (identical(other.logBuildTime, logBuildTime) ||
+                other.logBuildTime == logBuildTime) &&
             const DeepCollectionEquality()
                 .equals(other._tasksInvocation, _tasksInvocation));
   }
@@ -303,20 +310,21 @@ class _$_Options extends _Options {
   @override
   int get hashCode => Object.hash(
       runtimeType,
-      const DeepCollectionEquality().hash(logLevel),
-      const DeepCollectionEquality().hash(colorfulLog),
-      const DeepCollectionEquality().hash(showHelp),
-      const DeepCollectionEquality().hash(showVersion),
-      const DeepCollectionEquality().hash(showTasks),
-      const DeepCollectionEquality().hash(showTaskGraph),
-      const DeepCollectionEquality().hash(forceTasks),
-      const DeepCollectionEquality().hash(parallelizeTasks),
-      const DeepCollectionEquality().hash(resetCache),
-      const DeepCollectionEquality().hash(logBuildTime),
+      logLevel,
+      colorfulLog,
+      showHelp,
+      showVersion,
+      showTasks,
+      showTaskGraph,
+      forceTasks,
+      parallelizeTasks,
+      resetCache,
+      logBuildTime,
       const DeepCollectionEquality().hash(_tasksInvocation));
 
   @JsonKey(ignore: true)
   @override
+  @pragma('vm:prefer-inline')
   _$$_OptionsCopyWith<_$_Options> get copyWith =>
       __$$_OptionsCopyWithImpl<_$_Options>(this, _$identity);
 }
