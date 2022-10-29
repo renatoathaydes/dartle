@@ -11,13 +11,49 @@ are actually explicitly invoked by a human.
 Dartle makes sure that every task that _needs to run_, but no others, actually run when you ask it to run
 one or more tasks.
 
-For example, Dartle's own build has the following tasks (as shown by running `dartle --show-tasks`):
+For example, Dartle's own build (which uses Dartle's own support for Dart) has the following tasks
+(as shown by running `dartle --show-tasks`):
  
 ```
-  generateDartSources ---> format       ---> analyzeCode ---> test ---> build
-                           checkImports                                      
-                           runPubGet                                         
+======== Showing build information only, no tasks will be executed ========
 
+Tasks declared in this build:
+
+==> Setup Phase:
+  * clean
+      Deletes the outputs of all other tasks in this build.
+==> Build Phase:
+  * analyzeCode [up-to-date]
+      Analyzes Dart source code
+  * build [default] [always-runs]
+      Runs all enabled tasks.
+  * checkImports [up-to-date]
+      Checks dart file imports are allowed
+  * compileExe
+      Compiles Dart executables declared in pubspec. Argument may specify the name(s) of the executable(s) to compile.
+  * format [up-to-date]
+      Formats all Dart source code.
+  * generateDartSources [up-to-date]
+      Generates Dart source files
+  * runBuildRunner [up-to-date]
+      Runs the Dart build_runner tool.
+  * runPubGet [up-to-date]
+      Runs "pub get" in order to update dependencies.
+  * test [up-to-date]
+      Runs all tests. Arguments can be used to provide the platforms the tests should run on.
+==> TearDown Phase:
+  No tasks in this phase.
+
+The following tasks were selected to run, in order:
+
+  runPubGet
+  generateDartSources
+      checkImports
+      runBuildRunner
+          format
+              analyzeCode
+                  test
+                      build
 ```
 
 > Note: Tasks on the same _column_ may run in parallel.
