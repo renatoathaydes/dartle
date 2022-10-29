@@ -98,8 +98,8 @@ void main() {
       expect(result3.stdout[2], matches('bye'));
       expect(result3.stdout[3], matches('✔ Build succeeded in .*'));
       expect(result3.stderr, equals([]));
-    }, timeout: Timeout(const Duration(minutes: 1)));
-  });
+    });
+  }, timeout: Timeout(const Duration(minutes: 1)));
 }
 
 Future<Directory> _createTestProject(

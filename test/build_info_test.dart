@@ -75,7 +75,8 @@ void main() {
     });
 
     test('can show all tasks', () async {
-      var proc = await runExampleDartBuild(const ['-s', '--no-color']);
+      var proc =
+          await runExampleDartBuild(const ['-s', '--no-color', '-l', 'debug']);
 
       final expectedOutput = r'''
 ======== Showing build information only, no tasks will be executed ========
@@ -108,12 +109,26 @@ Tasks declared in this build:
 
 The following tasks were selected to run, in order:
 
-  d ---> c ---> g ---> f ---> b ---> a
-  e             n                     
-  m                                   
+  d
+  e
+  m
+      c
+          g
+          n
+              f
+                  b
+                      a
 ''';
 
-      expect(proc.stdout.join('\n'), equals(expectedOutput));
+      const infoLine =
+          '======== Showing build information only, no tasks will be executed ========';
+
+      expect(proc.stdout, contains(infoLine));
+
+      // remove all logs before the relevant line
+      final infoLineIndex = proc.stdout.indexOf(infoLine);
+      expect(
+          proc.stdout.skip(infoLineIndex).join('\n'), equals(expectedOutput));
       expect(proc.exitCode, equals(0));
       expect(proc.stderr, isEmpty);
     });
@@ -147,9 +162,15 @@ Tasks Graph:
 
 The following tasks were selected to run, in order:
 
-  d ---> c ---> g ---> f ---> b ---> a
-  e             n                     
-  m                                   
+  d
+  e
+  m
+      c
+          g
+          n
+              f
+                  b
+                      a
 ''';
 
       expect(proc.stdout.join('\n'), equals(expectedOutput));

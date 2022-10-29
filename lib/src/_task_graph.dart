@@ -1,7 +1,7 @@
 import 'dart:io';
-import 'dart:math' show max;
 
 import 'package:collection/collection.dart';
+import 'package:logging/logging.dart';
 
 import '_log.dart';
 import 'options.dart';
@@ -41,10 +41,11 @@ void showAll(List<ParallelTasks> executableTasks, Map<String, Task> taskMap,
     if (taskList.isEmpty) {
       print('  No tasks in this phase.');
     } else {
+      final verbose = logger.isLoggable(Level.FINE);
       for (final task in taskList) {
         final desc =
             task.description.isEmpty ? '' : '\n      ${task.description}';
-        final io = task.runCondition == const AlwaysRun()
+        final io = !verbose || task.runCondition == const AlwaysRun()
             ? ''
             : '\n      runCondition: ${task.runCondition}';
         final isDefault = defaultSet.contains(task.name)
@@ -131,43 +132,13 @@ void showExecutableTasks(List<ParallelTasks> executableTasks) {
     print('No tasks were selected to run.');
   } else {
     print('The following tasks were selected to run, in order:\n');
-
-    final rowCount =
-        executableTasks.map((t) => t.invocations.length).fold(0, max);
-    final rows = List<List<String>>.filled(rowCount, const []);
-    for (var r = 0; r < rowCount; r++) {
-      final row = executableTasks
-          .map((t) => r < t.invocations.length ? t.invocations[r].name : '');
-      rows[r] = row.toList(growable: false);
-    }
-
-    final cols = executableTasks.length;
-    final colWidths = List<int>.filled(cols, 0);
-
-    for (var col = 0; col < cols; col++) {
-      var width = 0;
-      for (final row in rows) {
-        final w = (col < row.length) ? row[col].length : 0;
-        if (w > width) width = w;
+    var indentation = '  ';
+    for (final pTasks in executableTasks) {
+      for (final task in pTasks.tasks) {
+        stdout.write(indentation);
+        stdout.writeln(task.invocation.name);
       }
-      colWidths[col] = width;
-    }
-
-    for (final row in rows) {
-      stdout.write('  ');
-      for (var col = 0; col < row.length; col++) {
-        final task = row[col];
-        stdout.write(task.padRight(colWidths[col]));
-        final lastCol = col + 1 == cols;
-        if (lastCol) continue;
-        if (row == rows[0]) {
-          final lastColInRow = col + 1 == row.length;
-          stdout.write(lastColInRow ? ' -+' : ' ---> ');
-        } else {
-          stdout.write('      ');
-        }
-      }
-      stdout.writeln();
+      indentation += '    ';
     }
   }
 }

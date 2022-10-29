@@ -4,6 +4,9 @@
 
 ## done, waiting for next release
 
+- only log task's runCondition when `debug` logging is enabled.
+- log executable tasks in a more compact way to better support large number of tasks.
+
 ## 0.15.0
 
 ### Dartle Core
