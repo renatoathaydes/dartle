@@ -4,10 +4,17 @@
 
 ## done, waiting for next release
 
+## 0.17.0
+
+### Dartle Core
+
 - log stack-traces of all Exceptions when error is unknown or logging level is `debug`.
 - fixed logger initialization on new task Actors. Parallel task action logging should now work properly.
+- invalidate Dartle cache when re-compiling dartle.dart as tasks may have been modified.
 
 ## 0.16.0
+
+### Dartle Core
 
 - improved new projects created when 'dartle.dart' file is not found.
 - only log task's runCondition when `debug` logging is enabled.
