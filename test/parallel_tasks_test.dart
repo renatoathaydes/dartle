@@ -30,7 +30,7 @@ void main() {
           const ['-p', '--no-color', 'sayHi', 'sayHo', 'sayArgs']);
       expect(
           proc.stdout[0],
-          contains('Executing 3 tasks out of a total of 4 tasks:'
+          contains('Executing 3 tasks out of a total of 6 tasks:'
               ' 3 tasks selected'));
       final tasksOutput = proc.stdout.skip(1).join('\n');
       expect(tasksOutput, contains("Running task 'sayHi'"));
@@ -46,7 +46,7 @@ void main() {
 
       expect(
           proc.stdout[0],
-          contains('Executing 4 tasks out of a total of 4 tasks:'
+          contains('Executing 4 tasks out of a total of 6 tasks:'
               ' 1 task selected, 3 dependencies'));
       var tasksOutput = proc.stdout.skip(1).join();
       expect(tasksOutput, contains('Env={}'));
@@ -60,7 +60,7 @@ void main() {
 
       expect(
           proc.stdout[0],
-          contains('Executing 2 tasks out of a total of 4 tasks:'
+          contains('Executing 2 tasks out of a total of 6 tasks:'
               ' 2 tasks selected'));
       var tasksOutput = proc.stdout.skip(1).join();
       expect(
@@ -78,7 +78,7 @@ void main() {
 
       expect(
           proc.stdout[0],
-          contains('Executing 4 tasks out of a total of 4 tasks:'
+          contains('Executing 4 tasks out of a total of 6 tasks:'
               ' 1 task selected, 3 dependencies'));
       var tasksOutput = proc.stdout.skip(1).join();
       final pattern = RegExp('Env={(.*)}');
@@ -87,6 +87,31 @@ void main() {
       final envValues = match?.group(1)?.split(', ') ?? [];
       expect(envValues, containsAll({'hi', 'args', 'ho'}));
       expect(envValues, hasLength(3));
+    });
+
+    test('stackTraces are logged if log level is debug', () async {
+      var proc = await runBuild(
+          const ['throw', 'delayedMessage', '-l', 'debug', '--no-color']);
+
+      var tasksOutput = proc.stdout.join();
+      expect(
+          tasksOutput,
+          contains(RegExp(r'ERROR - Several errors have occurred',
+              multiLine: true)));
+      expect(tasksOutput,
+          contains(RegExp(r'ERROR - Multiple stackTraces', multiLine: true)));
+      expect(tasksOutput,
+          contains(RegExp(r'\s*#0\s+_File.open.', multiLine: true)));
+      expect(tasksOutput,
+          contains(RegExp(r'\s*#1\s+_readNonExistingFile', multiLine: true)));
+      expect(tasksOutput,
+          contains(RegExp(r'\s*#2\s+throwError', multiLine: true)));
+      expect(tasksOutput,
+          contains(RegExp(r'\s*#0\s+actorAction', multiLine: true)));
+      expect(
+          tasksOutput,
+          contains(
+              RegExp(r"Task 'delayedMessage' was cancelled", multiLine: true)));
     });
   });
 }
