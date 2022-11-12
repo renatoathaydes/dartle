@@ -23,6 +23,9 @@ class _Log {
 }
 
 /// A log message that should be displayed with a specific color.
+///
+/// Notice that [ColoredLogMessage] bypasses the logging format string,
+/// hence is logged without the usual message metadata (time, level, etc.)
 class ColoredLogMessage {
   final Object message;
   final LogColor color;
@@ -112,6 +115,10 @@ String style(String message, LogStyle style) {
 bool _loggingActivated = false;
 bool _colorfulLog = true;
 String _logName = Isolate.current.debugName ?? 'main';
+final _pid = pid;
+
+/// Whether colorful log is enabled.
+bool get colorfulLog => _colorfulLog;
 
 /// Activate logging.
 ///
@@ -160,7 +167,7 @@ void _log(log.LogRecord rec) {
 }
 
 String _createLogMessage(log.LogRecord rec) {
-  return '${rec.time} - ${rec.loggerName}[$_logName $pid] - '
+  return '${rec.time} - ${rec.loggerName}[$_logName $_pid] - '
       '${nameByLevel[rec.level] ?? rec.level} - ${rec.message}${_error(rec)}';
 }
 

@@ -5,6 +5,7 @@
 ## done, waiting for next release
 
 - log stack-traces of all Exceptions when error is unknown or logging level is `debug`.
+- fixed logger initialization on new task Actors. Parallel task action logging should now work properly.
 
 ## 0.16.0
 
