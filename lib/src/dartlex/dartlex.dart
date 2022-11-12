@@ -35,6 +35,11 @@ Future<void> runDartlex(List<String> args, {bool doNotExit = false}) async {
   if (await recompileCondition.shouldRun(compileDartlexInvocation)) {
     logger.info('Detected changes in dartle.dart or pubspec, '
         'compiling Dartle executable.');
+
+    // as the build sources have changed, we must invalidate the cache
+    await recompileCondition.cache.clean();
+    recompileCondition.cache.init();
+
     final stopWatch = Stopwatch()..start();
     final success = await _runTask(compileDartlexInvocation);
     stopWatch.stop();

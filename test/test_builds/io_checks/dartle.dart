@@ -13,10 +13,6 @@ final allTasks = {
 
 void main(List<String> args) async => await run(args, tasks: allTasks);
 
-// FIXME
-//   - dart file changes don't trigger re-build
-//   - output file change doesn't trigger re-build
-
 Future base64(_) async {
   final inputDir = inputs.directories.first.path;
   final outDir = outputs.directories.first.path;
