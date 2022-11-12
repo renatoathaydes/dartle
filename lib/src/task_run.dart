@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:collection/collection.dart';
 import 'package:logging/logging.dart';
 import 'package:structured_async/structured_async.dart';
 
@@ -13,9 +14,11 @@ import 'task_invocation.dart';
 /// Result of executing a [Task].
 class TaskResult {
   final TaskInvocation invocation;
-  final Exception? error;
+  final ExceptionAndStackTrace? exceptionAndStackTrace;
 
-  TaskResult(this.invocation, [this.error]);
+  Exception? get error => exceptionAndStackTrace?.exception;
+
+  TaskResult(this.invocation, [this.exceptionAndStackTrace]);
 
   /// Whether this task result is successful.
   bool get isSuccess => error == null;
@@ -70,7 +73,7 @@ Future<List<TaskResult>> _run(
     List<ParallelTasks> tasks, bool parallelize) async {
   final results = <TaskResult>[];
   final phaseResults = <TaskResult>[];
-  final phaseErrors = <Exception>[];
+  final phaseErrors = <ExceptionAndStackTrace>[];
   TaskPhase? currentPhase;
 
   for (final parTasks in tasks) {
@@ -138,9 +141,10 @@ Future<TaskResult> runTask(TaskInvocation invocation,
     await action(args);
     stopwatch.stop();
     result = TaskResult(invocation);
-  } catch (e) {
+  } catch (e, st) {
     stopwatch.stop();
-    result = TaskResult(invocation, e is Exception ? e : Exception(e));
+    result = TaskResult(invocation,
+        ExceptionAndStackTrace(e is Exception ? e : Exception(e), st));
 
     // other tasks should be cancelled if there's a failure
     currentCancellableContext()?.cancel();
@@ -173,7 +177,7 @@ Future Function(List<String>) _createTaskAction(Task task, bool runInIsolate) {
       : (args) async => await task.action(args);
 }
 
-Future<List<Exception>> _onNewPhaseStarted(
+Future<List<ExceptionAndStackTrace>> _onNewPhaseStarted(
     List<TaskResult> phaseResults, TaskPhase? phaseEnded) async {
   if (phaseResults.isEmpty) return const [];
   logger.fine(() {
@@ -188,26 +192,32 @@ Future<List<Exception>> _onNewPhaseStarted(
   }
 }
 
-Exception? _toDisplayError(TaskResult result) {
-  final error = result.error;
-  if (error == null) return null;
+ExceptionAndStackTrace? _toDisplayError(TaskResult result) {
+  final exSt = result.exceptionAndStackTrace;
+  if (exSt == null) return null;
   final prefix = "Task '${result.invocation.name}'";
+  final error = exSt.exception;
+  DartleException dartleException;
   if (error is FutureCancelled) {
-    return DartleException(message: '$prefix was cancelled', exitCode: 4);
+    dartleException =
+        DartleException(message: '$prefix was cancelled', exitCode: 4);
+  } else if (error is DartleException) {
+    dartleException = error.withMessage('$prefix failed: ${error.message}');
+  } else {
+    dartleException =
+        DartleException(message: '$prefix failed: $error', exitCode: 2);
   }
-  if (error is DartleException) {
-    return error.withMessage('$prefix failed: ${error.message}');
-  }
-  return DartleException(message: '$prefix failed: $error', exitCode: 2);
+  return exSt.withException(dartleException);
 }
 
-Future<List<Exception>> runTasksPostRun(List<TaskResult> results) async {
-  final errors = <Exception>[];
+Future<List<ExceptionAndStackTrace>> runTasksPostRun(
+    List<TaskResult> results) async {
+  final errors = <ExceptionAndStackTrace>[];
   for (final result in results) {
     try {
       await runTaskPostRun(result);
-    } on Exception catch (e) {
-      errors.add(e);
+    } on Exception catch (e, st) {
+      errors.add(ExceptionAndStackTrace(e, st));
     }
   }
   return errors;

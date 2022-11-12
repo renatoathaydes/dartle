@@ -4,6 +4,8 @@
 
 ## done, waiting for next release
 
+- log stack-traces of all Exceptions when error is unknown or logging level is `debug`.
+
 ## 0.16.0
 
 - improved new projects created when 'dartle.dart' file is not found.

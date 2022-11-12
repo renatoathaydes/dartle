@@ -67,8 +67,12 @@ Future<void> runSafely(List<String> args, bool doNotExit,
     await action(stopWatch, options);
     if (!doNotExit) abort(0);
   } on DartleException catch (e) {
+    // activate SEVERE logging in case logging was not enabled yet
     activateLogging(log.Level.SEVERE);
     logger.severe(e.message);
+    if (logger.isLoggable(log.Level.FINE)) {
+      _logStackTrace(e);
+    }
     if (options.logBuildTime) {
       logger.severe(ColoredLogMessage(
           '✗ Build failed in ${elapsedTime(stopWatch)}', LogColor.red));
@@ -79,6 +83,7 @@ Future<void> runSafely(List<String> args, bool doNotExit,
       abort(e.exitCode);
     }
   } on Exception catch (e, st) {
+    // activate SEVERE logging in case logging was not enabled yet
     activateLogging(log.Level.SEVERE);
     logger.severe('Unexpected error', e, st);
     if (options.logBuildTime) {
@@ -89,6 +94,15 @@ Future<void> runSafely(List<String> args, bool doNotExit,
       rethrow;
     } else {
       abort(22);
+    }
+  }
+}
+
+void _logStackTrace(DartleException exception) {
+  if (exception is MultipleExceptions) {
+    logger.severe('Multiple stackTraces:');
+    for (final exSt in exception.exceptionsAndStackTraces) {
+      logger.severe('============>', exSt.exception, exSt.stackTrace);
     }
   }
 }
@@ -204,8 +218,8 @@ Future<void> _runAll(
       await runTasks(executableTasks, parallelize: options.parallelizeTasks);
 
   final taskErrors = results
-      .map((f) => f.error)
-      .whereType<Exception>()
+      .map((f) => f.exceptionAndStackTrace)
+      .whereNotNull()
       .toList(growable: false);
 
   if (taskErrors.isNotEmpty) {

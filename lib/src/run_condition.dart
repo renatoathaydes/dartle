@@ -273,12 +273,12 @@ mixin RunConditionCombiner implements RunCondition {
 
   @override
   FutureOr<void> postRun(TaskResult result) async {
-    final errors = <Exception>[];
+    final errors = <ExceptionAndStackTrace>[];
     for (var cond in conditions) {
       try {
         await cond.postRun(result);
-      } on Exception catch (e) {
-        errors.add(e);
+      } on Exception catch (e, st) {
+        errors.add(ExceptionAndStackTrace(e, st));
       }
     }
     if (errors.isNotEmpty) {

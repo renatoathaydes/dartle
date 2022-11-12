@@ -13,43 +13,54 @@ class DartleException implements Exception {
   String toString() => 'DartleException{message=$message, exitCode=$exitCode}';
 }
 
+class ExceptionAndStackTrace {
+  final Exception exception;
+  final StackTrace stackTrace;
+
+  ExceptionAndStackTrace(this.exception, this.stackTrace);
+
+  ExceptionAndStackTrace withException(Exception exception) =>
+      ExceptionAndStackTrace(exception, stackTrace);
+}
+
 /// A [DartleException] caused by multiple Exceptions, usually due to multiple
 /// asynchronous actions failing simultaneously.
 class MultipleExceptions extends DartleException {
-  final List<Exception> exceptions;
+  final List<ExceptionAndStackTrace> exceptionsAndStackTraces;
 
-  MultipleExceptions(this.exceptions)
+  List<Exception> get exceptions =>
+      [for (final e in exceptionsAndStackTraces) e.exception];
+
+  MultipleExceptions(this.exceptionsAndStackTraces)
       : super(
-            message: _computeMessage(exceptions),
-            exitCode: _computeExitCode(exceptions));
+            message: _computeMessage(exceptionsAndStackTraces),
+            exitCode: _computeExitCode(exceptionsAndStackTraces));
 
   @override
   String toString() {
     return 'MultipleExceptions{exceptions: $exceptions}';
   }
 
-  static int _computeExitCode(List<Exception> errors) {
+  static int _computeExitCode(List<ExceptionAndStackTrace> errors) {
     return errors
+        .map((e) => e.exception)
         .whereType<DartleException>()
         .map((e) => e.exitCode)
         .firstWhere((e) => true, orElse: () => 1);
   }
 
-  static String _computeMessage(List<Exception> errors) {
+  static String _computeMessage(List<ExceptionAndStackTrace> errors) {
     if (errors.isEmpty) return 'unknown error';
-    if (errors.length == 1) return _messageOf(errors[0]);
-
-    var exitCode = _computeExitCode(errors);
+    if (errors.length == 1) return _messageOf(errors[0].exception);
 
     final messageBuilder = StringBuffer('Several errors have occurred:\n');
     for (final error in errors) {
       messageBuilder
         ..write('    - ')
-        ..writeln(_messageOf(error));
+        ..writeln(_messageOf(error.exception));
     }
 
-    throw DartleException(
-        message: messageBuilder.toString(), exitCode: exitCode);
+    return messageBuilder.toString();
   }
 
   static String _messageOf(Exception e) {
