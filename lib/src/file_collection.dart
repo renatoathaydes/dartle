@@ -61,16 +61,13 @@ class DirectoryEntry {
   }
 
   @override
-  String toString() =>
-      '(' +
-      [
+  String toString() => '(${[
         'path: $path${recurse ? '/**' : ''}',
         if (exclusions.isNotEmpty) 'exclusions: [${exclusions.join(', ')}]',
         if (fileExtensions.isNotEmpty)
           'fileExtensions: [${fileExtensions.join(', ')}]',
         if (includeHidden) 'includeHidden: true',
-      ].join(', ') +
-      ')';
+      ].join(', ')})';
 }
 
 mixin ResolvedEntity {

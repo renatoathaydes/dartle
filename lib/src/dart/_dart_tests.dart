@@ -198,7 +198,7 @@ class JsonReporter {
     _ansi.cleanLines(_threads.length + 1);
     _write('Tests finished in  ${elapsedTime(_stopWatch)}\n${_status()}\n');
     if (_failureCount > 0) {
-      _write(colorize('Failed Tests:\n', LogColor.red) +
+      _write('${colorize('Failed Tests:\n', LogColor.red)}'
           '${_failedTests.map((e) => '  * ${e.description}').join('\n')}\n');
       if (_errorLines.isNotEmpty) {
         _write(colorize(

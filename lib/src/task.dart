@@ -315,7 +315,7 @@ class TaskWithDeps implements Task, Comparable<TaskWithDeps> {
   int get hashCode => _task.hashCode ^ dependencies.hashCode;
 
   @override
-  set _dependsOn(Set<String> __dependsOn) {
+  set _dependsOn(Set<String> dependsOn) {
     throw UnsupportedError(
         'cannot modify dependencies of task after build is running');
   }
@@ -489,8 +489,7 @@ void _collectTransitiveDependencies(
 
   final dependencies = <TaskWithDeps>[];
   for (final dep in task._dependsOn) {
-    _collectTransitiveDependencies(
-        dep, tasksByName, result, visited, ind + '  ');
+    _collectTransitiveDependencies(dep, tasksByName, result, visited, '$ind  ');
     final depTask = result[dep];
     if (depTask == null) {
       // should never happen!!

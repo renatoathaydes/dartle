@@ -77,8 +77,8 @@ List<TaskInvocation> parseInvocation(List<String> tasksInvocation,
       }
     } else {
       final message = errors.length > 1
-          ? 'Several invocation problems found:\n' +
-              errors.map((err) => '  * $err').join('\n')
+          ? 'Several invocation problems found:\n'
+              '${errors.map((err) => '  * $err').join('\n')}'
           : 'Invocation problem: ${errors[0]}';
       throw DartleException(message: message);
     }

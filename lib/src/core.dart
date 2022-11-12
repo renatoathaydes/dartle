@@ -195,14 +195,13 @@ void _logTasksInfo(
   // build log phrases
   final totalTasksPhrase = taskPhrase(totalTasksCount);
   final requestedTasksPhrase = directTasksCount == 0
-      ? taskPhrase(defaultTasks.length) +
-          ' (${colorize('default', LogColor.gray)})'
-      : taskPhrase(directTasksCount) + ' selected';
+      ? '${taskPhrase(defaultTasks.length)} (${colorize('default', LogColor.gray)})'
+      : '${taskPhrase(directTasksCount)} selected';
   final runnableTasksPhrase =
       style(taskPhrase(runnableTasksCount), LogStyle.bold);
   final dependenciesPhrase = dependentTasksCount == 0
       ? ''
-      : ', ' + taskPhrase(dependentTasksCount, 'dependency', 'dependencies');
+      : ', ${taskPhrase(dependentTasksCount, 'dependency', 'dependencies')}';
   final upToDatePhrase = upToDateCount > 0
       ? ', $upToDateCount ${colorize('up-to-date', LogColor.green)}'
       : '';

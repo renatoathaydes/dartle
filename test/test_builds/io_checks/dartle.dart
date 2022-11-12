@@ -19,7 +19,7 @@ Future base64(_) async {
   await for (final file in inputs.resolveFiles()) {
     final filePath = file.path.substring(inputDir.length + 1);
     print('b64 encoding file $filePath');
-    final outputPath = path.withoutExtension(filePath) + '.b64.txt';
+    final outputPath = '${path.withoutExtension(filePath)}.b64.txt';
     final encoded = base64Encode(await file.readAsBytes());
     final outputFile = File(path.join(outDir, outputPath));
     await outputFile.parent.create(recursive: true);

@@ -160,8 +160,8 @@ class RunOnChanges with RunCondition, FilesCondition {
     }
     if (missingOutputs.isNotEmpty) {
       throw DartleException(
-          message: 'task did not produce the following expected outputs:\n' +
-              missingOutputs.map((f) => '  * $f').join('\n'));
+          message: 'task did not produce the following expected outputs:\n'
+              '${missingOutputs.map((f) => '  * $f').join('\n')}');
     }
   }
 
@@ -246,8 +246,8 @@ class RunToDelete with RunCondition, FilesCondition {
       final failedToDelete = await _collectNotDeleted().toList();
       if (failedToDelete.isNotEmpty) {
         throw DartleException(
-            message: 'task did not delete the following expected entities:\n' +
-                failedToDelete.map((f) => '  * $f').join('\n'));
+            message: 'task did not delete the following expected entities:\n'
+                '${failedToDelete.map((f) => '  * $f').join('\n')}');
       }
     }
   }
