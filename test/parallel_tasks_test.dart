@@ -52,6 +52,25 @@ void main() {
       expect(tasksOutput, contains('Env={}'));
     });
 
+    test('loggers in separate Isolates with -p flag', () async {
+      // the showEnv task depends on the others, so will run in the main Isolate,
+      // hence it should not see the env modifications the other tasks made
+      // because with the -p flag, they should run in different Isolates.
+      var proc = await runBuild(const ['-p', 'sayHi', 'sayHo', '--no-color']);
+
+      expect(
+          proc.stdout[0],
+          contains('Executing 2 tasks out of a total of 4 tasks:'
+              ' 2 tasks selected'));
+      var tasksOutput = proc.stdout.skip(1).join();
+      expect(
+          tasksOutput,
+          allOf(
+            contains(RegExp(r'dartle\[dartle-Actor-\d \d+] - INFO - Hi')),
+            contains(RegExp(r'dartle\[dartle-Actor-\d \d+] - INFO - Ho')),
+          ));
+    });
+
     test('run in the same Isolate with the --no-parallel flag', () async {
       // without the -p flag, all tasks run in the main Isolate
       var proc = await runBuild(
