@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import '../options.dart';
 import '../_log.dart';
 import '../_utils.dart';
 import '../core.dart';
@@ -18,7 +19,7 @@ final _cachedDartlex = getExeLocation(File('dartle.dart'));
 Future<void> dartlexMain(List<String> args) async {
   await runSafely(args, false, (stopWatch, options) async {
     activateLogging(options.logLevel, colorfulLog: options.colorfulLog);
-    await runDartlex(args);
+    await runDartlex(args, options);
   });
 }
 
@@ -26,8 +27,9 @@ Future<void> dartlexMain(List<String> args) async {
 ///
 /// This method will normally not return as Dartle will exit with the
 /// appropriate code. To avoid that, set [doNotExit] to [true].
-Future<void> runDartlex(List<String> args, {bool doNotExit = false}) async {
-  await _checkDartProject();
+Future<void> runDartlex(List<String> args, Options options,
+    {bool doNotExit = false}) async {
+  if (options.runPubGet) await _checkDartProject();
   await checkDartleFileExists(doNotExit);
 
   final compileTask = await _createDartCompileTask();

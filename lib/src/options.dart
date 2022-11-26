@@ -25,6 +25,7 @@ class Options with _$Options {
     @Default(true) bool parallelizeTasks,
     @Default(false) bool resetCache,
     @Default(true) bool logBuildTime,
+    @Default(true) bool runPubGet,
     @Default([]) List<String> tasksInvocation,
   }) = _Options;
 
@@ -115,6 +116,13 @@ final _parser = ArgParser()
     defaultsTo: true,
     hide: true,
     help: 'Whether to log build time.',
+  )
+  ..addFlag(
+    'run-pub-get',
+    negatable: true,
+    defaultsTo: true,
+    hide: true,
+    help: 'Whether to run "dart pub get" if dependencies not downloaded.',
   );
 
 /// Dartle usage message.
@@ -174,6 +182,7 @@ Options parseOptions(List<String> args) {
     showTaskGraph: parseResult['show-task-graph'] as bool,
     resetCache: parseResult['reset-cache'] as bool,
     logBuildTime: parseResult['log-build-time'] as bool,
+    runPubGet: parseResult['run-pub-get'] as bool,
     tasksInvocation: parseResult.rest,
   );
 }

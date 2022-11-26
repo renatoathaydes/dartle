@@ -26,6 +26,7 @@ mixin _$Options {
   bool get parallelizeTasks => throw _privateConstructorUsedError;
   bool get resetCache => throw _privateConstructorUsedError;
   bool get logBuildTime => throw _privateConstructorUsedError;
+  bool get runPubGet => throw _privateConstructorUsedError;
   List<String> get tasksInvocation => throw _privateConstructorUsedError;
 
   @JsonKey(ignore: true)
@@ -48,6 +49,7 @@ abstract class $OptionsCopyWith<$Res> {
       bool parallelizeTasks,
       bool resetCache,
       bool logBuildTime,
+      bool runPubGet,
       List<String> tasksInvocation});
 }
 
@@ -74,6 +76,7 @@ class _$OptionsCopyWithImpl<$Res, $Val extends Options>
     Object? parallelizeTasks = null,
     Object? resetCache = null,
     Object? logBuildTime = null,
+    Object? runPubGet = null,
     Object? tasksInvocation = null,
   }) {
     return _then(_value.copyWith(
@@ -117,6 +120,10 @@ class _$OptionsCopyWithImpl<$Res, $Val extends Options>
           ? _value.logBuildTime
           : logBuildTime // ignore: cast_nullable_to_non_nullable
               as bool,
+      runPubGet: null == runPubGet
+          ? _value.runPubGet
+          : runPubGet // ignore: cast_nullable_to_non_nullable
+              as bool,
       tasksInvocation: null == tasksInvocation
           ? _value.tasksInvocation
           : tasksInvocation // ignore: cast_nullable_to_non_nullable
@@ -143,6 +150,7 @@ abstract class _$$_OptionsCopyWith<$Res> implements $OptionsCopyWith<$Res> {
       bool parallelizeTasks,
       bool resetCache,
       bool logBuildTime,
+      bool runPubGet,
       List<String> tasksInvocation});
 }
 
@@ -166,6 +174,7 @@ class __$$_OptionsCopyWithImpl<$Res>
     Object? parallelizeTasks = null,
     Object? resetCache = null,
     Object? logBuildTime = null,
+    Object? runPubGet = null,
     Object? tasksInvocation = null,
   }) {
     return _then(_$_Options(
@@ -209,6 +218,10 @@ class __$$_OptionsCopyWithImpl<$Res>
           ? _value.logBuildTime
           : logBuildTime // ignore: cast_nullable_to_non_nullable
               as bool,
+      runPubGet: null == runPubGet
+          ? _value.runPubGet
+          : runPubGet // ignore: cast_nullable_to_non_nullable
+              as bool,
       tasksInvocation: null == tasksInvocation
           ? _value._tasksInvocation
           : tasksInvocation // ignore: cast_nullable_to_non_nullable
@@ -231,6 +244,7 @@ class _$_Options extends _Options {
       this.parallelizeTasks = true,
       this.resetCache = false,
       this.logBuildTime = true,
+      this.runPubGet = true,
       final List<String> tasksInvocation = const []})
       : _tasksInvocation = tasksInvocation,
         super._();
@@ -265,6 +279,9 @@ class _$_Options extends _Options {
   @override
   @JsonKey()
   final bool logBuildTime;
+  @override
+  @JsonKey()
+  final bool runPubGet;
   final List<String> _tasksInvocation;
   @override
   @JsonKey()
@@ -275,7 +292,7 @@ class _$_Options extends _Options {
 
   @override
   String toString() {
-    return 'Options(logLevel: $logLevel, colorfulLog: $colorfulLog, showHelp: $showHelp, showVersion: $showVersion, showTasks: $showTasks, showTaskGraph: $showTaskGraph, forceTasks: $forceTasks, parallelizeTasks: $parallelizeTasks, resetCache: $resetCache, logBuildTime: $logBuildTime, tasksInvocation: $tasksInvocation)';
+    return 'Options(logLevel: $logLevel, colorfulLog: $colorfulLog, showHelp: $showHelp, showVersion: $showVersion, showTasks: $showTasks, showTaskGraph: $showTaskGraph, forceTasks: $forceTasks, parallelizeTasks: $parallelizeTasks, resetCache: $resetCache, logBuildTime: $logBuildTime, runPubGet: $runPubGet, tasksInvocation: $tasksInvocation)';
   }
 
   @override
@@ -303,6 +320,8 @@ class _$_Options extends _Options {
                 other.resetCache == resetCache) &&
             (identical(other.logBuildTime, logBuildTime) ||
                 other.logBuildTime == logBuildTime) &&
+            (identical(other.runPubGet, runPubGet) ||
+                other.runPubGet == runPubGet) &&
             const DeepCollectionEquality()
                 .equals(other._tasksInvocation, _tasksInvocation));
   }
@@ -320,6 +339,7 @@ class _$_Options extends _Options {
       parallelizeTasks,
       resetCache,
       logBuildTime,
+      runPubGet,
       const DeepCollectionEquality().hash(_tasksInvocation));
 
   @JsonKey(ignore: true)
@@ -341,6 +361,7 @@ abstract class _Options extends Options {
       final bool parallelizeTasks,
       final bool resetCache,
       final bool logBuildTime,
+      final bool runPubGet,
       final List<String> tasksInvocation}) = _$_Options;
   const _Options._() : super._();
 
@@ -364,6 +385,8 @@ abstract class _Options extends Options {
   bool get resetCache;
   @override
   bool get logBuildTime;
+  @override
+  bool get runPubGet;
   @override
   List<String> get tasksInvocation;
   @override
