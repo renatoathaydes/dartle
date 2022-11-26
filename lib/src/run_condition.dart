@@ -105,12 +105,6 @@ class RunOnChanges with RunCondition, FilesCondition {
       logger.fine('Changes detected on task outputs: $outputs');
       return true;
     }
-    for (final output in outputs.includedEntities()) {
-      if (!await output.exists()) {
-        logger.fine('Task output does not exist: ${output.path}');
-        return true;
-      }
-    }
     return false;
   }
 

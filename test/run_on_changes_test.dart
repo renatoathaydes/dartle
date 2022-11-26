@@ -64,7 +64,7 @@ void main() {
       expect(await runOnChanges.shouldRun(_invocation), isTrue);
     });
 
-    test('does not run if no inputs or outpus change', () async {
+    test('does not run if no inputs or outputs change', () async {
       // should not run as the outputs already exist and are not modified
       final fs =
           await createFileSystem(['a', 'b', 'c'].map((f) => Entry.file(f)));
@@ -83,7 +83,7 @@ void main() {
       expect(wouldRun, isFalse);
     });
 
-    test('runs if inputs and outputs did not change but output does not exist',
+    test('does not run if inputs and outputs did not change but output does not exist',
         () async {
       final fs = await createFileSystem([]);
 
@@ -98,7 +98,7 @@ void main() {
 
         return await runOnChanges.shouldRun(_invocation);
       });
-      expect(wouldRun, isTrue);
+      expect(wouldRun, isFalse);
     });
   });
 }

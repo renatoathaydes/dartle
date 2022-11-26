@@ -3,6 +3,7 @@
 - forbid tasks from accessing IO resources not declared in inputs/outputs.
 
 - automatically run `dart pub get` before trying to compile `dartle.dart` if dependencies not downloaded yet.
+- do not re-run task if previous run did not create certain declared outputs.
 
 ## done, waiting for next release
 
