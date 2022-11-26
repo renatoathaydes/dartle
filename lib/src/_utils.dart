@@ -7,8 +7,15 @@ import 'package:crypto/crypto.dart';
 
 import '_log.dart';
 import '_project.dart';
+import 'helpers.dart';
 
 final _capitalLetterPattern = RegExp(r'[A-Z]');
+
+Future<void> runPubGet(_) async {
+  final code = await execProc(Process.start('dart', const ['pub', 'get']),
+      name: 'Dart pub get', successMode: StreamRedirectMode.stdoutAndStderr);
+  if (code != 0) failBuild(reason: 'Dart "pub get"" failed');
+}
 
 Future<void> checkDartleFileExists(bool doNotExit) async {
   final dartleFile = File('dartle.dart');

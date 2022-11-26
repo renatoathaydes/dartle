@@ -5,6 +5,7 @@ import 'package:yaml/yaml.dart';
 
 import '../file_collection.dart';
 import '../helpers.dart';
+import '../_utils.dart' as utils;
 import '../run_condition.dart';
 import '../task.dart';
 import '_dart_tests.dart';
@@ -132,7 +133,7 @@ class DartleDart {
         runCondition: RunOnChanges(
             inputs: productionDartFiles, outputs: dir('$rootDir/build/bin')));
 
-    runPubGet = Task(_runPubGet,
+    runPubGet = Task(utils.runPubGet,
         name: 'runPubGet',
         description: 'Runs "pub get" in order to update dependencies.',
         runCondition: OrCondition([
@@ -241,11 +242,5 @@ class DartleDart {
       final code = await entry.value;
       if (code != 0) failBuild(reason: 'Failed to compile ${entry.key}');
     }
-  }
-
-  Future<void> _runPubGet(_) async {
-    final code = await execProc(Process.start('dart', const ['pub', 'get']),
-        name: 'Dart pub get', successMode: StreamRedirectMode.stdoutAndStderr);
-    if (code != 0) failBuild(reason: 'Dart "pub get"" failed');
   }
 }

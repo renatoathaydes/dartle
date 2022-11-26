@@ -3,8 +3,9 @@ import 'dart:io';
 import '../_log.dart';
 import '../_utils.dart';
 import '../core.dart';
-import '../io/exec.dart';
+import '../error.dart';
 import '../file_collection.dart';
+import '../io/exec.dart';
 import '../run_condition.dart';
 import '../task.dart';
 import '../task_invocation.dart';
@@ -26,6 +27,7 @@ Future<void> dartlexMain(List<String> args) async {
 /// This method will normally not return as Dartle will exit with the
 /// appropriate code. To avoid that, set [doNotExit] to [true].
 Future<void> runDartlex(List<String> args, {bool doNotExit = false}) async {
+  await _checkDartProject();
   await checkDartleFileExists(doNotExit);
 
   final compileTask = await _createDartCompileTask();
@@ -70,6 +72,18 @@ Future<void> runDartlex(List<String> args, {bool doNotExit = false}) async {
     }
   } else {
     exit(exitCode);
+  }
+}
+
+Future<void> _checkDartProject() async {
+  if (!await File('pubspec.yaml').exists()) {
+    throw DartleException(
+        message: "File 'pubspec.yaml' not found. Cannot execute Dartle.");
+  }
+  if (!await Directory('.dart_tool').exists()) {
+    logger.info('Dart dependencies not downloaded yet. Executing '
+        "'dart pub get'");
+    await runPubGet(const []);
   }
 }
 
