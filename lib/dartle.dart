@@ -11,6 +11,8 @@ library dartle;
 
 export 'src/_log.dart'
     show activateLogging, profile, LogColor, ColoredLogMessage;
+export 'src/message.dart';
+export 'src/ansi_message.dart';
 export 'src/_utils.dart' show elapsedTime;
 export 'src/core.dart';
 export 'src/io/exec.dart';

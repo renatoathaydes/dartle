@@ -4,6 +4,8 @@
 
 - automatically run `dart pub get` before trying to compile `dartle.dart` if dependencies not downloaded yet.
 - do not re-run task if previous run did not create certain declared outputs.
+- added better support for logging colored/styled messages without formatting.
+- logged messages are now printed in the same `Zone` they were emitted from.
 
 ## done, waiting for next release
 

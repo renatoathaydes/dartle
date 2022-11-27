@@ -1,8 +1,11 @@
+import 'dart:async';
 import 'dart:io' show pid;
 import 'dart:isolate';
 
 import 'package:io/ansi.dart' as ansi;
 import 'package:logging/logging.dart' as log;
+
+import 'message.dart';
 
 /// Supported log colors.
 enum LogColor { red, green, blue, yellow, gray, magenta }
@@ -17,8 +20,8 @@ class _Log {
 
   const _Log(this.color);
 
-  void call(String message) {
-    _printColorized(message, color);
+  void call(Zone zone, Object message) {
+    _printColorized(zone, message, color);
   }
 }
 
@@ -26,14 +29,16 @@ class _Log {
 ///
 /// Notice that [ColoredLogMessage] bypasses the logging format string,
 /// hence is logged without the usual message metadata (time, level, etc.)
-class ColoredLogMessage {
+class ColoredLogMessage with Message {
   final Object message;
   final LogColor color;
 
   const ColoredLogMessage(this.message, this.color);
 
   @override
-  String toString() => message.toString();
+  Object getPrintable(bool useColor) {
+    return useColor ? colorize(message.toString(), color) : message;
+  }
 }
 
 enum LogLevel { debug, info, warn, error }
@@ -82,11 +87,11 @@ ansi.AnsiCode _ansiCode(LogColor color) {
   }
 }
 
-void _printColorized(String message, [LogColor? color]) {
+void _printColorized(Zone zone, Object message, [LogColor? color]) {
   if (color == null) {
-    return print(message);
+    return zone.runUnary(print, message);
   }
-  print(colorize(message, color));
+  zone.runUnary(print, colorize(message.toString(), color));
 }
 
 /// Returns the given [message] with a [color] unless dartle is executed with
@@ -113,6 +118,7 @@ String style(String message, LogStyle style) {
 }
 
 bool _loggingActivated = false;
+StreamSubscription<log.LogRecord>? _logSubscription;
 bool _colorfulLog = true;
 String _logName = Isolate.current.debugName ?? 'main';
 final _pid = pid;
@@ -135,35 +141,44 @@ bool activateLogging(log.Level level,
       _logName = logName;
     }
     log.Logger.root.level = level;
-    log.Logger.root.onRecord.listen(colorfulLog ? _logColored : _log);
+    _logSubscription =
+        log.Logger.root.onRecord.listen(colorfulLog ? _logColored : _log);
     return true;
   }
   return false;
 }
 
+/// Internal function (it may go away or change completely in any version).
+Future<void>? deactivateLogging() {
+  _loggingActivated = false;
+  return _logSubscription?.cancel();
+}
+
 void _logColored(log.LogRecord rec) {
   _Log log;
-  String? msg;
-  final obj = rec.object;
-  if (obj is ColoredLogMessage) {
-    log = _Log(obj.color);
-    msg = rec.message;
+  Object? msg;
+  final object = rec.object;
+  if (object is Message) {
+    // colorization is done by the message itself
+    log = const _Log(null);
+    msg = object.getPrintable(true);
   } else {
     log = _logByLevel[rec.level] ?? const _Log(null);
   }
 
-  log(msg ?? _createLogMessage(rec));
+  log(rec.zone ?? Zone.current, msg ?? _createLogMessage(rec));
 }
 
 void _log(log.LogRecord rec) {
   _Log log = const _Log(null);
 
-  String? msg;
-  if (rec.object is ColoredLogMessage) {
-    msg = rec.message;
+  Object? msg;
+  final object = rec.object;
+  if (object is Message) {
+    msg = object.getPrintable(false);
   }
 
-  log(msg ?? _createLogMessage(rec));
+  log(rec.zone ?? Zone.current, msg ?? _createLogMessage(rec));
 }
 
 String _createLogMessage(log.LogRecord rec) {
