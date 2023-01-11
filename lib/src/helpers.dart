@@ -20,11 +20,14 @@ void failBuild({required String reason, int exitCode = 1}) {
 }
 
 /// Run the given action ignoring any Exceptions thrown by it.
-FutureOr ignoreExceptions(FutureOr Function() action) async {
+/// Returns `true` if the action succeeded, `false` otherwise.
+FutureOr<bool> ignoreExceptions(FutureOr Function() action) async {
   try {
     await action();
+    return true;
   } on Exception {
     // ignore
+    return false;
   }
 }
 
@@ -146,6 +149,9 @@ Future<void> deleteAll(FileCollection fileCollection) async {
   // directories last.
   for (final entry in toDelete.reversed) {
     logger.fine('Deleting ${entry.path}');
-    await ignoreExceptions(entry.entity.delete);
+    final ok = await ignoreExceptions(entry.entity.delete);
+    if (!ok) {
+      logger.warning('Failed to delete: ${entry.path}');
+    }
   }
 }

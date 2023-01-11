@@ -154,6 +154,8 @@ class DartleCache {
     final oldTasks = Directory(_tasksDir).list();
     await for (final oldTask in oldTasks) {
       if (!taskNames.contains(path.basename(oldTask.path))) {
+        logger.fine(() =>
+            "Removing task '${oldTask.path}' directory as task is not part of the build");
         await oldTask.delete(recursive: true);
         removedCount++;
       }
@@ -161,12 +163,14 @@ class DartleCache {
     final oldKeys = Directory(_hashesDir).list();
     await for (final oldKey in oldKeys) {
       if (!keys.contains(path.basename(oldKey.path))) {
+        logger.fine(() =>
+            "Removing key '${oldKey.path}' as key is not part of the build");
         await oldKey.delete(recursive: true);
         removedCount++;
       }
     }
     logger.fine(() =>
-        'Removed $removedCount cache entries that are no longer relevant');
+        'Removed $removedCount cache entries that are any longer relevant');
   }
 
   Future<void> _cacheFile(File file, {required String key}) async {

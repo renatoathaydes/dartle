@@ -239,8 +239,10 @@ class RunToDelete with RunCondition, FilesCondition {
     if (verifyDeletions) {
       final failedToDelete = await _collectNotDeleted().toList();
       if (failedToDelete.isNotEmpty) {
+        final taskName = result.invocation.name;
         throw DartleException(
-            message: 'task did not delete the following expected entities:\n'
+            message:
+                "task '$taskName' did not delete the following expected entities:\n"
                 '${failedToDelete.map((f) => '  * $f').join('\n')}');
       }
     }
