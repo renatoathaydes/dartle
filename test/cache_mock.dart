@@ -42,6 +42,12 @@ class CacheMock implements DartleCache {
   }
 
   @override
+  Stream<FileChange> findChanges(FileCollection fileCollection,
+      {String key = ''}) {
+    throw UnimplementedError();
+  }
+
+  @override
   Future<bool> hasTaskInvocationChanged(TaskInvocation invocation) async {
     final changes = invocationChanges[invocation.name];
     if (changes == null) {

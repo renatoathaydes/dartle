@@ -7,7 +7,9 @@ import 'package:structured_async/structured_async.dart';
 import '_actor_task.dart';
 import '_log.dart';
 import '_utils.dart';
+import 'cache/cache.dart';
 import 'error.dart';
+import 'run_condition.dart';
 import 'task.dart';
 import 'task_invocation.dart';
 
@@ -34,6 +36,13 @@ class TaskResult {
   String toString() {
     return 'TaskResult{invocation: $invocation, error: $error}';
   }
+}
+
+/// A mixin that can be used by a [Task] action in order to receive the
+/// changes that triggered it.
+mixin IncrementalAction {
+  /// Receive the detected changes before running.
+  FutureOr<void> prepareForChanges(Stream<FileChange> changes);
 }
 
 /// Calls [runTask] with each given task that must run.
@@ -129,12 +138,22 @@ Future<List<TaskResult>> _run(
 Future<TaskResult> runTask(TaskInvocation invocation,
     {required bool runInIsolate}) async {
   final task = invocation.task;
+  final runCondition = task.runCondition;
+
   final action = _createTaskAction(task, runInIsolate && task.isParallelizable);
+
+  final stopwatch = Stopwatch()..start();
+
+  if (runCondition is RunOnChanges && action is IncrementalAction) {
+    await _prepareIncrementalAction(
+        stopwatch, task.name, runCondition, action as IncrementalAction);
+  }
 
   logger.log(task.name.startsWith('_') ? Level.FINE : Level.INFO,
       "Running task '${task.name}'");
 
-  final stopwatch = Stopwatch()..start();
+  stopwatch.reset();
+
   TaskResult result;
   try {
     final args = invocation.args;
@@ -161,6 +180,17 @@ Future<TaskResult> runTask(TaskInvocation invocation,
         '$completionReason in ${elapsedTime(stopwatch)}');
   }
   return result;
+}
+
+Future<void> _prepareIncrementalAction(Stopwatch stopwatch, String taskName,
+    RunOnChanges runCondition, IncrementalAction action) async {
+  logger.fine(() => "Collecting changes for incremental task '$taskName'");
+  final changes = runCondition.cache.findChanges(runCondition.inputs);
+
+  logger.log(profile,
+      "Collected changes for '$taskName' in ${elapsedTime(stopwatch)}");
+
+  await action.prepareForChanges(changes);
 }
 
 bool _taskMustRun(TaskWithStatus pTask) {

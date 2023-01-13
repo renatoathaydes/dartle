@@ -157,7 +157,7 @@ Future<void> runBasic(Set<Task> tasks, Set<Task> defaultTasks, Options options,
 }
 
 FutureOr<void> _cleanCache(DartleCache cache, Set<String> taskNames) {
-  return ignoreExceptions(() {
+  ignoreExceptions(() {
     final stopWatch = Stopwatch()..start();
     try {
       return cache.removeNotMatching(taskNames, taskNames);

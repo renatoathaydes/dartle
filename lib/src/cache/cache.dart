@@ -11,6 +11,21 @@ import '../helpers.dart';
 import '../task.dart';
 import '../task_invocation.dart';
 
+/// Kind of [FileChange].
+enum ChangeKind {
+  added,
+  deleted,
+  modified,
+}
+
+/// FileChange represents a file system entity change.
+class FileChange {
+  final FileSystemEntity entity;
+  final ChangeKind kind;
+
+  FileChange(this.entity, this.kind);
+}
+
 /// The cache used by dartle to figure out when files change between checks,
 /// typically between two builds.
 ///
@@ -216,44 +231,61 @@ class DartleCache {
   /// Returns false if the [FileCollection] is empty.
   Future<bool> hasChanged(FileCollection fileCollection,
       {String key = ''}) async {
+    return !await findChanges(fileCollection, key: key).isEmpty;
+  }
+
+  /// Find all changes if a [FileCollection] has been modified since the
+  /// last time someone checked with this method.
+  ///
+  /// The `key` argument is used to consider whether changes have happened
+  /// since last time the check was made with the exact same key.
+  ///
+  /// Returns an empty [Stream] if the [FileCollection] is empty.
+  Stream<FileChange> findChanges(FileCollection fileCollection,
+      {String key = ''}) async* {
     logger
         .fine(() => 'Checking if $fileCollection with key="$key" has changed');
-    if (fileCollection.isEmpty) return false;
+    if (fileCollection.isEmpty) return;
     Set<String> visitedEntities = {};
     await for (final entity in fileCollection.resolve()) {
       if (visitedEntities.add(entity.path)) {
-        if (await entity.use((file) => _hasFileChanged(file, key: key),
-            (dir, children) => _hasDirChanged(dir, children, key: key))) {
-          return true;
-        }
+        final change = await entity.use(
+            (file) async => await _hasFileChanged(file, key: key),
+            (dir, children) async =>
+                await _hasDirChanged(dir, children, key: key));
+        if (change != null) yield FileChange(entity.entity, change);
       }
     }
+
     // visit entities that do not exist but may have existed before
     for (final file in fileCollection.files.where(visitedEntities.add)) {
-      if (await _hasFileChanged(File(file), key: key)) {
-        return true;
+      final fileEntity = File(file);
+      final change = await _hasFileChanged(fileEntity, key: key);
+      if (change != null) {
+        yield FileChange(fileEntity, change);
       }
     }
     for (final dir in fileCollection.directories
         .map((e) => e.path)
         .where(visitedEntities.add)) {
       // this dir doesn't exist, otherwise it would've been visited earlier
-      if (await _hasDirChanged(Directory(dir), const [], key: key)) {
-        return true;
+      final dirEntity = Directory(dir);
+      final change = await _hasDirChanged(dirEntity, const [], key: key);
+      if (change != null) {
+        yield FileChange(dirEntity, change);
       }
     }
-    return false;
   }
 
-  Future<bool> _hasFileChanged(File file, {String key = ''}) async {
+  Future<ChangeKind?> _hasFileChanged(File file, {String key = ''}) async {
     final hf = _getCacheLocation(file, key: key);
     var hashExists = await hf.exists();
     if (!await file.exists()) {
       logger.fine(() => "File '${file.path}' does not exist "
           "${hashExists ? 'but was cached' : 'and was not known before'}");
-      return hashExists;
+      return hashExists ? ChangeKind.deleted : null;
     }
-    bool changed;
+    ChangeKind? change;
     if (hashExists) {
       // allow for 1 second difference: file systems seem to not refresh
       // the timestamp with sub-second precision!
@@ -268,48 +300,44 @@ class DartleCache {
         if (previousHash.equals(hash)) {
           logger.fine(
               () => "File '${file.path}' hash is still the same: '$hash'");
-          changed = false;
         } else {
           logger.fine(() => "File '${file.path}' hash changed - "
               "old hash='$previousHash', new hash='$hash'");
-          changed = true;
+          change = ChangeKind.modified;
         }
       } else {
         logger.fine(() => "File '${file.path}' hash is fresh.");
-        changed = false;
       }
     } else {
       logger.fine(() => "Hash does not exist for file: '${file.path}'");
-      changed = true;
+      change = ChangeKind.added;
     }
-    return changed;
+    return change;
   }
 
-  Future<bool> _hasDirChanged(
+  Future<ChangeKind?> _hasDirChanged(
       Directory dir, Iterable<FileSystemEntity> children,
       {required String key}) async {
     final hf = _getCacheLocation(dir, key: key);
-    bool changed;
+    ChangeKind? change;
     if (await hf.exists()) {
       final previousHash = await hf.readAsBytes();
       final currentHash = _DirectoryContents(children).encode();
       if (previousHash.equals(currentHash)) {
         logger.fine(() => 'Directory hash is still the same: ${dir.path}');
-        changed = false;
       } else {
         logger.fine(() => 'Directory hash has changed: ${dir.path}');
-        changed = true;
+        change = ChangeKind.modified;
       }
     } else if (await dir.exists()) {
       logger.fine(() => 'Directory hash does not exist for '
           "existing directory: '${dir.path}'");
-      changed = true;
+      change = ChangeKind.added;
     } else {
       logger.fine(() => "Directory '${dir.path}' does not exist "
           'and was not known before');
-      changed = false;
     }
-    return changed;
+    return change;
   }
 
   File getExecutablesLocation(File file) =>
