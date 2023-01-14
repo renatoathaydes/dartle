@@ -38,12 +38,18 @@ class TaskResult {
   }
 }
 
-/// A mixin that can be used by a [Task] action in order to receive the
-/// changes that triggered it.
-mixin IncrementalAction {
-  /// Receive the detected changes before running.
-  FutureOr<void> prepareForChanges(Stream<FileChange> changes);
-}
+/// Signature of the action of incremental [Task]s.
+///
+/// When there are no changes, the [Task] will not run, but it is still
+/// possible for an action to run with the [changes] List empty: the first
+/// time the [Task] runs, as there is no cached resources yet.
+/// Otherwise, the [changes] List will reflect what has changed since the
+/// last time the [Task] executed successfully.
+///
+/// Only [Task]s that have a `runCondition` of type [RunOnChanges] can receive
+/// input/output changes.
+typedef IncrementalAction = FutureOr<void> Function(List<String> args,
+    [List<FileChange> changes]);
 
 /// Calls [runTask] with each given task that must run.
 ///
@@ -140,14 +146,19 @@ Future<TaskResult> runTask(TaskInvocation invocation,
   final task = invocation.task;
   final runCondition = task.runCondition;
 
-  final action = _createTaskAction(task, runInIsolate && task.isParallelizable);
-
   final stopwatch = Stopwatch()..start();
 
-  if (runCondition is RunOnChanges && action is IncrementalAction) {
-    await _prepareIncrementalAction(
-        stopwatch, task.name, runCondition, action as IncrementalAction);
+  List<FileChange>? changes;
+
+  if (runCondition is RunOnChanges && task.action is IncrementalAction) {
+    changes =
+        await _prepareIncrementalAction(stopwatch, task.name, runCondition);
+  } else {
+    changes = null;
   }
+
+  final action =
+      _createTaskAction(task, runInIsolate && task.isParallelizable, changes);
 
   logger.log(task.name.startsWith('_') ? Level.FINE : Level.INFO,
       "Running task '${task.name}'");
@@ -157,7 +168,7 @@ Future<TaskResult> runTask(TaskInvocation invocation,
   TaskResult result;
   try {
     final args = invocation.args;
-    await action(args);
+    await action(args, changes);
     stopwatch.stop();
     result = TaskResult(invocation);
   } catch (e, st) {
@@ -182,15 +193,16 @@ Future<TaskResult> runTask(TaskInvocation invocation,
   return result;
 }
 
-Future<void> _prepareIncrementalAction(Stopwatch stopwatch, String taskName,
-    RunOnChanges runCondition, IncrementalAction action) async {
+Future<List<FileChange>> _prepareIncrementalAction(
+    Stopwatch stopwatch, String taskName, RunOnChanges runCondition) async {
   logger.fine(() => "Collecting changes for incremental task '$taskName'");
-  final changes = runCondition.cache.findChanges(runCondition.inputs);
+  final changes =
+      await runCondition.cache.findChanges(runCondition.inputs).toList();
 
   logger.log(profile,
-      "Collected changes for '$taskName' in ${elapsedTime(stopwatch)}");
+      "Collected ${changes.length} changes for '$taskName' in ${elapsedTime(stopwatch)}");
 
-  await action.prepareForChanges(changes);
+  return changes;
 }
 
 bool _taskMustRun(TaskWithStatus pTask) {
@@ -201,10 +213,11 @@ bool _taskMustRun(TaskWithStatus pTask) {
   return willRun;
 }
 
-Future Function(List<String>) _createTaskAction(Task task, bool runInIsolate) {
+MaybeIncrementalAction _createTaskAction(
+    Task task, bool runInIsolate, List<FileChange>? changes) {
   return runInIsolate
       ? actorAction(task.action)
-      : (args) async => await task.action(args);
+      : (args, changes) async => await runAction(task.action, args, changes);
 }
 
 Future<List<ExceptionAndStackTrace>> _onNewPhaseStarted(

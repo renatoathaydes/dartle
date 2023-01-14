@@ -35,10 +35,11 @@ Future base64(_) async {
   }
 }
 
-class ExampleIncrementalAction with IncrementalAction {
-  List<FileChange> _changes = [];
-
-  Future<void> call(List<String> _) async {
+class ExampleIncrementalAction {
+  Future<void> call(List<String> _,
+      [List<FileChange> changes = const []]) async {
+    print(
+        'Changes : ${changes.map((c) => '${c.kind.name}: ${c.entity.path}\n')}');
     final inputDir = Directory(incInputs.directories.first.path);
     if (!await inputDir.exists()) {
       return;
@@ -47,35 +48,21 @@ class ExampleIncrementalAction with IncrementalAction {
     await outDir.create();
     final output = File(path.join(outDir.path, 'out.txt'));
 
-    List toWrite;
+    List<String> toWrite;
 
-    if (_changes.isEmpty) {
-      // first run, would need to do everything
-      toWrite = await inputDir.list().toList();
+    if (changes.isEmpty) {
+      toWrite = ['first run'];
     } else {
-      // incremental run, only write the changed stuff
-      toWrite = _changes.map((c) => '${c.kind.name}: ${c.entity.path}\n').toList();
+      toWrite =
+          changes.map((c) => '${c.kind.name}: ${c.entity.path}').toList();
     }
 
-    final inputFiles = await inputDir.list().toList();
-    inputFiles.sort((a, b) => a.path.compareTo(b.path));
+    toWrite.sort();
     final handle = await output.open(mode: FileMode.writeOnly);
     try {
-      if (inputFiles.isEmpty) {
-        await handle.writeString('<empty>');
-      } else
-        for (final entry in inputFiles) {
-          if (entry is File) {
-            await handle.writeString(await entry.readAsString());
-          }
-        }
+      await handle.writeString(toWrite.join('\n'));
     } finally {
       handle.close();
     }
-  }
-
-  @override
-  FutureOr<void> prepareForChanges(Stream<FileChange> changes) async {
-    _changes = await changes.toList();
   }
 }

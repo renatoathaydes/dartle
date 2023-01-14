@@ -141,20 +141,25 @@ void main() {
       var proc = await runExampleDartBuild(const ['--no-color', 'incremental']);
       expect(proc.exitCode, equals(0), reason: 'STDOUT: ${proc.stdout}');
       expect(proc.stdout[0], contains(oneOfTwoTasksExecutingMessage));
-      await _expectFileTree(incOutputsDir.path, {'out.txt': 'Bye\nhello\n'});
+      await _expectFileTree(incOutputsDir.path, {
+        'out.txt': ''
+            'added: inc-inputs\n'
+            'added: inc-inputs/bye.txt\n'
+            'added: inc-inputs/hello.txt'
+      });
 
-      // run again
+      // run again (no changes)
       proc = await runExampleDartBuild(const ['--no-color', 'incremental']);
       expect(proc.exitCode, equals(0));
 
       expect(proc.stdout[0], contains(noTasksOfTwoExecutingMessage));
       expect(proc.stderr, isEmpty);
 
+      // change one of the input files
       final inputFile = File(path.join(
           _buildDirectory, incInputs.directories.first.path, 'hello.txt'));
       final originalInputFileContents = await inputFile.readAsString();
 
-      // change one input
       await inputFile.writeAsString('bye', flush: true);
 
       Future<void> revertInputFileChange() =>
@@ -163,10 +168,12 @@ void main() {
       // revert the change later even if test fails
       addTearDown(revertInputFileChange);
 
+      // run again, ensure the input file change was detected
       proc = await runExampleDartBuild(const ['--no-color', 'incremental']);
       expect(proc.exitCode, equals(0), reason: 'STDOUT: ${proc.stdout}');
       expect(proc.stdout[0], contains(oneOfTwoTasksExecutingMessage));
-      await _expectFileTree(incOutputsDir.path, {'out.txt': 'Bye\nbye'});      
+      await _expectFileTree(
+          incOutputsDir.path, {'out.txt': 'changed: inc-inputs/hello.txt'});
     });
   });
 }
