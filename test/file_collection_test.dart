@@ -1,21 +1,19 @@
 import 'dart:async';
+import 'dart:io';
 
 import 'package:dartle/dartle.dart';
-import 'package:file/file.dart';
-import 'package:file/memory.dart';
 import 'package:test/test.dart';
-
 import 'test_utils.dart';
 
 void main() {
   group('FilesCollection', () {
-    FileSystem fs = MemoryFileSystem();
+    DartleTestFileSystem fs = createTempFileSystem();
 
     setUpAll(() async {
       fs = await createFileSystem([
         ...[
           'dartle',
-          'a',
+          'aa',
           'b',
           'c',
           'd',
@@ -44,14 +42,14 @@ void main() {
 
     test('can be created for multiple files', () async {
       final allFiles =
-          files(const ['a', 'b', 'c', 'b/b.txt', 'dartle', 'dartle.dart']);
+          files(const ['aa', 'b', 'c', 'b/b.txt', 'dartle', 'dartle.dart']);
       await _expectFileCollection(fs, allFiles,
           files: {'b/b.txt', 'dartle.dart'});
     });
 
     test('can be created for a single, empty directory', () async {
-      final files = dir('a');
-      await _expectFileCollection(fs, files, dirs: {'a'});
+      final files = dir('aa');
+      await _expectFileCollection(fs, files, dirs: {'aa'});
     });
 
     test('can be created for a single, non-empty directory (no recurse)',
@@ -115,7 +113,7 @@ void main() {
         dirs: const {
           '.',
           './dartle',
-          './a',
+          './aa',
           './b',
           './c',
           './d',
@@ -161,9 +159,9 @@ void main() {
     });
 
     test('can be created for multiple directories (no recurse)', () async {
-      final files = dirs(const ['a', 'b', 'c', 'd'], recurse: false);
+      final files = dirs(const ['aa', 'b', 'c', 'd'], recurse: false);
       await _expectFileCollection(fs, files,
-          files: const {'b/b.txt'}, dirs: const {'a', 'b', 'c', 'd'});
+          files: const {'b/b.txt'}, dirs: const {'aa', 'b', 'c', 'd'});
     });
 
     test('can be created for root dir with extension filter including dot',
@@ -174,7 +172,7 @@ void main() {
       }, dirs: const {
         '.',
         './dartle',
-        './a',
+        './aa',
         './b',
         './c',
         './d',
@@ -359,7 +357,7 @@ void main() {
   }, timeout: Timeout(Duration(milliseconds: 250)));
 }
 
-Future _expectFileCollection(FileSystem fs, FileCollection actual,
+Future _expectFileCollection(DartleTestFileSystem fs, FileCollection actual,
     {Set<String> files = const {}, Set<String> dirs = const {}}) async {
   await withFileSystem(fs, () async {
     final entities = await actual.resolve().toList();
@@ -408,8 +406,8 @@ class Entry {
         _bytes = const [];
 }
 
-Future<FileSystem> createFileSystem(Iterable<Entry> entries) async {
-  final fs = MemoryFileSystem();
+Future<DartleTestFileSystem> createFileSystem(Iterable<Entry> entries) async {
+  final fs = createTempFileSystem();
   for (var entry in entries) {
     if (entry._isFile) {
       await fs.file(entry._name).writeAsBytes(entry._bytes);

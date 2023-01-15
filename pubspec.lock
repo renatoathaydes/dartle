@@ -156,7 +156,7 @@ packages:
     source: hosted
     version: "2.2.4"
   file:
-    dependency: "direct main"
+    dependency: transitive
     description:
       name: file
       url: "https://pub.dartlang.org"
@@ -225,6 +225,13 @@ packages:
       url: "https://pub.dartlang.org"
     source: hosted
     version: "1.0.3"
+  isolate_current_directory:
+    dependency: "direct dev"
+    description:
+      name: isolate_current_directory
+      url: "https://pub.dartlang.org"
+    source: hosted
+    version: "1.1.0"
   js:
     dependency: transitive
     description:
@@ -492,4 +499,4 @@ packages:
     source: hosted
     version: "3.1.1"
 sdks:
-  dart: ">=2.18.0 <3.0.0"
+  dart: ">=2.18.2 <3.0.0"
