@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:collection/collection.dart';
@@ -247,13 +248,24 @@ class DartleCache {
         .fine(() => 'Checking if $fileCollection with key="$key" has changed');
     if (fileCollection.isEmpty) return;
     Set<String> visitedEntities = {};
+
+    // visit all entities that currently exist
     await for (final entity in fileCollection.resolve()) {
       if (visitedEntities.add(entity.path)) {
-        final change = await entity.use(
-            (file) async => await _hasFileChanged(file, key: key),
-            (dir, children) async =>
-                await _hasDirChanged(dir, children, key: key));
-        if (change != null) yield FileChange(entity.entity, change);
+        final changes = await entity.use((file) async* {
+          final change = await _hasFileChanged(file, key: key);
+          if (change != null) yield FileChange(file, change);
+        }, (dir, children) async* {
+          final dirChange = await _hasDirChanged(dir, children, key: key);
+          if (dirChange != null && dirChange.kind == ChangeKind.modified) {
+            // do not report dir modified: will report the modified files instead...
+            // deleted files will only be detected here, so report them
+            yield* _deletedFiles(
+                dirChange.newContents!, dirChange.oldContents!);
+          }
+          if (dirChange != null) yield FileChange(dir, dirChange.kind);
+        });
+        yield* changes;
       }
     }
 
@@ -272,7 +284,7 @@ class DartleCache {
       final dirEntity = Directory(dir);
       final change = await _hasDirChanged(dirEntity, const [], key: key);
       if (change != null) {
-        yield FileChange(dirEntity, change);
+        yield FileChange(dirEntity, change.kind);
       }
     }
   }
@@ -315,24 +327,26 @@ class DartleCache {
     return change;
   }
 
-  Future<ChangeKind?> _hasDirChanged(
+  Future<_DirectoryChange?> _hasDirChanged(
       Directory dir, Iterable<FileSystemEntity> children,
       {required String key}) async {
     final hf = _getCacheLocation(dir, key: key);
-    ChangeKind? change;
+    _DirectoryChange? change;
     if (await hf.exists()) {
       final previousHash = await hf.readAsBytes();
-      final currentHash = _DirectoryContents(children).encode();
+      final currentContents = _DirectoryContents(children);
+      final currentHash = currentContents.encode();
       if (previousHash.equals(currentHash)) {
         logger.fine(() => 'Directory hash is still the same: ${dir.path}');
       } else {
         logger.fine(() => 'Directory hash has changed: ${dir.path}');
-        change = ChangeKind.modified;
+        change = _DirectoryChange(ChangeKind.modified, currentContents,
+            _DirectoryContents.decode(previousHash));
       }
     } else if (await dir.exists()) {
       logger.fine(() => 'Directory hash does not exist for '
           "existing directory: '${dir.path}'");
-      change = ChangeKind.added;
+      change = _DirectoryChange(ChangeKind.added, null, null);
     } else {
       logger.fine(() => "Directory '${dir.path}' does not exist "
           'and was not known before');
@@ -344,13 +358,44 @@ class DartleCache {
       File(path.join(_executablesDir, hash(file.path).toString()));
 
   File _getCacheLocation(FileSystemEntity entity, {required String key}) {
-    final locationHash = _locationHash(entity);
-    return File(path.join(_hashesDir, key, locationHash));
+    String parentDir, fileName;
+    if (entity is Directory) {
+      parentDir = entity.path;
+      fileName = 'dir';
+    } else {
+      parentDir = entity.parent.path;
+      fileName = _locationHash(entity);
+    }
+
+    return File(path.join(_hashesDir, key, parentDir, fileName));
   }
 
-  static String _locationHash(FileSystemEntity fe) => hash(fe.path).toString();
+  static String _locationHash(FileSystemEntity fe) =>
+      hash(path.basename(fe.path)).toString();
+
+  Stream<FileChange> _deletedFiles(
+      _DirectoryContents newContents, _DirectoryContents oldContents) async* {
+    final newEntities = newContents.children.map(entityPath).toSet();
+    final deleted =
+        oldContents.children.where((e) => !newEntities.contains(entityPath(e)));
+    for (final entity in deleted) {
+      yield FileChange(entity, ChangeKind.deleted);
+    }
+  }
 }
 
+class _DirectoryChange {
+  final ChangeKind kind;
+  final _DirectoryContents? newContents;
+  final _DirectoryContents? oldContents;
+
+  _DirectoryChange(this.kind, this.newContents, this.oldContents);
+}
+
+/// Directory is stored in the cache as a list of its contents.
+///
+/// This is necessary because it must be able to detect file deletions,
+/// so it must "remember" the previous files that were present directly under it.
 class _DirectoryContents {
   final List<FileSystemEntity> children;
 
@@ -363,10 +408,13 @@ class _DirectoryContents {
     return list;
   }
 
+  static _DirectoryContents decode(List<int> bytes) {
+    final list = jsonDecode(utf8.decode(bytes)) as List;
+    return _DirectoryContents(list.map((p) => fromEntityPath(p as String)));
+  }
+
   List<int> encode() {
-    // prepend 'd/' to mark hash as a directory
-    return hashAll((const [
-      [68, 47]
-    ]).followedBy(children.map((e) => e.path.codeUnits))).bytes;
+    final json = jsonEncode(children.map(entityPath).toList());
+    return utf8.encode(json);
   }
 }

@@ -33,7 +33,7 @@ class DirectoryEntry {
 
   bool includes(String otherPath, {required bool isDir}) {
     final other = otherPath == '.' ? '' : otherPath;
-    final self = path == '.' ? '' : path;
+    final self = (path == '.' ? '' : path).toAbsolute(p.isAbsolute(otherPath));
     if (exclusions.isNotEmpty) {
       if (isDir) {
         // check every sub-path of other path, not just the last one
@@ -479,5 +479,13 @@ extension _PathHelper on String {
   int _firstEffectiveIndex() {
     final index = lastIndexOf(pathSeparator);
     return index > 0 && index < length - 1 ? index + 1 : 0;
+  }
+
+  String toAbsolute(bool isAbsolute) {
+    if (isAbsolute) {
+      // wrap in Directory so path can be changed by the Dir impl.
+      return p.absolute(Directory(this).path);
+    }
+    return this;
   }
 }

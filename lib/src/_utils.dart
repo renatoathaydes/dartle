@@ -78,6 +78,24 @@ String? findMatchingByWords(String searchText, List<String> options) {
   return result.isEmpty ? null : result;
 }
 
+/// Get the path of a file system entity such that directories
+/// always end with '/', distinguishing them from files.
+String entityPath(FileSystemEntity entity) {
+  if (entity is Directory) {
+    return '${entity.path}/';
+  }
+  return entity.path;
+}
+
+/// Retrieve a file system entity from a path obtained from
+/// calling [entityPath].
+FileSystemEntity fromEntityPath(String path) {
+  if (path.endsWith('/')) {
+    return Directory(path);
+  }
+  return File(path);
+}
+
 Digest hash(String text) => hashBytes(utf8.encode(text));
 
 Digest hashBytes(List<int> bytes) => sha1.convert(bytes);

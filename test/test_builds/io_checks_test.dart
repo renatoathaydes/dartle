@@ -141,7 +141,7 @@ void main() {
       var proc = await runExampleDartBuild(const ['--no-color', 'incremental']);
       expect(proc.exitCode, equals(0), reason: 'STDOUT: ${proc.stdout}');
       expect(proc.stdout[0], contains(oneOfTwoTasksExecutingMessage));
-      await _expectFileTree(incOutputsDir.path, {
+      await expectFileTree(incOutputsDir.path, {
         'out.txt': ''
             'added: inc-inputs\n'
             'added: inc-inputs/bye.txt\n'
@@ -172,7 +172,7 @@ void main() {
       proc = await runExampleDartBuild(const ['--no-color', 'incremental']);
       expect(proc.exitCode, equals(0), reason: 'STDOUT: ${proc.stdout}');
       expect(proc.stdout[0], contains(oneOfTwoTasksExecutingMessage));
-      await _expectFileTree(
+      await expectFileTree(
           incOutputsDir.path, {'out.txt': 'changed: inc-inputs/hello.txt'});
     });
   });
@@ -180,31 +180,11 @@ void main() {
 
 Future<void> _expectFileTreeAfterBase64TaskRuns(
     String rootDir, Map<String, String?> outputFilesAtStart) {
-  return _expectFileTree(rootDir, {
+  return expectFileTree(rootDir, {
     'hello.b64.txt': 'aGVsbG8=',
     path.join('more', 'foo.b64.txt'): 'Zm9v',
     ...outputFilesAtStart,
   });
-}
-
-Future<void> _expectFileTree(
-    String rootDir, Map<String, String?> fileTree) async {
-  for (final entry in fileTree.entries) {
-    if (entry.value == null) continue;
-    final file = File(path.join(rootDir, entry.key));
-    expect(await file.exists(), isTrue,
-        reason: 'file ${file.path} does not exist');
-    expect(await file.readAsString(), equals(entry.value),
-        reason: 'file ${file.path} has incorrect contents');
-  }
-
-  // make sure no extra files exist
-  await for (final entity in Directory(rootDir).list(recursive: true)) {
-    if (entity is File &&
-        !fileTree.containsKey(path.relative(entity.path, from: rootDir))) {
-      fail('Unexpected file in outputDir: ${entity.path}');
-    }
-  }
 }
 
 Future<void> _rebuildFileTree(Map<String, String?> fileTree) async {

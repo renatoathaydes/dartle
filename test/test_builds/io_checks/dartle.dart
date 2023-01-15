@@ -53,8 +53,7 @@ class ExampleIncrementalAction {
     if (changes.isEmpty) {
       toWrite = ['first run'];
     } else {
-      toWrite =
-          changes.map((c) => '${c.kind.name}: ${c.entity.path}').toList();
+      toWrite = changes.map((c) => '${c.kind.name}: ${c.entity.path}').toList();
     }
 
     toWrite.sort();

@@ -3,9 +3,10 @@
 import 'dart:async';
 import 'dart:io';
 
+import 'package:collection/collection.dart';
 import 'package:dartle/dartle_cache.dart';
 import 'package:dartle/src/_log.dart';
-import 'package:file/memory.dart';
+import 'package:dartle/src/_utils.dart';
 import 'package:logging/logging.dart';
 import 'package:path/path.dart' show join;
 import 'package:test/test.dart';
@@ -13,17 +14,17 @@ import 'package:test/test.dart';
 import 'test_utils.dart';
 
 void main([List<String> args = const []]) {
-  if (args.contains('log')) {
+  // if (args.contains('log')) {
     activateLogging(Level.FINE);
-  }
+  // }
 
   final cache = DartleCache.instance;
 
   group('DartleCache', () {
-    var fs = MemoryFileSystem();
+    var fs = createTempFileSystem();
 
     setUp(() async {
-      fs = MemoryFileSystem();
+      fs = createTempFileSystem();
       await withFileSystem(fs, cache.init);
       await fs
           .file('dartle.dart')
@@ -61,10 +62,13 @@ void main([List<String> args = const []]) {
       });
 
       // check that the expected cache files have been created
-      expect(fs.directory('.dartle_tool').existsSync(), isTrue);
-      expect(fs.directory(join('.dartle_tool', 'hashes')).existsSync(), isTrue);
-      expect(fs.directory(join('.dartle_tool', 'hashes')).listSync().length,
-          equals(1));
+      expectFileTree(
+          '.dartle_tool',
+          {
+            'hashes/${hash('dartle.dart')}': '',
+          },
+          fs: fs,
+          checkFileContents: false);
 
       // verify interactions
       expect(
@@ -128,15 +132,14 @@ void main([List<String> args = const []]) {
       });
 
       // check that the expected cache files have been created
-      expect(fs.directory('.dartle_tool').existsSync(), isTrue);
-      expect(fs.directory(join('.dartle_tool', 'hashes', testKey)).existsSync(),
-          isTrue);
-      expect(
-          fs
-              .directory(join('.dartle_tool', 'hashes', testKey))
-              .listSync()
-              .length,
-          equals(1));
+      await expectFileTree(
+          '.dartle_tool',
+          {
+            'hashes/${hash('dartle.dart')}': '',
+            'hashes/$testKey/${hash('dartle.dart')}': '',
+          },
+          fs: fs,
+          checkFileContents: false);
 
       // verify interactions
       expect(
@@ -611,5 +614,95 @@ void main([List<String> args = const []]) {
             'invocation changed after removed right task': true,
           }));
     });
+
+    test('caches files and detects changes one by one', () async {
+      final interactions = <String, Object>{};
+      await withFileSystem(fs, () async {
+        final dartleFile = File('dartle.dart');
+        final textFile = File('hello.txt');
+        final someDir = Directory('dir');
+        final notInCache = File(join('dir', 'not-in-cache'));
+        final file1InSomeDir = File(join('dir', 'file1.txt'));
+        final file2InSomeDir = File(join('dir', 'file2.txt'));
+        final nestedDir = Directory(join('dir', 'nested'));
+
+        final inputCollection = dirs(['.'], fileExtensions: {'dart', 'txt'});
+
+        await cache(inputCollection);
+        await Future.delayed(const Duration(milliseconds: 100));
+
+        interactions['changesAfterCaching'] = await cache
+            .findChanges(inputCollection)
+            .map(fileChangeString)
+            .join(',');
+
+        final someContent = 'different contents';
+
+        await dartleFile.writeAsString(someContent);
+        interactions['changesAfterActualChange'] = await cache
+            .findChanges(inputCollection)
+            .map(fileChangeString)
+            .join(',');
+
+        await cache(inputCollection);
+        await Future.delayed(const Duration(milliseconds: 100));
+        await dartleFile.writeAsString(someContent);
+        await Future.delayed(const Duration(milliseconds: 100));
+        interactions['changesAfterRedundantChange'] = await cache
+            .findChanges(inputCollection)
+            .map(fileChangeString)
+            .join(',');
+
+        await cache(inputCollection);
+        await Future.delayed(const Duration(milliseconds: 100));
+        await textFile.writeAsString(someContent);
+        interactions['changesAfterNewFile'] = await cache
+            .findChanges(inputCollection)
+            .map(fileChangeString)
+            .join(',');
+
+        await cache(inputCollection);
+        await Future.delayed(const Duration(milliseconds: 100));
+        await textFile.writeAsString('other content');
+        await someDir.create();
+        await notInCache.writeAsString('ignored');
+        await file1InSomeDir.writeAsString(someContent);
+        await file2InSomeDir.writeAsString(someContent);
+        await dartleFile.delete();
+        interactions['changesAfterNewFilesAndDir'] = (await cache
+                .findChanges(inputCollection)
+                .map(fileChangeString)
+                .toList())
+            .sorted()
+            .join(', ');
+
+        await cache(inputCollection);
+        await Future.delayed(const Duration(milliseconds: 100));
+        await nestedDir.create();
+        interactions['changesAfterNewNestedDir'] = await cache
+            .findChanges(inputCollection)
+            .map(fileChangeString)
+            .join(',');
+      });
+
+      // verify interactions
+      expect(
+          interactions,
+          equals({
+            'changesAfterCaching': '',
+            'changesAfterActualChange': 'modified: ./dartle.dart',
+            'changesAfterRedundantChange': '',
+            'changesAfterNewFile': 'modified: ./hello.txt',
+            'changesAfterNewFilesAndDir':
+                'added: ./dir/, added: ./dir/file1.txt, added: ./dir/file2.txt, '
+                    'modified: ./hello.txt, removed: ./dartle.dart',
+            'changesAfterNewNestedDir': 'added: ./dir/nested/',
+          }));
+    });
   });
+}
+
+String fileChangeString(FileChange change) {
+  final c = change.entity is File ? '' : '/';
+  return '${change.kind.name}: ${change.entity.path}$c';
 }
