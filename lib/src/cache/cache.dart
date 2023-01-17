@@ -12,6 +12,9 @@ import '../helpers.dart';
 import '../task.dart';
 import '../task_invocation.dart';
 
+/// Current version of the Dartle Cache.
+const cacheFormatVersion = '0.1';
+
 /// Kind of [FileChange].
 enum ChangeKind {
   added,
@@ -56,10 +59,37 @@ class DartleCache {
   /// This method does not normally need to be called explicitly as the
   /// constructor will call it.
   void init() {
-    Directory(rootDir).createSync(recursive: true);
+    final root = Directory(rootDir);
+    final versionFile = File(path.join(rootDir, 'version'));
+    bool requiresUpdate;
+    if (root.existsSync()) {
+      requiresUpdate = !_isCurrentVersion(versionFile);
+      if (requiresUpdate) {
+        logger.info(
+            'Dartle cache version change detected. Performing full cleanup.');
+        Directory(_hashesDir).deleteSync(recursive: true);
+        Directory(_tasksDir).deleteSync(recursive: true);
+        Directory(_executablesDir).deleteSync(recursive: true);
+      }
+    } else {
+      root.createSync(recursive: true);
+      requiresUpdate = true;
+    }
+    if (requiresUpdate) {
+      versionFile.writeAsStringSync(cacheFormatVersion);
+    }
     Directory(_hashesDir).createSync();
     Directory(_tasksDir).createSync();
     Directory(_executablesDir).createSync();
+  }
+
+  bool _isCurrentVersion(File versionFile) {
+    if (versionFile.existsSync()) {
+      final version = versionFile.readAsStringSync();
+      return version == cacheFormatVersion;
+    } else {
+      return false;
+    }
   }
 
   /// Clean the Dartle cache.
