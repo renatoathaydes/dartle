@@ -69,6 +69,7 @@ void main([List<String> args = const []]) {
           cache.rootDir,
           {
             'hashes/${hash('dartle.dart')}': '',
+            'version': '',
           },
           fs: fs,
           checkFileContents: false);
@@ -140,6 +141,7 @@ void main([List<String> args = const []]) {
           {
             'hashes/${hash('dartle.dart')}': '',
             'hashes/$testKey/${hash('dartle.dart')}': '',
+            'version': '0.1'
           },
           fs: fs,
           checkFileContents: false);
