@@ -3,6 +3,7 @@ import 'dart:io' as io;
 import 'dart:math';
 
 import 'package:dartle/dartle.dart';
+import 'package:dartle/src/_log.dart';
 import 'package:isolate_current_directory/isolate_current_directory.dart';
 import 'package:path/path.dart' as p;
 import 'package:test/test.dart';
@@ -33,7 +34,8 @@ DartleTestFileSystem createTempFileSystem() {
 
 FutureOr<R> withFileSystem<R>(
     DartleTestFileSystem fs, FutureOr<R> Function() action) {
-  return withCurrentDirectory(fs.root, action);
+  logger.fine(() => 'Using file system with root at: ${fs.root}');
+  return withCurrentDirectory(fs.root, () async => await action());
 }
 
 Future<ProcessResult> startProcess(

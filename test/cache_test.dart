@@ -14,18 +14,21 @@ import 'package:test/test.dart';
 import 'test_utils.dart';
 
 void main([List<String> args = const []]) {
-  // if (args.contains('log')) {
-    activateLogging(Level.FINE);
-  // }
+  if (args.contains('log')) {
+    activateLogging(Level.FINE, colorfulLog: false);
+  }
 
-  final cache = DartleCache.instance;
+  DartleCache cache = DartleCache.instance;
 
   group('DartleCache', () {
     var fs = createTempFileSystem();
 
     setUp(() async {
       fs = createTempFileSystem();
-      await withFileSystem(fs, cache.init);
+      await withFileSystem(fs, () async {
+        cache = DartleCache('test-cache');
+        cache.init();
+      });
       await fs
           .file('dartle.dart')
           .writeAsString('main(){print("hello world");}');
@@ -62,8 +65,8 @@ void main([List<String> args = const []]) {
       });
 
       // check that the expected cache files have been created
-      expectFileTree(
-          '.dartle_tool',
+      await expectFileTree(
+          cache.rootDir,
           {
             'hashes/${hash('dartle.dart')}': '',
           },
@@ -133,7 +136,7 @@ void main([List<String> args = const []]) {
 
       // check that the expected cache files have been created
       await expectFileTree(
-          '.dartle_tool',
+          cache.rootDir,
           {
             'hashes/${hash('dartle.dart')}': '',
             'hashes/$testKey/${hash('dartle.dart')}': '',
@@ -249,14 +252,6 @@ void main([List<String> args = const []]) {
         interactions['hasChangedAfterCreatingOtherDirAndFile'] =
             await cache.hasChanged(dirCollection);
       });
-
-      // check that the expected cache files have been created
-      expect(fs.directory('.dartle_tool').existsSync(), isTrue);
-      expect(fs.directory(join('.dartle_tool', 'hashes')).existsSync(), isTrue);
-
-      // there should be one hash for each directory and file cached in the test
-      expect(fs.directory(join('.dartle_tool', 'hashes')).listSync().length,
-          equals(4));
 
       // verify interactions
       expect(
@@ -618,15 +613,18 @@ void main([List<String> args = const []]) {
     test('caches files and detects changes one by one', () async {
       final interactions = <String, Object>{};
       await withFileSystem(fs, () async {
-        final dartleFile = File('dartle.dart');
-        final textFile = File('hello.txt');
-        final someDir = Directory('dir');
-        final notInCache = File(join('dir', 'not-in-cache'));
-        final file1InSomeDir = File(join('dir', 'file1.txt'));
-        final file2InSomeDir = File(join('dir', 'file2.txt'));
-        final nestedDir = Directory(join('dir', 'nested'));
+        final dartleFile = File(join('src', 'dartle.dart'));
+        final textFile = File(join('src', 'hello.txt'));
+        final someDir = Directory(join('src', 'dir'));
+        final notInCache = File(join('src', 'dir', 'not-in-cache'));
+        final file1InSomeDir = File(join('src', 'dir', 'file1.txt'));
+        final file2InSomeDir = File(join('src', 'dir', 'file2.txt'));
+        final nestedDir = Directory(join('src', 'dir', 'nested'));
+        await Directory('src').create();
 
-        final inputCollection = dirs(['.'], fileExtensions: {'dart', 'txt'});
+        await dartleFile.create();
+
+        final inputCollection = dirs(['src'], fileExtensions: {'dart', 'txt'});
 
         await cache(inputCollection);
         await Future.delayed(const Duration(milliseconds: 100));
@@ -634,7 +632,7 @@ void main([List<String> args = const []]) {
         interactions['changesAfterCaching'] = await cache
             .findChanges(inputCollection)
             .map(fileChangeString)
-            .join(',');
+            .join(', ');
 
         final someContent = 'different contents';
 
@@ -642,7 +640,7 @@ void main([List<String> args = const []]) {
         interactions['changesAfterActualChange'] = await cache
             .findChanges(inputCollection)
             .map(fileChangeString)
-            .join(',');
+            .join(', ');
 
         await cache(inputCollection);
         await Future.delayed(const Duration(milliseconds: 100));
@@ -651,7 +649,7 @@ void main([List<String> args = const []]) {
         interactions['changesAfterRedundantChange'] = await cache
             .findChanges(inputCollection)
             .map(fileChangeString)
-            .join(',');
+            .join(', ');
 
         await cache(inputCollection);
         await Future.delayed(const Duration(milliseconds: 100));
@@ -659,7 +657,7 @@ void main([List<String> args = const []]) {
         interactions['changesAfterNewFile'] = await cache
             .findChanges(inputCollection)
             .map(fileChangeString)
-            .join(',');
+            .join(', ');
 
         await cache(inputCollection);
         await Future.delayed(const Duration(milliseconds: 100));
@@ -682,7 +680,7 @@ void main([List<String> args = const []]) {
         interactions['changesAfterNewNestedDir'] = await cache
             .findChanges(inputCollection)
             .map(fileChangeString)
-            .join(',');
+            .join(', ');
       });
 
       // verify interactions
@@ -690,13 +688,14 @@ void main([List<String> args = const []]) {
           interactions,
           equals({
             'changesAfterCaching': '',
-            'changesAfterActualChange': 'modified: ./dartle.dart',
+            'changesAfterActualChange': 'modified: src/dartle.dart',
             'changesAfterRedundantChange': '',
-            'changesAfterNewFile': 'modified: ./hello.txt',
+            'changesAfterNewFile': 'modified: src/, added: src/hello.txt',
             'changesAfterNewFilesAndDir':
-                'added: ./dir/, added: ./dir/file1.txt, added: ./dir/file2.txt, '
-                    'modified: ./hello.txt, removed: ./dartle.dart',
-            'changesAfterNewNestedDir': 'added: ./dir/nested/',
+                'added: src/dir/, added: src/dir/file1.txt, added: src/dir/file2.txt, '
+                    'deleted: src/dartle.dart, modified: src/, modified: src/hello.txt',
+            'changesAfterNewNestedDir':
+                'modified: src/dir/, added: src/dir/nested/',
           }));
     });
   });

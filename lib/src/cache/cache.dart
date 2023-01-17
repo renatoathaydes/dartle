@@ -116,8 +116,10 @@ class DartleCache {
 
   /// Cache the given task invocation.
   Future<void> cacheTaskInvocation(TaskInvocation invocation) async {
-    await File(path.join(_tasksDir, invocation.name))
-        .writeAsString(invocation.args.toString());
+    final file = File(path.join(_tasksDir, invocation.name));
+    logger.fine(() =>
+        'Caching invocation of task "${invocation.name}" at ${file.path}');
+    await file.writeAsString(invocation.args.toString());
   }
 
   /// Get the [DateTime] when this task was last invoked successfully.
@@ -358,15 +360,8 @@ class DartleCache {
       File(path.join(_executablesDir, hash(file.path).toString()));
 
   File _getCacheLocation(FileSystemEntity entity, {required String key}) {
-    String parentDir, fileName;
-    if (entity is Directory) {
-      parentDir = entity.path;
-      fileName = 'dir';
-    } else {
-      parentDir = entity.parent.path;
-      fileName = _locationHash(entity);
-    }
-
+    final parentDir = entity is Directory ? entity.path : entity.parent.path;
+    final fileName = _locationHash(entity);
     return File(path.join(_hashesDir, key, parentDir, fileName));
   }
 
