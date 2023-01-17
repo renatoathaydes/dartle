@@ -28,6 +28,9 @@ void main() {
     var exampleDartleBuild = File('');
 
     setUpAll(() async {
+      await ignoreExceptions(() async =>
+          await Directory(join('example', '.dartle_tool'))
+              .delete(recursive: true));
       exampleDartleBuild =
           await createDartExe(File(join('example', 'dartle.dart')));
     });
