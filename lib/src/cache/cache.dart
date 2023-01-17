@@ -37,7 +37,13 @@ class FileChange {
 /// directories, it only associates a cache to them so that it can tell whether
 /// their contents have changed between two checks in a very efficient manner.
 class DartleCache {
-  static final DartleCache instance = DartleCache._defaultInstance();
+  static DartleCache? _defaultCache;
+
+  /// Get the default DartleCache instance.
+  /// May initialize the default cache directory at .dartle_tool.
+  static DartleCache get instance {
+    return _defaultCache ??= DartleCache._defaultInstance();
+  }
 
   final String rootDir;
   final String _hashesDir;
