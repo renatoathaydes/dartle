@@ -173,7 +173,7 @@ void main() {
       expect(proc.exitCode, equals(0), reason: 'STDOUT: ${proc.stdout}');
       expect(proc.stdout[0], contains(oneOfTwoTasksExecutingMessage));
       await expectFileTree(
-          incOutputsDir.path, {'out.txt': 'changed: inc-inputs/hello.txt'});
+          incOutputsDir.path, {'out.txt': 'modified: inc-inputs/hello.txt'});
     });
   });
 }

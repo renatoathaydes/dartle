@@ -196,8 +196,9 @@ Future<TaskResult> runTask(TaskInvocation invocation,
 Future<List<FileChange>> _prepareIncrementalAction(
     Stopwatch stopwatch, String taskName, RunOnChanges runCondition) async {
   logger.fine(() => "Collecting changes for incremental task '$taskName'");
-  final changes =
-      await runCondition.cache.findChanges(runCondition.inputs).toList();
+  final changes = await runCondition.cache
+      .findChanges(runCondition.inputs, key: taskName)
+      .toList();
 
   logger.log(profile,
       "Collected ${changes.length} changes for '$taskName' in ${elapsedTime(stopwatch)}");
