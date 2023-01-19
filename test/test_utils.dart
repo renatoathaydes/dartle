@@ -94,7 +94,7 @@ Future<void> expectFileTree(String rootDir, Map<String, String?> fileTree,
   // make sure no extra files exist
   await for (final entity in absRootDir.list(recursive: true)) {
     if (entity is io.File) {
-      final path = p.relative(entity.path, from: absRootDir.path);
+      final path = fixPath(p.relative(entity.path, from: absRootDir.path));
       if (!fileTree.containsKey(path)) {
         fail('Unexpected file in outputDir: $path. '
             'Actual tree: ${await _collectFileTree(fs, rootDir)}');

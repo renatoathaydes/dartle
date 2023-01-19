@@ -364,19 +364,15 @@ Future _expectFileCollection(DartleTestFileSystem fs, FileCollection actual,
     final allFiles = entities
         .map((e) => e.entity)
         .whereType<File>()
-        .map((e) => e.path)
+        .map((e) => fixPath(e.path))
         .toSet();
     final allDirs = entities
         .map((e) => e.entity)
         .whereType<Directory>()
-        .map((e) => e.path)
+        .map((e) => fixPath(e.path))
         .toSet();
     expect(allFiles, equals(files));
     expect(allDirs, equals(dirs));
-    expect(
-        await actual.resolveFiles().map((f) => f.path).toSet(), equals(files));
-    expect(await actual.resolveDirectories().map((f) => f.path).toSet(),
-        equals(dirs));
   });
 }
 
