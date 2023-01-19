@@ -68,6 +68,9 @@ class ProcessResult {
       'exitCode: $exitCode}';
 }
 
+/// Change Windows path to Unix path if needed.
+String fixPath(String p) => io.Platform.isWindows ? p.replaceAll('\\', '/') : p;
+
 Future<void> expectFileTree(String rootDir, Map<String, String?> fileTree,
     {DartleTestFileSystem fs = const DartleTestFileSystem('.'),
     bool checkFileContents = true}) async {
