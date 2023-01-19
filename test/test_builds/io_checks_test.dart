@@ -45,8 +45,10 @@ void main() {
 
     setUp(() async {
       await _deleteDartleToolDir();
-      final preExistingOutput = outputsDir.list(recursive: true);
-      await for (final out in preExistingOutput) {
+      final preExistingOutput = (await outputsDir.exists())
+          ? await outputsDir.list(recursive: true).toList()
+          : const <FileSystemEntity>[];
+      for (final out in preExistingOutput) {
         outputFilesAtStart[path.relative(out.path, from: outputsDir.path)] =
             (out is File) ? await out.readAsString() : null;
       }
