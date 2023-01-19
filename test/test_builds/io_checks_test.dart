@@ -146,8 +146,8 @@ void main() {
       await expectFileTree(incOutputsDir.path, {
         'out.txt': ''
             'added: inc-inputs\n'
-            'added: inc-inputs/bye.txt\n'
-            'added: inc-inputs/hello.txt'
+            'added: ${path.join('inc-inputs', 'bye.txt')}\n'
+            'added: ${path.join('inc-inputs', 'hello.txt')}'
       });
 
       // run again (no changes)
@@ -174,8 +174,8 @@ void main() {
       proc = await runExampleDartBuild(const ['--no-color', 'incremental']);
       expect(proc.exitCode, equals(0), reason: 'STDOUT: ${proc.stdout}');
       expect(proc.stdout[0], contains(oneOfTwoTasksExecutingMessage));
-      await expectFileTree(
-          incOutputsDir.path, {'out.txt': 'modified: inc-inputs/hello.txt'});
+      await expectFileTree(incOutputsDir.path,
+          {'out.txt': 'modified: ${path.join('inc-inputs', 'hello.txt')}'});
     });
   });
 }
@@ -184,7 +184,7 @@ Future<void> _expectFileTreeAfterBase64TaskRuns(
     String rootDir, Map<String, String?> outputFilesAtStart) {
   return expectFileTree(rootDir, {
     'hello.b64.txt': 'aGVsbG8=',
-    path.join('more', 'foo.b64.txt'): 'Zm9v',
+    'more/foo.b64.txt': 'Zm9v',
     ...outputFilesAtStart,
   });
 }
