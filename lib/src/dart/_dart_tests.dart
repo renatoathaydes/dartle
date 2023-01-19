@@ -24,21 +24,32 @@ enum DartTestOutput {
 }
 
 Future<void> runTests(
-    Iterable<String> platformArgs, DartTestOutput testOutput) async {
+    Iterable<String> dartTestOptions, DartTestOutput testOutput,
+    [List<String> testsToRun = const []]) async {
+  if (testsToRun.isNotEmpty) {
+    logger.info(
+        'Running ${testsToRun.length} modified test files. Use --all to run all.');
+  }
   int code;
   switch (testOutput) {
     case DartTestOutput.dartleReporter:
       final jsonReporter = JsonReporter();
       code = await exec(
-          Process.start(
-              'dart', ['test', '--reporter', 'json', ...platformArgs]),
+          Process.start('dart', [
+            'test',
+            '--reporter',
+            'json',
+            ...dartTestOptions,
+            ...testsToRun
+          ]),
           name: 'Dart Tests',
           onStdoutLine: jsonReporter,
           onStderrLine: jsonReporter.error);
       jsonReporter.close();
       break;
     case DartTestOutput.dart:
-      final proc = await Process.start('dart', ['test', ...platformArgs]);
+      final proc = await Process.start(
+          'dart', ['test', ...dartTestOptions, ...testsToRun]);
       final stdoutFuture = stdout.addStream(proc.stdout);
       final stderrFuture = stderr.addStream(proc.stderr);
       code = await proc.exitCode;
@@ -46,7 +57,8 @@ Future<void> runTests(
       await stderrFuture;
       break;
     case DartTestOutput.printOnFailure:
-      code = await execProc(Process.start('dart', ['test', ...platformArgs]),
+      code = await execProc(
+          Process.start('dart', ['test', ...dartTestOptions, ...testsToRun]),
           name: 'Dart Tests');
       break;
   }

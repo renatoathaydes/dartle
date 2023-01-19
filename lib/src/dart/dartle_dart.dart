@@ -3,9 +3,9 @@ import 'dart:io';
 import 'package:path/path.dart';
 import 'package:yaml/yaml.dart';
 
-import '../file_collection.dart';
-import '../helpers.dart';
+import '../../dartle_cache.dart';
 import '../_utils.dart' as utils;
+import '../helpers.dart';
 import '../run_condition.dart';
 import '../task.dart';
 import '_dart_tests.dart';
@@ -144,10 +144,9 @@ class DartleDart {
 
     test = Task(_test,
         name: 'test',
-        description: 'Runs all tests. Arguments can be used to provide the '
-            'platforms the tests should run on.',
+        description: 'Runs Dart tests.',
         dependsOn: {if (config.runAnalyzer) 'analyzeCode'},
-        argsValidator: const AcceptAnyArgs(),
+        argsValidator: const TestTaskArgsValidator(),
         runCondition: RunOnChanges(
             inputs: dirs(['lib', 'bin', 'test', 'example']
                 .map((e) => join(rootDir, e)))));
@@ -183,9 +182,34 @@ class DartleDart {
     tasks = Set.unmodifiable(buildTasks);
   }
 
-  Future<void> _test(List<String> platforms) async {
-    final platformArgs = platforms.expand((p) => ['-p', p]);
-    await runTests(platformArgs, config.testOutput);
+  Future<void> _test(List<String> args,
+      [List<FileChange> changes = const []]) async {
+    final options = args.where((a) => a != '--all');
+    final forceAllTests = args.contains('--all') ||
+        // if it looks like a file or dir was included in args, avoid trying
+        // to specify which tests to run.
+        args.any((a) => a.contains(Platform.pathSeparator));
+
+    final testChanges = changes
+        .where((change) => change.entity.path.endsWith('_test.dart'))
+        .toList();
+
+    List<String> testsToRun;
+
+    if (!forceAllTests &&
+        changes.isNotEmpty &&
+        testChanges.length == changes.length) {
+      // only tests have changed, run the changed tests only!
+      testsToRun = testChanges
+          .where((change) =>
+              change.kind != ChangeKind.deleted && change.entity is File)
+          .map((change) => change.entity.path)
+          .toList();
+    } else {
+      testsToRun = const [];
+    }
+
+    await runTests(options, config.testOutput, testsToRun);
   }
 
   Future<void> _formatCode(_) async {
@@ -243,4 +267,20 @@ class DartleDart {
       if (code != 0) failBuild(reason: 'Failed to compile ${entry.key}');
     }
   }
+}
+
+class TestTaskArgsValidator with ArgsValidator {
+  const TestTaskArgsValidator();
+
+  @override
+  String helpMessage() => '''
+The following options are accepted:
+
+    --all     run all tests, even unmodified ones.
+    
+    Any other arguments are passed on to 'dart test'.
+''';
+
+  @override
+  bool validate(List<String> args) => true;
 }
