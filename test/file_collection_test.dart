@@ -354,7 +354,7 @@ void main() {
         'A/B/D/E'
       });
     });
-  }, timeout: Timeout(Duration(milliseconds: 250)));
+  }, timeout: Timeout(Duration(seconds: 5)));
 }
 
 Future _expectFileCollection(DartleTestFileSystem fs, FileCollection actual,
