@@ -1,5 +1,3 @@
-// FIXME test fails on Windows due to https://github.com/google/file.dart/issues/182
-@TestOn('!windows')
 import 'dart:io';
 
 import 'package:collection/collection.dart';
