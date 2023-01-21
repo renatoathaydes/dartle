@@ -27,8 +27,10 @@ Future<void> runTests(
     Iterable<String> dartTestOptions, DartTestOutput testOutput,
     [List<String> testsToRun = const []]) async {
   if (testsToRun.isNotEmpty) {
+    final s = testsToRun.length == 1 ? '' : 's';
     logger.info(
-        'Running ${testsToRun.length} modified test files. Use --all to run all.');
+        'Running ${testsToRun.length} modified test file$s. '
+        'Use ":--all" to force all tests to run.');
   }
   int code;
   switch (testOutput) {

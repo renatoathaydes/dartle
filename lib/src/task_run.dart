@@ -50,7 +50,7 @@ class TaskResult {
 /// Notice that the full set of changes are only collected if a
 /// [Task] action requires them.
 typedef IncrementalAction = FutureOr<void> Function(List<String> args,
-    [List<FileChange> inputChanges, List<FileChange> outputChanges]);
+    [ChangeSet? changeSet]);
 
 /// The change Set for an incremental action.
 class ChangeSet {

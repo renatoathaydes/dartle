@@ -58,6 +58,5 @@ Future<void> runAction(Function(List<String>) action, List<String> args,
   if (changes == null) {
     return action(args);
   }
-  return (action as IncrementalAction)(
-      args, changes.inputChanges, changes.outputChanges);
+  return (action as IncrementalAction)(args, changes);
 }

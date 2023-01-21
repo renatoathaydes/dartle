@@ -4,7 +4,6 @@ import 'dart:io';
 
 import 'package:collection/collection.dart';
 import 'package:dartle/dartle.dart';
-import 'package:dartle/src/cache/cache.dart';
 import 'package:path/path.dart' as path;
 
 final inputs = dir('inputs', fileExtensions: const {'txt'});
@@ -37,9 +36,7 @@ Future base64(_) async {
 }
 
 class ExampleIncrementalAction {
-  Future<void> call(List<String> _,
-      [List<FileChange> inputChanges = const [],
-      List<FileChange> outputChanges = const []]) async {
+  Future<void> call(List<String> _, [ChangeSet? changeSet]) async {
     final inputDir = Directory(incInputs.directories.first.path);
     if (!await inputDir.exists()) {
       return;
@@ -47,6 +44,9 @@ class ExampleIncrementalAction {
     final outDir = Directory(incOutputs.directories.first.path);
     await outDir.create();
     final output = File(path.join(outDir.path, 'out.txt'));
+
+    final inputChanges = changeSet?.inputChanges ?? const [];
+    final outputChanges = changeSet?.outputChanges ?? const [];
 
     List<String> toWrite;
 

@@ -8,6 +8,7 @@ import '../_utils.dart' as utils;
 import '../helpers.dart';
 import '../run_condition.dart';
 import '../task.dart';
+import '../task_run.dart' show ChangeSet;
 import '_dart_tests.dart';
 
 /// Configuration for the [DartleDart] class.
@@ -182,23 +183,23 @@ class DartleDart {
     tasks = Set.unmodifiable(buildTasks);
   }
 
-  Future<void> _test(List<String> args,
-      [List<FileChange> changes = const []]) async {
+  Future<void> _test(List<String> args, [ChangeSet? changes]) async {
     final options = args.where((a) => a != '--all');
     final forceAllTests = args.contains('--all') ||
         // if it looks like a file or dir was included in args, avoid trying
         // to specify which tests to run.
         args.any((a) => a.contains(Platform.pathSeparator));
 
-    final testChanges = changes
-        .where((change) => change.entity.path.endsWith('_test.dart'))
-        .toList();
+    final testChanges = changes?.inputChanges
+            .where((change) => change.entity.path.endsWith('_test.dart'))
+            .toList() ??
+        const [];
 
     List<String> testsToRun;
 
     if (!forceAllTests &&
-        changes.isNotEmpty &&
-        testChanges.length == changes.length) {
+        testChanges.isNotEmpty &&
+        testChanges.length == changes!.inputChanges.length) {
       // only tests have changed, run the changed tests only!
       testsToRun = testChanges
           .where((change) =>
