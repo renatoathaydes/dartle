@@ -5,18 +5,17 @@ import 'package:actors/actors.dart';
 import 'package:structured_async/structured_async.dart';
 
 import '_log.dart';
-import 'cache/cache.dart' show FileChange;
-import 'task_run.dart' show IncrementalAction;
+import 'task_run.dart' show IncrementalAction, ChangeSet;
 
 /// An Action that may or may not be an [IncrementalAction].
 ///
 /// If [changes] are `null`, then the action is non-incremental.
 typedef MaybeIncrementalAction = Function(
-    List<String> args, List<FileChange>? changes);
+    List<String> args, ChangeSet? changes);
 
 class _ActorMessage {
   final List<String> args;
-  final List<FileChange>? changes;
+  final ChangeSet? changes;
 
   _ActorMessage(this.args, this.changes);
 }
@@ -55,9 +54,10 @@ Function(_ActorMessage) _initializedActorFun<A>(Function(List<String>) fun) {
 }
 
 Future<void> runAction(Function(List<String>) action, List<String> args,
-    List<FileChange>? changes) async {
+    ChangeSet? changes) async {
   if (changes == null) {
     return action(args);
   }
-  return (action as IncrementalAction)(args, changes);
+  return (action as IncrementalAction)(
+      args, changes.inputChanges, changes.outputChanges);
 }

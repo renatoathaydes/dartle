@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:collection/collection.dart';
 import 'package:dartle/dartle.dart';
 import 'package:dartle/src/cache/cache.dart';
 import 'package:path/path.dart' as path;
@@ -37,9 +38,8 @@ Future base64(_) async {
 
 class ExampleIncrementalAction {
   Future<void> call(List<String> _,
-      [List<FileChange> changes = const []]) async {
-    print(
-        'Changes : ${changes.map((c) => '${c.kind.name}: ${c.entity.path}\n')}');
+      [List<FileChange> inputChanges = const [],
+      List<FileChange> outputChanges = const []]) async {
     final inputDir = Directory(incInputs.directories.first.path);
     if (!await inputDir.exists()) {
       return;
@@ -50,13 +50,22 @@ class ExampleIncrementalAction {
 
     List<String> toWrite;
 
-    if (changes.isEmpty) {
-      toWrite = ['first run'];
+    if (inputChanges.isEmpty && outputChanges.isEmpty) {
+      toWrite = ['<no changes>'];
     } else {
-      toWrite = changes.map((c) => '${c.kind.name}: ${c.entity.path}').toList();
+      toWrite = [
+        'inputChanges',
+        ...inputChanges
+            .map((c) => '${c.kind.name}: ${c.entity.path}')
+            .toList()
+            .sorted(),
+        'outputChanges',
+        ...outputChanges
+            .map((c) => '${c.kind.name}: ${c.entity.path}')
+            .toList()
+            .sorted(),
+      ];
     }
-
-    toWrite.sort();
     final handle = await output.open(mode: FileMode.writeOnly);
     try {
       await handle.writeString(toWrite.join('\n'));

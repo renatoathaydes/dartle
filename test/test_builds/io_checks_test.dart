@@ -144,10 +144,11 @@ void main() {
       expect(proc.exitCode, equals(0), reason: 'STDOUT: ${proc.stdout}');
       expect(proc.stdout[0], contains(oneOfTwoTasksExecutingMessage));
       await expectFileTree(incOutputsDir.path, {
-        'out.txt': ''
+        'out.txt': 'inputChanges\n'
             'added: inc-inputs\n'
             'added: ${path.join('inc-inputs', 'bye.txt')}\n'
-            'added: ${path.join('inc-inputs', 'hello.txt')}'
+            'added: ${path.join('inc-inputs', 'hello.txt')}\n'
+            'outputChanges' // none
       });
 
       // run again (no changes)
@@ -174,8 +175,25 @@ void main() {
       proc = await runExampleDartBuild(const ['--no-color', 'incremental']);
       expect(proc.exitCode, equals(0), reason: 'STDOUT: ${proc.stdout}');
       expect(proc.stdout[0], contains(oneOfTwoTasksExecutingMessage));
-      await expectFileTree(incOutputsDir.path,
-          {'out.txt': 'modified: ${path.join('inc-inputs', 'hello.txt')}'});
+      await expectFileTree(incOutputsDir.path, {
+        'out.txt': 'inputChanges\n'
+            'modified: ${path.join('inc-inputs', 'hello.txt')}\n'
+            'outputChanges' // none
+      });
+
+      // delete the output
+      await File(path.join(incOutputsDir.path, 'out.txt')).delete();
+
+      // run again, it should detect the deletion
+      proc = await runExampleDartBuild(const ['--no-color', 'incremental']);
+      expect(proc.exitCode, equals(0), reason: 'STDOUT: ${proc.stdout}');
+      expect(proc.stdout[0], contains(oneOfTwoTasksExecutingMessage));
+      await expectFileTree(incOutputsDir.path, {
+        'out.txt': 'inputChanges\n' // none
+            'outputChanges\n'
+            'deleted: ${path.join('inc-outputs', 'out.txt')}\n'
+            'modified: inc-outputs'
+      });
     });
   });
 }
