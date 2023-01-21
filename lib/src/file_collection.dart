@@ -1,8 +1,9 @@
 import 'dart:async';
 import 'dart:io';
 
-import 'package:dartle/dartle_dart.dart';
 import 'package:path/path.dart' as p;
+
+import '../dartle.dart';
 
 /// A directory entry, usually used within a [FileCollection].
 ///
@@ -446,12 +447,13 @@ Iterable<DirectoryEntry> _ensureValidDirs(Iterable<DirectoryEntry> dirs) sync* {
   for (final dir in dirs) {
     final pdir = _ensurePosixPath(dir.path);
     if (p.isAbsolute(pdir)) {
-      throw DartleException(message: 'Absolute directory not allowed: ${dir.path}');
+      throw DartleException(
+          message: 'Absolute directory not allowed: ${dir.path}');
     }
     for (final seen in seenDirs) {
       if (p.isWithin(seen, pdir)) {
-        throw DartleException(message:
-            'Non disjoint-directories: $seen includes ${dir.path}');
+        throw DartleException(
+            message: 'Non disjoint-directories: $seen includes ${dir.path}');
       }
     }
     if (!seenDirs.add(pdir)) {
