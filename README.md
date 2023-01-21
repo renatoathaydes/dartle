@@ -208,6 +208,8 @@ hello(_) => print("Hello Dartle!");
 
 This allows the task to run in parallel with other tasks on different `Isolate`s (potentially on different CPU cores).
 
+> Notice that because the task may run on an `Isolate`, it must not depend on any global state. The function will not _see_ changes made from the main `Isolate` or any other.
+
 If that's not important, a lambda can be used, but in such case the task's name must be provided explicitly (because
 lambdas have no name):
 
@@ -230,6 +232,20 @@ hello(List<String> args) => ...
 ```
 
 A Task will not be executed if its `argsValidator` is not satisfied (Dartle will fail the build if that happens).
+
+### Incremental Tasks
+
+For a Dartle task to become incremental, it only needs to have an action function that accepts an optional argument containing the `ChangeSet` since the last build.
+
+For example, the `hello` function from the previous example would need to be declared as shown below to become an incremental task:
+
+```dart
+hello(List<String> args, [ChangeSet? changeSet]) async {
+    // TODO inspect changes to know what needs to be done
+}
+```
+
+Importantly, the `ChangeSet` must be an optional argument, otherwise the function won't match the signature expected by Dartle.
 
 ### Task dependencies and run conditions
 
