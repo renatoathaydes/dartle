@@ -81,7 +81,7 @@ String? findMatchingByWords(String searchText, List<String> options) {
 /// Get the path of a file system entity such that directories
 /// always end with '/', distinguishing them from files.
 String entityPath(FileSystemEntity entity) {
-  if (entity is Directory  && !entity.path.endsWith('/')) {
+  if (entity is Directory && !entity.path.endsWith('/')) {
     return '${entity.path}/';
   }
   return entity.path;
