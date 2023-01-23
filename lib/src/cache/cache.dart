@@ -296,12 +296,14 @@ class DartleCache {
         }, (dir, children) async* {
           final dirChange = await _hasDirChanged(dir, children, key: key);
           if (dirChange != null && dirChange.kind == ChangeKind.modified) {
-            // do not report dir modified: will report the modified files instead...
-            // deleted files will only be detected here, so report them
+            // file additions/modifications are reported elsehwere,
+            // but only here can we find deleted files.
             yield* _deletedFiles(
                 dirChange.newContents!, dirChange.oldContents!);
           }
-          if (dirChange != null) yield FileChange(dir, dirChange.kind);
+          if (dirChange != null) {
+            yield FileChange(dir, dirChange.kind);
+          }
         });
         yield* changes;
       }

@@ -654,6 +654,17 @@ void main([List<String> args = const []]) {
             .findChanges(inputCollection)
             .map(fileChangeString)
             .join(', ');
+
+        await cache(inputCollection);
+
+        // remove all files in a sub-dir
+        await file1InSomeDir.delete();
+        await file2InSomeDir.delete();
+
+        interactions['changesAfterDeletedAllFilesInDir'] = await cache
+            .findChanges(inputCollection)
+            .map(fileChangeString)
+            .join(', ');
       });
 
       // verify interactions
@@ -669,6 +680,8 @@ void main([List<String> args = const []]) {
                     'deleted: src/dartle.dart, modified: src/, modified: src/hello.txt',
             'changesAfterNewNestedDir':
                 'modified: src/dir/, added: src/dir/nested/',
+            'changesAfterDeletedAllFilesInDir':
+                'deleted: src/dir/file1.txt, deleted: src/dir/file2.txt, modified: src/dir/',
           }));
     });
   });
