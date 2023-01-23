@@ -112,7 +112,7 @@ class DartleCache {
       logger.fine('Dartle cache has been cleaned');
     } else {
       logger.fine(() => 'Cleaning Dartle cache (key=$key)');
-      final dir = Directory(path.join(_hashesDir, key));
+      final dir = Directory(path.join(_hashesDir, _encodeKey(key)));
       await ignoreExceptions(() => dir.delete(recursive: true));
       logger.fine(() => 'Dartle cache has been cleaned (key=$key)');
     }
@@ -400,7 +400,7 @@ class DartleCache {
   File _getCacheLocation(FileSystemEntity entity, {required String key}) {
     final parentDir = entity is Directory ? entity.path : entity.parent.path;
     final fileName = _locationHash(entity);
-    return File(path.join(_hashesDir, key, parentDir, fileName));
+    return File(path.join(_hashesDir, _encodeKey(key), parentDir, fileName));
   }
 
   static String _locationHash(FileSystemEntity fe) =>
@@ -414,6 +414,11 @@ class DartleCache {
     for (final entity in deleted) {
       yield FileChange(entity, ChangeKind.deleted);
     }
+  }
+
+  String _encodeKey(String key) {
+    if (key.isEmpty) return key;
+    return 'D__${key}__D';
   }
 }
 

@@ -135,7 +135,7 @@ void main([List<String> args = const []]) {
           cache.rootDir,
           {
             'hashes/${hash('dartle.dart')}': '',
-            'hashes/$testKey/${hash('dartle.dart')}': '',
+            'hashes/D__${testKey}__D/${hash('dartle.dart')}': '',
             'version': '0.1'
           },
           fs: fs,
