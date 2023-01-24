@@ -285,6 +285,13 @@ class DartleCache {
     logger
         .fine(() => 'Checking if $fileCollection with key="$key" has changed');
     if (fileCollection.isEmpty) return;
+
+    // if the cache is empty, avoid checking anything and report everything as added
+    if (await isEmptyDir(_hashesDir)) {
+      yield* _reportAllAdded(fileCollection);
+      return;
+    }
+
     Set<String> visitedEntities = {};
 
     // visit all entities that currently exist
@@ -326,6 +333,12 @@ class DartleCache {
       if (change != null) {
         yield FileChange(dirEntity, change.kind);
       }
+    }
+  }
+
+  Stream<FileChange> _reportAllAdded(FileCollection fileCollection) async* {
+    await for (final entry in fileCollection.resolve()) {
+      yield FileChange(entry.entity, ChangeKind.added);
     }
   }
 

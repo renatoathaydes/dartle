@@ -584,6 +584,33 @@ void main([List<String> args = const []]) {
           }));
     });
 
+    test('on first run, detects whole file collection as having been added',
+        () async {
+      final changes = await withFileSystem(fs, () async {
+        for (final dynamic entity in [
+          Directory('src'),
+          File(join('src', 'dartle.dart')),
+          File(join('src', 'hello.txt')),
+          Directory(join('src', 'dir')),
+          File(join('src', 'dir', 'not-in-cache')),
+        ]) {
+          await entity.create();
+        }
+
+        final inputCollection = dirs(['src'], fileExtensions: {'dart', 'txt'});
+
+        return await cache
+            .findChanges(inputCollection)
+            .map(fileChangeString)
+            .toList();
+      });
+
+      expect(
+          changes.sorted().join(', '),
+          equals('added: src/, added: src/dartle.dart, added: src/dir/, '
+              'added: src/hello.txt'));
+    });
+
     test('caches files and detects changes one by one', () async {
       final interactions = <String, Object>{};
       await withFileSystem(fs, () async {

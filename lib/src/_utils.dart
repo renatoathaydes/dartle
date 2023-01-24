@@ -131,6 +131,17 @@ Digest hashAll(Iterable<List<int>> items) {
   return sink.events.single;
 }
 
+/// Check if the directory is empty safely.
+/// Instead of failing, returns `false` on error.
+Future<bool> isEmptyDir(String path) async {
+  final dir = Directory(path);
+  try {
+    return await dir.list().isEmpty;
+  } catch (e) {
+    return false;
+  }
+}
+
 String elapsedTime(Stopwatch stopwatch) {
   final millis = stopwatch.elapsedMilliseconds;
   if (millis > 1000) {
