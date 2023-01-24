@@ -1,7 +1,11 @@
 import 'package:args/args.dart';
 import 'package:dartle/dartle_cache.dart';
+import 'package:dartle/dartle_dart.dart';
 import 'package:dartle/src/_log.dart';
+import 'package:io/ansi.dart' as ansi;
 import 'package:logging/logging.dart';
+
+final log = Logger('dartle-cache');
 
 Future<void> main(List<String> args) async {
   final cache = DartleCache('dartle-cache');
@@ -20,7 +24,11 @@ Future<void> main(List<String> args) async {
 
   if (options.wasParsed('log-level')) {
     activateLogging(logLevel(options['log-level']));
+  } else {
+    activateLogging(Level.INFO);
   }
+
+  log.info(const ColoredLogMessage('Dartle Cache Example', LogColor.magenta));
 
   final key = options['key']?.toString() ?? '';
 
@@ -28,27 +36,45 @@ Future<void> main(List<String> args) async {
   if (cmd != null) {
     switch (cmd.name) {
       case "clean":
+        logger.info('Cleaning cache');
         await cache.clean(key: key);
         break;
       case "cache":
         for (final directory in cmd.arguments) {
-          print('Caching $directory');
+          logger.info('Caching $directory');
           await cache(dir(directory), key: key);
         }
-        print('All done!');
         break;
       case "diff":
         for (final directory in cmd.arguments) {
-          print('Checking $directory');
+          logger.info('Checking $directory');
           await for (final change
               in cache.findChanges(dir(directory), key: key)) {
-            print('${change.entity} has been ${change.kind.name}');
+            log.severe(ColoredLogMessage(
+                '${change.entity} has been ${change.kind.name}',
+                colorFor(change.kind)));
           }
-          print('Done!');
         }
     }
+    log.severe(AnsiMessage(const [
+      AnsiMessagePart.code(ansi.styleBold),
+      AnsiMessagePart.text('All done!')
+    ]));
   } else {
-    print('ERROR! No command selected.\n${parser.usage}');
+    log.severe('ERROR! No command selected.\n\n'
+        'Usage:\n  cache_example [-options] <clean|cache|diff> dir'
+        'Options:\n${parser.usage}');
+  }
+}
+
+LogColor colorFor(ChangeKind kind) {
+  switch (kind) {
+    case ChangeKind.added:
+      return LogColor.green;
+    case ChangeKind.deleted:
+      return LogColor.red;
+    case ChangeKind.modified:
+      return LogColor.blue;
   }
 }
 
