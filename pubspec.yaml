@@ -29,7 +29,7 @@ dev_dependencies:
   lints: ^2.0.1
   build_runner: ^2.2.0
   freezed: ^2.1.0+1
-  isolate_current_directory: ^1.1.0
+  isolate_current_directory: ^1.2.0
 
 executables:
   dartle:
