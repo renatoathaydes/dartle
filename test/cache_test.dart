@@ -1,11 +1,9 @@
-// FIXME test fails on Windows due to https://github.com/google/file.dart/issues/182
-@TestOn('!windows')
-import 'dart:async';
 import 'dart:io';
 
+import 'package:collection/collection.dart';
 import 'package:dartle/dartle_cache.dart';
 import 'package:dartle/src/_log.dart';
-import 'package:file/memory.dart';
+import 'package:dartle/src/_utils.dart';
 import 'package:logging/logging.dart';
 import 'package:path/path.dart' show join;
 import 'package:test/test.dart';
@@ -14,17 +12,20 @@ import 'test_utils.dart';
 
 void main([List<String> args = const []]) {
   if (args.contains('log')) {
-    activateLogging(Level.FINE);
+    activateLogging(Level.FINE, colorfulLog: false);
   }
 
-  final cache = DartleCache.instance;
+  DartleCache cache = DartleCache.instance;
 
   group('DartleCache', () {
-    var fs = MemoryFileSystem();
+    var fs = createTempFileSystem();
 
     setUp(() async {
-      fs = MemoryFileSystem();
-      await withFileSystem(fs, cache.init);
+      fs = createTempFileSystem();
+      await withFileSystem(fs, () async {
+        cache = DartleCache('test-cache');
+        cache.init();
+      });
       await fs
           .file('dartle.dart')
           .writeAsString('main(){print("hello world");}');
@@ -41,7 +42,6 @@ void main([List<String> args = const []]) {
         final dartleFileCollection = files([dartleFile.path]);
 
         await cache(dartleFileCollection);
-        await Future.delayed(const Duration(milliseconds: 100));
 
         interactions['hasChangedAfterCaching'] =
             await cache.hasChanged(dartleFileCollection);
@@ -53,18 +53,22 @@ void main([List<String> args = const []]) {
             await cache.hasChanged(dartleFileCollection);
 
         await cache(dartleFileCollection);
-        await Future.delayed(const Duration(milliseconds: 100));
+
         await dartleFile.writeAsString(someContent);
-        await Future.delayed(const Duration(milliseconds: 100));
+
         interactions['hasChangedAfterRedundantChange'] =
             await cache.hasChanged(dartleFileCollection);
       });
 
       // check that the expected cache files have been created
-      expect(fs.directory('.dartle_tool').existsSync(), isTrue);
-      expect(fs.directory(join('.dartle_tool', 'hashes')).existsSync(), isTrue);
-      expect(fs.directory(join('.dartle_tool', 'hashes')).listSync().length,
-          equals(1));
+      await expectFileTree(
+          cache.rootDir,
+          {
+            'hashes/${hash('dartle.dart')}': '',
+            'version': '',
+          },
+          fs: fs,
+          checkFileContents: false);
 
       // verify interactions
       expect(
@@ -84,7 +88,6 @@ void main([List<String> args = const []]) {
         final dartleFileCollection = files([dartleFile.path]);
 
         await cache(dartleFileCollection, key: testKey);
-        await Future.delayed(const Duration(milliseconds: 100));
 
         interactions['hasChangedAfterCaching (no key)'] =
             await cache.hasChanged(dartleFileCollection);
@@ -104,9 +107,9 @@ void main([List<String> args = const []]) {
             await cache.hasChanged(dartleFileCollection, key: 'wrong');
 
         await cache(dartleFileCollection, key: testKey);
-        await Future.delayed(const Duration(milliseconds: 100));
+
         await dartleFile.writeAsString(someContent);
-        await Future.delayed(const Duration(milliseconds: 100));
+
         interactions['hasChangedAfterRedundantChange (no key)'] =
             await cache.hasChanged(dartleFileCollection);
         interactions['hasChangedAfterRedundantChange (key)'] =
@@ -128,15 +131,15 @@ void main([List<String> args = const []]) {
       });
 
       // check that the expected cache files have been created
-      expect(fs.directory('.dartle_tool').existsSync(), isTrue);
-      expect(fs.directory(join('.dartle_tool', 'hashes', testKey)).existsSync(),
-          isTrue);
-      expect(
-          fs
-              .directory(join('.dartle_tool', 'hashes', testKey))
-              .listSync()
-              .length,
-          equals(1));
+      await expectFileTree(
+          cache.rootDir,
+          {
+            'hashes/${hash('dartle.dart')}': '',
+            'hashes/D__${testKey}__D/${hash('dartle.dart')}': '',
+            'version': '0.1'
+          },
+          fs: fs,
+          checkFileContents: false);
 
       // verify interactions
       expect(
@@ -175,7 +178,7 @@ void main([List<String> args = const []]) {
         final fileCollection = files([file.path]);
         await cache(fileCollection);
         await file.delete();
-        await Future.delayed(const Duration(milliseconds: 100));
+
         return await cache.hasChanged(fileCollection);
       });
       expect(isChanged, isTrue);
@@ -189,13 +192,11 @@ void main([List<String> args = const []]) {
         final dirCollection = dir(directory.path);
 
         await cache(dirCollection);
-        await Future.delayed(const Duration(milliseconds: 100));
 
         interactions['hasChangedAfterCaching'] =
             await cache.hasChanged(dirCollection);
 
         await cache(dirCollection);
-        await Future.delayed(const Duration(milliseconds: 100));
 
         await File(join(directory.path, 'new-file.txt')).writeAsString('hey');
         await File(join(directory.path, 'other-file.txt')).writeAsString('ho');
@@ -204,7 +205,6 @@ void main([List<String> args = const []]) {
             await cache.hasChanged(dirCollection);
 
         await cache(dirCollection);
-        await Future.delayed(const Duration(milliseconds: 100));
 
         await File(join(directory.path, 'other-file.txt')).delete();
 
@@ -212,7 +212,6 @@ void main([List<String> args = const []]) {
             await cache.hasChanged(dirCollection);
 
         await cache(dirCollection);
-        await Future.delayed(const Duration(milliseconds: 100));
 
         await Directory(join(directory.path, 'sub-dir')).create();
 
@@ -220,7 +219,6 @@ void main([List<String> args = const []]) {
             await cache.hasChanged(dirCollection);
 
         await cache(dirCollection);
-        await Future.delayed(const Duration(milliseconds: 100));
 
         await File(join(directory.path, 'new-file.txt'))
             .writeAsString('change');
@@ -230,15 +228,13 @@ void main([List<String> args = const []]) {
 
         await cache(dirCollection);
         await Directory(join(directory.path, 'sub-dir')).delete();
-        await Future.delayed(const Duration(milliseconds: 100));
+
         await File(join(directory.path, 'sub-dir')).writeAsString('');
-        await Future.delayed(const Duration(milliseconds: 100));
 
         interactions['hasChangedAfterSubDirTurnedIntoFile'] =
             await cache.hasChanged(dirCollection);
 
         await cache(dirCollection);
-        await Future.delayed(const Duration(milliseconds: 100));
 
         await Directory('another-dir').create();
         await File(join('another-dir', 'something')).writeAsString("let's go");
@@ -246,14 +242,6 @@ void main([List<String> args = const []]) {
         interactions['hasChangedAfterCreatingOtherDirAndFile'] =
             await cache.hasChanged(dirCollection);
       });
-
-      // check that the expected cache files have been created
-      expect(fs.directory('.dartle_tool').existsSync(), isTrue);
-      expect(fs.directory(join('.dartle_tool', 'hashes')).existsSync(), isTrue);
-
-      // there should be one hash for each directory and file cached in the test
-      expect(fs.directory(join('.dartle_tool', 'hashes')).listSync().length,
-          equals(4));
 
       // verify interactions
       expect(
@@ -279,7 +267,6 @@ void main([List<String> args = const []]) {
 
         await cache(dirCollection);
         await cache(dirCollectionNonRecursive);
-        await Future.delayed(const Duration(milliseconds: 100));
 
         await File(join('a', 'new-file.txt')).writeAsString('hey');
 
@@ -290,7 +277,7 @@ void main([List<String> args = const []]) {
 
         await cache(dirCollection);
         await cache(dirCollectionNonRecursive);
-        await Future.delayed(const Duration(milliseconds: 100));
+
         await File(join('a', 'b', 'other-file.txt')).writeAsString('hi');
 
         interactions['hasChangedAfterAddingFileInNestedDir'] =
@@ -300,10 +287,8 @@ void main([List<String> args = const []]) {
 
         await cache(dirCollection);
         await cache(dirCollectionNonRecursive);
-        await Future.delayed(const Duration(milliseconds: 100));
 
         await directory.delete();
-        await Future.delayed(const Duration(milliseconds: 100));
 
         interactions['hasChangedAfterDeletingNestedDir'] =
             await cache.hasChanged(dirCollection);
@@ -339,12 +324,10 @@ void main([List<String> args = const []]) {
         interactions['first check'] = await cache.hasChanged(dirCollection);
 
         await cache(dirCollection);
-        await Future.delayed(const Duration(milliseconds: 100));
 
         interactions['second check'] = await cache.hasChanged(dirCollection);
 
         await cache(dirCollection);
-        await Future.delayed(const Duration(milliseconds: 100));
 
         interactions['third check'] = await cache.hasChanged(dirCollection);
         interactions['fourth check'] = await cache.hasChanged(dirCollection);
@@ -367,11 +350,11 @@ void main([List<String> args = const []]) {
         final dartleFileCollection = files([dartleFile.path]);
 
         await cache(dartleFileCollection);
-        await Future.delayed(const Duration(milliseconds: 100));
+
         interactions['cached before'] = cache.contains(dartleFile);
 
         await cache.remove(dartleFileCollection);
-        await Future.delayed(const Duration(milliseconds: 100));
+
         interactions['cached after'] = cache.contains(dartleFile);
       });
 
@@ -392,14 +375,12 @@ void main([List<String> args = const []]) {
             await File(join('my-dir', 'foo.json')).writeAsString('"bar"');
 
         await cache(files([fooFile.path, myDir.path]));
-        await Future.delayed(const Duration(milliseconds: 100));
 
         interactions['fooFile is cached'] = cache.contains(fooFile);
         interactions['myDir is cached'] = cache.contains(myDir);
         interactions['myDirFooFile is cached'] = cache.contains(myDirFooFile);
 
         await cache.clean();
-        await Future.delayed(const Duration(milliseconds: 100));
 
         interactions['fooFile is cached (after)'] = cache.contains(fooFile);
         interactions['myDir is cached (after)'] = cache.contains(myDir);
@@ -410,7 +391,7 @@ void main([List<String> args = const []]) {
         await myDir.create();
         await cache(file('dartle.dart'));
         await cache(dir(myDir.path));
-        await Future.delayed(const Duration(milliseconds: 100));
+
         interactions['fooFile is cached (after clean)'] =
             cache.contains(fooFile);
         interactions['dartleFile is cached (after clean)'] =
@@ -443,7 +424,6 @@ void main([List<String> args = const []]) {
             await File(join('my-dir', 'foo.json')).writeAsString('"bar"');
 
         await cache(dir(myDir.path), key: testKey);
-        await Future.delayed(const Duration(milliseconds: 100));
 
         interactions['fooFile is cached (key)'] =
             cache.contains(fooFile, key: testKey);
@@ -465,7 +445,6 @@ void main([List<String> args = const []]) {
             cache.contains(myDirFooFile, key: 'foo');
 
         await cache.clean(key: testKey);
-        await Future.delayed(const Duration(milliseconds: 100));
 
         interactions['fooFile is cached (after) (key)'] =
             cache.contains(fooFile, key: testKey);
@@ -504,7 +483,6 @@ void main([List<String> args = const []]) {
       final interactions = <String, bool>{};
       await withFileSystem(fs, () async {
         await cache.cacheTaskInvocation(taskInvocation('foo'));
-        await Future.delayed(const Duration(milliseconds: 100));
 
         interactions['with one arg'] = await cache
             .hasTaskInvocationChanged(taskInvocation('foo', ['bar']));
@@ -532,7 +510,6 @@ void main([List<String> args = const []]) {
       final interactions = <String, bool>{};
       await withFileSystem(fs, () async {
         await cache.cacheTaskInvocation(taskInvocation('foo', ['a', 'b']));
-        await Future.delayed(const Duration(milliseconds: 100));
 
         interactions['with one arg'] =
             await cache.hasTaskInvocationChanged(taskInvocation('foo', ['a']));
@@ -568,34 +545,29 @@ void main([List<String> args = const []]) {
       final interactions = <String, bool>{};
       await withFileSystem(fs, () async {
         await cache.cacheTaskInvocation(taskInvocation('foo'));
-        await Future.delayed(const Duration(milliseconds: 100));
 
         interactions['invocation changed after caching it'] =
             await cache.hasTaskInvocationChanged(taskInvocation('foo'));
 
         await cache.removeTaskInvocation('foo');
-        await Future.delayed(const Duration(milliseconds: 100));
 
         interactions['invocation changed after removed'] =
             await cache.hasTaskInvocationChanged(taskInvocation('foo'));
 
         // try another task with one arg
         await cache.cacheTaskInvocation(taskInvocation('bar', ['a']));
-        await Future.delayed(const Duration(milliseconds: 100));
 
         interactions['invocation changed after cache (one arg)'] =
             await cache.hasTaskInvocationChanged(taskInvocation('bar', ['a']));
 
         // remove wrong task
         await cache.removeTaskInvocation('foo');
-        await Future.delayed(const Duration(milliseconds: 100));
 
         interactions['invocation changed after removed wrong task'] =
             await cache.hasTaskInvocationChanged(taskInvocation('bar', ['a']));
 
         // remove right task
         await cache.removeTaskInvocation('bar');
-        await Future.delayed(const Duration(milliseconds: 100));
 
         interactions['invocation changed after removed right task'] =
             await cache.hasTaskInvocationChanged(taskInvocation('bar', ['a']));
@@ -611,5 +583,138 @@ void main([List<String> args = const []]) {
             'invocation changed after removed right task': true,
           }));
     });
+
+    test('on first run, detects whole file collection as having been added',
+        () async {
+      final changes = await withFileSystem(fs, () async {
+        for (final dynamic entity in [
+          Directory('src'),
+          File(join('src', 'dartle.dart')),
+          File(join('src', 'hello.txt')),
+          Directory(join('src', 'dir')),
+          File(join('src', 'dir', 'not-in-cache')),
+        ]) {
+          await entity.create();
+        }
+
+        final inputCollection = dirs(['src'], fileExtensions: {'dart', 'txt'});
+
+        return await cache
+            .findChanges(inputCollection)
+            .map(fileChangeString)
+            .toList();
+      });
+
+      expect(
+          changes.sorted().join(', '),
+          equals('added: src/, added: src/dartle.dart, added: src/dir/, '
+              'added: src/hello.txt'));
+    });
+
+    test('caches files and detects changes one by one', () async {
+      final interactions = <String, Object>{};
+      await withFileSystem(fs, () async {
+        final dartleFile = File(join('src', 'dartle.dart'));
+        final textFile = File(join('src', 'hello.txt'));
+        final someDir = Directory(join('src', 'dir'));
+        final notInCache = File(join('src', 'dir', 'not-in-cache'));
+        final file1InSomeDir = File(join('src', 'dir', 'file1.txt'));
+        final file2InSomeDir = File(join('src', 'dir', 'file2.txt'));
+        final nestedDir = Directory(join('src', 'dir', 'nested'));
+        await Directory('src').create();
+
+        await dartleFile.create();
+
+        final inputCollection = dirs(['src'], fileExtensions: {'dart', 'txt'});
+
+        await cache(inputCollection);
+
+        interactions['changesAfterCaching'] = await cache
+            .findChanges(inputCollection)
+            .map(fileChangeString)
+            .join(', ');
+
+        final someContent = 'different contents';
+
+        await dartleFile.writeAsString(someContent);
+        interactions['changesAfterActualChange'] = await cache
+            .findChanges(inputCollection)
+            .map(fileChangeString)
+            .join(', ');
+
+        await cache(inputCollection);
+
+        await dartleFile.writeAsString(someContent);
+
+        interactions['changesAfterRedundantChange'] = await cache
+            .findChanges(inputCollection)
+            .map(fileChangeString)
+            .join(', ');
+
+        await cache(inputCollection);
+
+        await textFile.writeAsString(someContent);
+        interactions['changesAfterNewFile'] = await cache
+            .findChanges(inputCollection)
+            .map(fileChangeString)
+            .join(', ');
+
+        await cache(inputCollection);
+
+        await textFile.writeAsString('other content');
+        await someDir.create();
+        await notInCache.writeAsString('ignored');
+        await file1InSomeDir.writeAsString(someContent);
+        await file2InSomeDir.writeAsString(someContent);
+        await dartleFile.delete();
+        interactions['changesAfterNewFilesAndDir'] = (await cache
+                .findChanges(inputCollection)
+                .map(fileChangeString)
+                .toList())
+            .sorted()
+            .join(', ');
+
+        await cache(inputCollection);
+
+        await nestedDir.create();
+        interactions['changesAfterNewNestedDir'] = await cache
+            .findChanges(inputCollection)
+            .map(fileChangeString)
+            .join(', ');
+
+        await cache(inputCollection);
+
+        // remove all files in a sub-dir
+        await file1InSomeDir.delete();
+        await file2InSomeDir.delete();
+
+        interactions['changesAfterDeletedAllFilesInDir'] = await cache
+            .findChanges(inputCollection)
+            .map(fileChangeString)
+            .join(', ');
+      });
+
+      // verify interactions
+      expect(
+          interactions,
+          equals({
+            'changesAfterCaching': '',
+            'changesAfterActualChange': 'modified: src/dartle.dart',
+            'changesAfterRedundantChange': '',
+            'changesAfterNewFile': 'modified: src/, added: src/hello.txt',
+            'changesAfterNewFilesAndDir':
+                'added: src/dir/, added: src/dir/file1.txt, added: src/dir/file2.txt, '
+                    'deleted: src/dartle.dart, modified: src/, modified: src/hello.txt',
+            'changesAfterNewNestedDir':
+                'modified: src/dir/, added: src/dir/nested/',
+            'changesAfterDeletedAllFilesInDir':
+                'deleted: src/dir/file1.txt, deleted: src/dir/file2.txt, modified: src/dir/',
+          }));
+    });
   });
+}
+
+String fileChangeString(FileChange change) {
+  final c = change.entity is File ? '' : '/';
+  return '${change.kind.name}: ${fixPath(change.entity.path)}$c';
 }

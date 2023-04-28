@@ -11,8 +11,15 @@ const _buildDirectory = 'test/test_builds/io_checks';
 
 const oneTaskExecutingMessage = 'Executing 1 task out of a total of 1 task:'
     ' 1 task selected';
+const oneOfTwoTasksExecutingMessage =
+    'Executing 1 task out of a total of 2 tasks:'
+    ' 1 task selected';
 
-const noTasksExecutingMessage = 'Executing 0 tasks out of a total of 1 task:'
+const noTasksOfOneExecutingMessage =
+    'Executing 0 tasks out of a total of 1 task:'
+    ' 1 task selected, 1 up-to-date';
+const noTasksOfTwoExecutingMessage =
+    'Executing 0 tasks out of a total of 2 tasks:'
     ' 1 task selected, 1 up-to-date';
 
 Future<void> _deleteDartleToolDir() async {
@@ -24,6 +31,7 @@ void main() {
   group('IO Checks', () {
     File buildExe = File('');
     final outputsDir = Directory(path.join(_buildDirectory, 'outputs'));
+    final incOutputsDir = Directory(path.join(_buildDirectory, 'inc-outputs'));
     Map<String, String?> outputFilesAtStart = {};
 
     setUpAll(() async {
@@ -37,16 +45,21 @@ void main() {
 
     setUp(() async {
       await _deleteDartleToolDir();
-      final preExistingOutput = outputsDir.list(recursive: true);
-      await for (final out in preExistingOutput) {
-        outputFilesAtStart[out.path] =
+      final preExistingOutput = (await outputsDir.exists())
+          ? await outputsDir.list(recursive: true).toList()
+          : const <FileSystemEntity>[];
+      for (final out in preExistingOutput) {
+        outputFilesAtStart[path.relative(out.path, from: outputsDir.path)] =
             (out is File) ? await out.readAsString() : null;
       }
     });
 
     tearDown(() async {
       await _deleteDartleToolDir();
-      await outputsDir.delete(recursive: true);
+      await ignoreExceptions(
+          () async => await outputsDir.delete(recursive: true));
+      await ignoreExceptions(
+          () async => await incOutputsDir.delete(recursive: true));
       await outputsDir.create();
       await _rebuildFileTree(outputFilesAtStart);
     });
@@ -60,7 +73,7 @@ void main() {
     test('can run simple task and produce expected outputs', () async {
       var proc = await runExampleDartBuild(const ['--no-color', 'base64']);
       expect(proc.exitCode, equals(0));
-      expect(proc.stdout[0], contains(oneTaskExecutingMessage));
+      expect(proc.stdout[0], contains(oneOfTwoTasksExecutingMessage));
       expect(proc.stderr, isEmpty);
       await _expectFileTreeAfterBase64TaskRuns(
           outputsDir.path, outputFilesAtStart);
@@ -74,7 +87,7 @@ void main() {
       proc = await runExampleDartBuild(const ['--no-color', 'base64']);
       expect(proc.exitCode, equals(0));
 
-      expect(proc.stdout[0], contains(noTasksExecutingMessage));
+      expect(proc.stdout[0], contains(noTasksOfTwoExecutingMessage));
       expect(proc.stderr, isEmpty);
       await _expectFileTreeAfterBase64TaskRuns(
           outputsDir.path, outputFilesAtStart);
@@ -101,7 +114,7 @@ void main() {
       // run again
       proc = await runExampleDartBuild(const ['--no-color', 'base64']);
       expect(proc.exitCode, equals(0));
-      expect(proc.stdout[0], contains(oneTaskExecutingMessage));
+      expect(proc.stdout[0], contains(oneOfTwoTasksExecutingMessage));
       expect(proc.stderr, isEmpty);
 
       // change an output file
@@ -111,7 +124,7 @@ void main() {
       // run again
       proc = await runExampleDartBuild(const ['--no-color', 'base64']);
       expect(proc.exitCode, equals(0));
-      expect(proc.stdout[0], contains(oneTaskExecutingMessage));
+      expect(proc.stdout[0], contains(oneOfTwoTasksExecutingMessage));
       expect(proc.stderr, isEmpty);
 
       // reset input so the output should go back to the expected state
@@ -125,37 +138,73 @@ void main() {
       await _expectFileTreeAfterBase64TaskRuns(
           outputsDir.path, outputFilesAtStart);
     });
+
+    test('incremental task', () async {
+      var proc = await runExampleDartBuild(const ['--no-color', 'incremental']);
+      expect(proc.exitCode, equals(0), reason: 'STDOUT: ${proc.stdout}');
+      expect(proc.stdout[0], contains(oneOfTwoTasksExecutingMessage));
+      await expectFileTree(incOutputsDir.path, {
+        'out.txt': 'inputChanges\n'
+            'added: inc-inputs\n'
+            'added: ${path.join('inc-inputs', 'bye.txt')}\n'
+            'added: ${path.join('inc-inputs', 'hello.txt')}\n'
+            'outputChanges' // none
+      });
+
+      // run again (no changes)
+      proc = await runExampleDartBuild(const ['--no-color', 'incremental']);
+      expect(proc.exitCode, equals(0));
+
+      expect(proc.stdout[0], contains(noTasksOfTwoExecutingMessage));
+      expect(proc.stderr, isEmpty);
+
+      // change one of the input files
+      final inputFile = File(path.join(
+          _buildDirectory, incInputs.directories.first.path, 'hello.txt'));
+      final originalInputFileContents = await inputFile.readAsString();
+
+      await inputFile.writeAsString('bye', flush: true);
+
+      Future<void> revertInputFileChange() =>
+          inputFile.writeAsString(originalInputFileContents, flush: true);
+
+      // revert the change later even if test fails
+      addTearDown(revertInputFileChange);
+
+      // run again, ensure the input file change was detected
+      proc = await runExampleDartBuild(const ['--no-color', 'incremental']);
+      expect(proc.exitCode, equals(0), reason: 'STDOUT: ${proc.stdout}');
+      expect(proc.stdout[0], contains(oneOfTwoTasksExecutingMessage));
+      await expectFileTree(incOutputsDir.path, {
+        'out.txt': 'inputChanges\n'
+            'modified: ${path.join('inc-inputs', 'hello.txt')}\n'
+            'outputChanges' // none
+      });
+
+      // delete the output
+      await File(path.join(incOutputsDir.path, 'out.txt')).delete();
+
+      // run again, it should detect the deletion
+      proc = await runExampleDartBuild(const ['--no-color', 'incremental']);
+      expect(proc.exitCode, equals(0), reason: 'STDOUT: ${proc.stdout}');
+      expect(proc.stdout[0], contains(oneOfTwoTasksExecutingMessage));
+      await expectFileTree(incOutputsDir.path, {
+        'out.txt': 'inputChanges\n' // none
+            'outputChanges\n'
+            'deleted: ${path.join('inc-outputs', 'out.txt')}\n'
+            'modified: inc-outputs'
+      });
+    });
   });
 }
 
 Future<void> _expectFileTreeAfterBase64TaskRuns(
     String rootDir, Map<String, String?> outputFilesAtStart) {
-  return _expectFileTree(rootDir, {
+  return expectFileTree(rootDir, {
     'hello.b64.txt': 'aGVsbG8=',
-    path.join('more', 'foo.b64.txt'): 'Zm9v',
-    ...outputFilesAtStart.map(
-        (p, contents) => MapEntry(path.relative(p, from: rootDir), contents))
+    'more/foo.b64.txt': 'Zm9v',
+    ...outputFilesAtStart,
   });
-}
-
-Future<void> _expectFileTree(
-    String rootDir, Map<String, String?> fileTree) async {
-  for (final entry in fileTree.entries) {
-    if (entry.value == null) continue;
-    final file = File(path.join(rootDir, entry.key));
-    expect(await file.exists(), isTrue,
-        reason: 'file ${entry.key} does not exist');
-    expect(await file.readAsString(), equals(entry.value),
-        reason: 'file ${entry.key} has incorrect contents');
-  }
-
-  // make sure no extra files exist
-  await for (final entity in Directory(rootDir).list(recursive: true)) {
-    if (entity is File &&
-        !fileTree.containsKey(path.relative(entity.path, from: rootDir))) {
-      fail('Unexpected file in outputDir: ${entity.path}');
-    }
-  }
 }
 
 Future<void> _rebuildFileTree(Map<String, String?> fileTree) async {

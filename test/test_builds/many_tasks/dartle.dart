@@ -14,7 +14,7 @@ final tasks = [
   Task(noop, name: 'i', dependsOn: {'d'}),
   Task(noop, name: 'j'),
   Task(noop, name: 'k', dependsOn: {'a'}),
-  Task(noop, name: 'l'),
+  Task(noop, name: 'l', argsValidator: const AcceptAnyArgs()),
   Task(noop, name: 'm', runCondition: RunAtMostEvery(Duration(seconds: 4))),
   Task(noop, name: 'n'),
   Task(noop, name: 'o', description: 'Task O'),

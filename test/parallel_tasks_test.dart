@@ -101,11 +101,11 @@ void main() {
       expect(tasksOutput,
           contains(RegExp(r'ERROR - Multiple stackTraces', multiLine: true)));
       expect(tasksOutput,
-          contains(RegExp(r'\s*#0\s+_File.open.', multiLine: true)));
+          contains(RegExp(r'\s*#[0|1]\s+_File.open.', multiLine: true)));
       expect(tasksOutput,
-          contains(RegExp(r'\s*#1\s+_readNonExistingFile', multiLine: true)));
+          contains(RegExp(r'\s*#[1|2]\s+_readNonExistingFile', multiLine: true)));
       expect(tasksOutput,
-          contains(RegExp(r'\s*#2\s+throwError', multiLine: true)));
+          contains(RegExp(r'\s*#[2|3]\s+throwError', multiLine: true)));
       expect(tasksOutput,
           contains(RegExp(r'\s*#0\s+actorAction', multiLine: true)));
       expect(

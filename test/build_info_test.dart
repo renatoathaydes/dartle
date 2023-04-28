@@ -99,6 +99,7 @@ Tasks declared in this build:
   * j
   * k
   * l
+      taskArguments: all arguments are accepted
   * m [up-to-date]
       runCondition: RunAtMostEvery{0:00:04.000000}
   * n [always-runs]

@@ -3,6 +3,8 @@ import 'dart:io';
 
 import 'package:path/path.dart' as p;
 
+import '../dartle.dart';
+
 /// A directory entry, usually used within a [FileCollection].
 ///
 /// See [file], [files], [dir], [dirs], [entities].
@@ -33,7 +35,7 @@ class DirectoryEntry {
 
   bool includes(String otherPath, {required bool isDir}) {
     final other = otherPath == '.' ? '' : otherPath;
-    final self = path == '.' ? '' : path;
+    final self = (path == '.' ? '' : path).toAbsolute(p.isAbsolute(otherPath));
     if (exclusions.isNotEmpty) {
       if (isDir) {
         // check every sub-path of other path, not just the last one
@@ -445,16 +447,17 @@ Iterable<DirectoryEntry> _ensureValidDirs(Iterable<DirectoryEntry> dirs) sync* {
   for (final dir in dirs) {
     final pdir = _ensurePosixPath(dir.path);
     if (p.isAbsolute(pdir)) {
-      throw ArgumentError('Absolute directory not allowed: ${dir.path}');
+      throw DartleException(
+          message: 'Absolute directory not allowed: ${dir.path}');
     }
     for (final seen in seenDirs) {
       if (p.isWithin(seen, pdir)) {
-        throw ArgumentError(
-            'Non disjoint-directories: $seen includes ${dir.path}');
+        throw DartleException(
+            message: 'Non disjoint-directories: $seen includes ${dir.path}');
       }
     }
     if (!seenDirs.add(pdir)) {
-      throw ArgumentError('Duplicate directory: ${dir.path}');
+      throw DartleException(message: 'Duplicate directory: ${dir.path}');
     }
     yield DirectoryEntry(
         path: pdir,
@@ -479,5 +482,13 @@ extension _PathHelper on String {
   int _firstEffectiveIndex() {
     final index = lastIndexOf(pathSeparator);
     return index > 0 && index < length - 1 ? index + 1 : 0;
+  }
+
+  String toAbsolute(bool isAbsolute) {
+    if (isAbsolute) {
+      // wrap in Directory so path can be changed by the Dir impl.
+      return p.absolute(Directory(this).path);
+    }
+    return this;
   }
 }

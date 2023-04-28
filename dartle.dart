@@ -3,6 +3,7 @@ import 'package:path/path.dart' show join;
 
 import 'dartle-src/check_imports.dart';
 import 'dartle-src/metadata_generator.dart';
+import 'dartle-src/clean_working_dirs.dart';
 
 String _src(String name) => join('lib', 'src', name);
 
@@ -21,8 +22,9 @@ void main(List<String> args) {
   final checkImportsTask = DartleImportChecker(libDirDartFiles).task;
   final generateVersionTask =
       DartleVersionFileGenerator(dartleDart.rootDir).task;
+  final cleanupTask = createCleanWorkingDirsTask();
 
-  checkImportsTask.dependsOn(const {'runBuildRunner'});
+  checkImportsTask.dependsOn(const {'runBuildRunner', 'cleanWorkingDirs'});
   dartleDart.analyzeCode
       .dependsOn(const {'generateDartSources', 'checkImports'});
   dartleDart.formatCode.dependsOn(const {'generateDartSources'});
@@ -30,6 +32,7 @@ void main(List<String> args) {
   run(args, tasks: {
     checkImportsTask,
     generateVersionTask,
+    cleanupTask,
     ...dartleDart.tasks,
   }, defaultTasks: {
     dartleDart.build

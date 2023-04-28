@@ -4,6 +4,25 @@
 
 ## done, waiting for next release
 
+# 0.19.0
+
+### Dartle Core
+
+- support for incremental task actions.
+- include task ArgsValidator info on verbose usage.
+- removed dependency on `file` package.
+- force deletion of task outputs when required.
+- better error reporting on conflicting file collections for task RunCondition.
+
+### Dartle Cache
+
+- introduced versioning for cache. Allows future evolution.
+- better detection of directory changes when files are deleted.
+
+### Dartle Dart
+
+- made the `test` task incremental. Only changed tests are executed. Use `-f` to force all.
+
 # 0.18.0
 
 - automatically run `dart pub get` before trying to compile `dartle.dart` if dependencies not downloaded yet.

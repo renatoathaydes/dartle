@@ -7,7 +7,9 @@ import 'package:structured_async/structured_async.dart';
 import '_actor_task.dart';
 import '_log.dart';
 import '_utils.dart';
+import 'cache/cache.dart';
 import 'error.dart';
+import 'run_condition.dart';
 import 'task.dart';
 import 'task_invocation.dart';
 
@@ -34,6 +36,28 @@ class TaskResult {
   String toString() {
     return 'TaskResult{invocation: $invocation, error: $error}';
   }
+}
+
+/// Signature of the action of incremental [Task]s.
+///
+/// When there are no changes, the [Task] will not run.
+/// The changes Lists reflects what has changed since the
+/// last time the [Task] executed successfully.
+///
+/// Only [Task]s that have a `runCondition` of type [RunOnChanges] can receive
+/// input/output changes.
+///
+/// Notice that the full set of changes are only collected if a
+/// [Task] action requires them.
+typedef IncrementalAction = FutureOr<void> Function(List<String> args,
+    [ChangeSet? changeSet]);
+
+/// The change Set for an incremental action.
+class ChangeSet {
+  final List<FileChange> inputChanges;
+  final List<FileChange> outputChanges;
+
+  const ChangeSet(this.inputChanges, this.outputChanges);
 }
 
 /// Calls [runTask] with each given task that must run.
@@ -129,16 +153,29 @@ Future<List<TaskResult>> _run(
 Future<TaskResult> runTask(TaskInvocation invocation,
     {required bool runInIsolate}) async {
   final task = invocation.task;
-  final action = _createTaskAction(task, runInIsolate && task.isParallelizable);
+  final runCondition = task.runCondition;
+
+  final stopwatch = Stopwatch()..start();
+
+  ChangeSet? changeSet;
+
+  if (runCondition is RunOnChanges && task.action is IncrementalAction) {
+    changeSet =
+        await _prepareIncrementalAction(stopwatch, task.name, runCondition);
+  }
+
+  final action =
+      _createTaskAction(task, runInIsolate && task.isParallelizable, changeSet);
 
   logger.log(task.name.startsWith('_') ? Level.FINE : Level.INFO,
       "Running task '${task.name}'");
 
-  final stopwatch = Stopwatch()..start();
+  stopwatch.reset();
+
   TaskResult result;
   try {
     final args = invocation.args;
-    await action(args);
+    await action(args, changeSet);
     stopwatch.stop();
     result = TaskResult(invocation);
   } catch (e, st) {
@@ -163,6 +200,27 @@ Future<TaskResult> runTask(TaskInvocation invocation,
   return result;
 }
 
+Future<ChangeSet> _prepareIncrementalAction(
+    Stopwatch stopwatch, String taskName, RunOnChanges runCondition) async {
+  logger.fine(() => "Collecting changes for incremental task '$taskName'");
+
+  final inputChanges = await runCondition.cache
+      .findChanges(runCondition.inputs, key: taskName)
+      .toList();
+
+  final outputChanges = await runCondition.cache
+      .findChanges(runCondition.outputs, key: taskName)
+      .toList();
+
+  logger.log(
+      profile,
+      () =>
+          "Collected ${inputChanges.length} input and ${outputChanges.length} output "
+          "change(s) for '$taskName' in ${elapsedTime(stopwatch)}");
+
+  return ChangeSet(inputChanges, outputChanges);
+}
+
 bool _taskMustRun(TaskWithStatus pTask) {
   final willRun = pTask.mustRun;
   logger.fine(() => "Task '${pTask.task.name}' will "
@@ -171,10 +229,11 @@ bool _taskMustRun(TaskWithStatus pTask) {
   return willRun;
 }
 
-Future Function(List<String>) _createTaskAction(Task task, bool runInIsolate) {
+MaybeIncrementalAction _createTaskAction(
+    Task task, bool runInIsolate, ChangeSet? changes) {
   return runInIsolate
       ? actorAction(task.action)
-      : (args) async => await task.action(args);
+      : (args, changes) async => await runAction(task.action, args, changes);
 }
 
 Future<List<ExceptionAndStackTrace>> _onNewPhaseStarted(

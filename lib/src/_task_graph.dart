@@ -48,12 +48,15 @@ void showAll(List<ParallelTasks> executableTasks, Map<String, Task> taskMap,
         final io = !verbose || task.runCondition == const AlwaysRun()
             ? ''
             : '\n      runCondition: ${task.runCondition}';
+        final args = verbose && (task.argsValidator is! DoNotAcceptArgs)
+            ? '\n      taskArguments: ${task.argsValidator.helpMessage()}'
+            : '';
         final isDefault = defaultSet.contains(task.name)
             ? style(' [default]', LogStyle.dim)
             : '';
         final status = (tasksByName[task.name]?.first.status).describe();
         print('  * ${style(task.name, LogStyle.bold)}$isDefault$status'
-            '$desc$io');
+            '$desc$io$args');
       }
     }
   }
