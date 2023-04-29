@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:collection/collection.dart';
 
 import '_utils.dart';
+import 'cache/cache.dart' show DartleCache;
 import 'error.dart';
 import 'file_collection.dart';
 import 'helpers.dart';
@@ -658,6 +659,7 @@ Task createCleanTask(
     {required String name,
     String description = '',
     required Iterable<Task> tasks,
+    DartleCache? cache,
     TaskPhase phase = TaskPhase.setup}) {
   final allOutputs = tasks
       .map((e) => e.runCondition)
@@ -665,7 +667,7 @@ Task createCleanTask(
       .map((e) => e.outputs)
       .toList(growable: false);
   return Task((_) async => await ignoreExceptions(() => deleteOutputs(tasks)),
-      runCondition: RunToDelete(MultiFileCollection(allOutputs)),
+      runCondition: RunToDelete(MultiFileCollection(allOutputs), cache: cache),
       name: name,
       phase: phase,
       description: description);

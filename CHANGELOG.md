@@ -4,6 +4,9 @@
 
 ## done, waiting for next release
 
+- added `trace` log level, used it for logging cache file checks.
+- added optional `cache` parameter to `createCleanTask`.
+
 # 0.19.0
 
 ### Dartle Core
