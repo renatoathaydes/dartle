@@ -87,6 +87,8 @@ class DartleCache {
     Directory(_hashesDir).createSync();
     Directory(_tasksDir).createSync();
     Directory(_executablesDir).createSync();
+    logger.fine(() =>
+        'Cache initialized at ${path.join(Directory.current.path, rootDir)}');
   }
 
   bool _isCurrentVersion(File versionFile) {
@@ -109,12 +111,12 @@ class DartleCache {
           () => Directory(_tasksDir).delete(recursive: true));
       await ignoreExceptions(
           () => Directory(_hashesDir).delete(recursive: true));
-      logger.fine('Dartle cache has been cleaned');
+      logger.finest('Dartle cache has been cleaned');
     } else {
       logger.fine(() => 'Cleaning Dartle cache (key=$key)');
       final dir = Directory(path.join(_hashesDir, _encodeKey(key)));
       await ignoreExceptions(() => dir.delete(recursive: true));
-      logger.fine(() => 'Dartle cache has been cleaned (key=$key)');
+      logger.finest(() => 'Dartle cache has been cleaned (key=$key)');
     }
   }
 
@@ -127,7 +129,7 @@ class DartleCache {
 
   /// Cache all files and directories in the given collection.
   Future<void> call(FileCollection collection, {String key = ''}) async {
-    logger.fine(() => 'Adding $collection with key="$key" to cache');
+    logger.finest(() => 'Adding $collection with key="$key" to cache');
     Set<String> visitedEntities = {};
     await for (final entry in collection.resolve()) {
       if (visitedEntities.add(entry.path)) {
@@ -183,7 +185,7 @@ class DartleCache {
         logger.fine(() => 'Task "${invocation.name}" invocation changed '
             'because args were $taskArgs, but is now ${invocation.args}.');
       } else {
-        logger.fine(() => 'Task "${invocation.name}" invocation has not '
+        logger.finest(() => 'Task "${invocation.name}" invocation has not '
             'changed, args are $taskArgs');
       }
       return isChanged;
@@ -230,11 +232,11 @@ class DartleCache {
   Future<void> _cacheFile(File file, {required String key}) async {
     final hf = _getCacheLocation(file, key: key);
     if (await file.exists()) {
-      logger.fine(() => 'Caching file ${file.path} at ${hf.path}');
+      logger.finest(() => 'Caching file ${file.path} at ${hf.path}');
       await hf.parent.create(recursive: true);
       await hf.writeAsBytes((await hashFile(file)).bytes);
     } else {
-      logger.fine(() =>
+      logger.finest(() =>
           'Removing file ${file.path} from ${hf.path} as it does not exist');
       await _removeEntity(file, key: key, cacheLocation: hf);
     }
@@ -244,7 +246,7 @@ class DartleCache {
       {required String key}) async {
     final hf = _getCacheLocation(dir, key: key);
 
-    logger.fine(() => 'Caching directory ${dir.path} at ${hf.path} with '
+    logger.finest(() => 'Caching directory ${dir.path} at ${hf.path} with '
         'children $children');
     final contents = _DirectoryContents(children);
     await hf.parent.create(recursive: true);
@@ -255,7 +257,7 @@ class DartleCache {
       {required String key, File? cacheLocation}) async {
     final cl = cacheLocation ?? _getCacheLocation(entity, key: key);
     if (await cl.exists()) {
-      logger.fine(() => 'Removing entry for ${entity.path}'
+      logger.finest(() => 'Removing entry for ${entity.path}'
           ' with key $key from cache');
       await ignoreExceptions(cl.delete);
     }
@@ -282,12 +284,15 @@ class DartleCache {
   /// Returns an empty [Stream] if the [FileCollection] is empty.
   Stream<FileChange> findChanges(FileCollection fileCollection,
       {String key = ''}) async* {
-    logger
-        .fine(() => 'Checking if $fileCollection with key="$key" has changed');
+    logger.finest(
+        () => 'Checking if $fileCollection with key="$key" has changed');
     if (fileCollection.isEmpty) return;
 
     // if the cache is empty, avoid checking anything and report everything as added
     if (await isEmptyDir(_hashesDir)) {
+      logger.fine('No hashes in the cache '
+          '(${path.join(Directory.current.path, _hashesDir)}), '
+          'reporting all as changed');
       yield* _reportAllAdded(fileCollection);
       return;
     }
@@ -363,7 +368,7 @@ class DartleCache {
         final previousHash = await hf.readAsBytes();
         final hash = (await hashFile(file)).bytes;
         if (previousHash.equals(hash)) {
-          logger.fine(
+          logger.finest(
               () => "File '${file.path}' hash is still the same: '$hash'");
         } else {
           logger.fine(() => "File '${file.path}' hash changed - "
@@ -371,7 +376,7 @@ class DartleCache {
           change = ChangeKind.modified;
         }
       } else {
-        logger.fine(() => "File '${file.path}' hash is fresh.");
+        logger.finest(() => "File '${file.path}' hash is fresh.");
       }
     } else {
       logger.fine(() => "Hash does not exist for file: '${file.path}'");
@@ -390,7 +395,7 @@ class DartleCache {
       final currentContents = _DirectoryContents(children);
       final currentHash = currentContents.encode();
       if (previousHash.equals(currentHash)) {
-        logger.fine(() => 'Directory hash is still the same: ${dir.path}');
+        logger.finest(() => 'Directory hash is still the same: ${dir.path}');
       } else {
         logger.fine(() => 'Directory hash has changed: ${dir.path}');
         change = _DirectoryChange(ChangeKind.modified, currentContents,
@@ -401,7 +406,7 @@ class DartleCache {
           "existing directory: '${dir.path}'");
       change = _DirectoryChange(ChangeKind.added, null, null);
     } else {
-      logger.fine(() => "Directory '${dir.path}' does not exist "
+      logger.finest(() => "Directory '${dir.path}' does not exist "
           'and was not known before');
     }
     return change;
