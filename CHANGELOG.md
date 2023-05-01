@@ -4,6 +4,9 @@
 
 ## done, waiting for next release
 
+### Dartle Core
+
+- fixed bug in `deleteAll` in which it deleted full directory, not respecting `fileExtensions` or `exclusions` filters.
 - added `trace` log level, used it for logging cache file checks.
 - added optional `cache` parameter to `createCleanTask`.
 
@@ -27,6 +30,8 @@
 - made the `test` task incremental. Only changed tests are executed. Use `-f` to force all.
 
 # 0.18.0
+
+### Dartle Core
 
 - automatically run `dart pub get` before trying to compile `dartle.dart` if dependencies not downloaded yet.
 - do not re-run task if previous run did not create certain declared outputs.
