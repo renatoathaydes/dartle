@@ -13,7 +13,7 @@ import '../task.dart';
 import '../task_invocation.dart';
 
 /// Current version of the Dartle Cache.
-const cacheFormatVersion = '0.1';
+const cacheFormatVersion = '0.2';
 
 /// Kind of [FileChange].
 enum ChangeKind {
@@ -154,7 +154,8 @@ class DartleCache {
 
   /// Cache the given task invocation.
   Future<void> cacheTaskInvocation(TaskInvocation invocation) async {
-    final file = File(path.join(_tasksDir, invocation.name));
+    final file =
+        File(path.join(_tasksDir, invocation.name.escapePathSeparator()));
     logger.fine(() =>
         'Caching invocation of task "${invocation.name}" at ${file.path}');
     await file.writeAsString(invocation.args.toString());
@@ -165,7 +166,8 @@ class DartleCache {
   /// This time is only known if the [TaskInvocation] was previously cached via
   /// [cacheTaskInvocation].
   Future<DateTime?> getLatestInvocationTime(TaskInvocation invocation) async {
-    final file = File(path.join(_tasksDir, invocation.name));
+    final file =
+        File(path.join(_tasksDir, invocation.name.escapePathSeparator()));
     if (await file.exists()) {
       return await file.lastModified();
     }
@@ -177,7 +179,8 @@ class DartleCache {
   /// Only successful task invocations are normally cached, hence this method
   /// will normally return `true` when the previous invocation of [Task] failed.
   Future<bool> hasTaskInvocationChanged(TaskInvocation invocation) async {
-    final taskFile = File(path.join(_tasksDir, invocation.name));
+    final taskFile =
+        File(path.join(_tasksDir, invocation.name.escapePathSeparator()));
     if (await taskFile.exists()) {
       final taskArgs = await taskFile.readAsString();
       final isChanged = invocation.args.toString() != taskArgs;
@@ -198,7 +201,7 @@ class DartleCache {
   /// Remove any previous invocations of a task with the given name
   /// from the cache.
   Future<void> removeTaskInvocation(String taskName) async {
-    final file = File(path.join(_tasksDir, taskName));
+    final file = File(path.join(_tasksDir, taskName.escapePathSeparator()));
     await ignoreExceptions(file.delete);
   }
 
@@ -418,7 +421,8 @@ class DartleCache {
   File _getCacheLocation(FileSystemEntity entity, {required String key}) {
     final parentDir = entity is Directory ? entity.path : entity.parent.path;
     final fileName = _locationHash(entity);
-    return File(path.join(_hashesDir, _encodeKey(key), parentDir, fileName));
+    return File(path.join(
+        _hashesDir, _encodeKey(key), parentDir.noPathNavigation(), fileName));
   }
 
   static String _locationHash(FileSystemEntity fe) =>
@@ -436,7 +440,7 @@ class DartleCache {
 
   String _encodeKey(String key) {
     if (key.isEmpty) return key;
-    return 'D__${key}__D';
+    return 'D__${key.escapePathSeparator()}__D';
   }
 }
 
@@ -472,5 +476,17 @@ class _DirectoryContents {
   List<int> encode() {
     final json = jsonEncode(children.map(entityPath).toList());
     return utf8.encode(json);
+  }
+}
+
+final _pathSepPattern = RegExp(r'[\\/]');
+
+extension _StringPaths on String {
+  String escapePathSeparator() {
+    return replaceAll(_pathSepPattern, r'$');
+  }
+
+  String noPathNavigation() {
+    return replaceAll('..', r'$');
   }
 }

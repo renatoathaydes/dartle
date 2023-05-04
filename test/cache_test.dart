@@ -584,6 +584,60 @@ void main([List<String> args = const []]) {
           }));
     });
 
+    test('task invocation with tricky name can be removed', () async {
+      const trickyName = '../../tricky';
+      final interactions = <String, bool>{};
+      await withFileSystem(fs, () async {
+        await cache.cacheTaskInvocation(taskInvocation(trickyName));
+
+        interactions['invocation changed after caching it'] =
+            await cache.hasTaskInvocationChanged(taskInvocation(trickyName));
+
+        await cache.removeTaskInvocation(trickyName);
+
+        interactions['invocation changed after removed'] =
+            await cache.hasTaskInvocationChanged(taskInvocation(trickyName));
+
+        // try with args
+        await cache.cacheTaskInvocation(taskInvocation(trickyName, ['a']));
+
+        interactions['invocation changed after cache (one arg)'] = await cache
+            .hasTaskInvocationChanged(taskInvocation(trickyName, ['a']));
+
+        interactions['invocation with different arg'] = await cache
+            .hasTaskInvocationChanged(taskInvocation(trickyName, ['b']));
+      });
+
+      expect(
+          interactions,
+          equals({
+            'invocation changed after caching it': false,
+            'invocation changed after removed': true,
+            'invocation changed after cache (one arg)': false,
+            'invocation with different arg': true,
+          }));
+    });
+
+    test('tasks are cached in the correct locations', () async {
+      await withFileSystem(fs, () async {
+        await cache.cacheTaskInvocation(taskInvocation('abc'));
+        await cache.cacheTaskInvocation(taskInvocation('../def'));
+      });
+
+      await expectFileTree(
+          cache.rootDir,
+          {
+            'hashes/': '',
+            'tasks/': '',
+            'executables/': '',
+            'tasks/abc': '',
+            r'tasks/..$def': '',
+            'version': '',
+          },
+          fs: fs,
+          checkFileContents: false);
+    });
+
     test('on first run, detects whole file collection as having been added',
         () async {
       final changes = await withFileSystem(fs, () async {
