@@ -6,6 +6,12 @@
 
 # 0.21.0
 
+### Dartle Cache
+
+- fixed handling of relative paths (in tasks, keys, file paths) in the cache.
+
+# 0.20.0
+
 ### Dartle Core
 
 - fixed bug in `deleteAll` in which it deleted full directory, not respecting `fileExtensions` or `exclusions` filters.
