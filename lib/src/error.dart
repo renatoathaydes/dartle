@@ -35,8 +35,8 @@ class MultipleExceptions extends DartleException {
 
   MultipleExceptions(this.exceptionsAndStackTraces)
       : super(
-      message: _computeMessage(exceptionsAndStackTraces),
-      exitCode: _computeExitCode(exceptionsAndStackTraces));
+            message: _computeMessage(exceptionsAndStackTraces),
+            exitCode: _computeExitCode(exceptionsAndStackTraces));
 
   @override
   String toString() {

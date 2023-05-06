@@ -16,7 +16,7 @@ void main() {
   });
 
   Future<ExecReadResult> runBuild(List<String> args,
-      {Set<int> successExitCodes =const {0}}) async {
+      {Set<int> successExitCodes = const {0}}) async {
     return execRead(
         runDartExe(parallelTasksBuild,
             args: args, workingDirectory: 'test/test_builds/parallel_tasks'),
