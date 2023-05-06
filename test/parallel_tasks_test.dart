@@ -3,8 +3,6 @@ import 'dart:io';
 import 'package:dartle/dartle.dart';
 import 'package:test/test.dart';
 
-import 'test_utils.dart';
-
 void main() {
   // create a snapshot so we can run the build quickly, several times
   var parallelTasksBuild = File('');
@@ -17,11 +15,13 @@ void main() {
     await deleteAll(files([parallelTasksBuild.path]));
   });
 
-  Future<ProcessResult> runBuild(List<String> args) async {
-    return startProcess(
+  Future<ExecReadResult> runBuild(List<String> args,
+      {Set<int> successExitCodes =const {0}}) async {
+    return execRead(
         runDartExe(parallelTasksBuild,
-            args: args, workingDirectory: 'test/test_builds/many_tasks'),
-        'many_tasks test dart build');
+            args: args, workingDirectory: 'test/test_builds/parallel_tasks'),
+        name: 'parallel_tasks test dart build',
+    successExitCodes: successExitCodes);
   }
 
   group('Parallel Tasks', () {
@@ -91,7 +91,8 @@ void main() {
 
     test('stackTraces are logged if log level is debug', () async {
       var proc = await runBuild(
-          const ['throw', 'delayedMessage', '-l', 'debug', '--no-color']);
+          const ['throw', 'delayedMessage', '-l', 'debug', '--no-color'],
+          successExitCodes: const {2});
 
       var tasksOutput = proc.stdout.join();
       expect(

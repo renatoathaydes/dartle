@@ -3,10 +3,10 @@ import 'dart:convert';
 import 'dart:io';
 
 import '_log.dart';
+import '_std_stream_consumer.dart';
 import 'error.dart';
 import 'file_collection.dart';
 import 'run_condition.dart';
-import 'std_stream_consumer.dart';
 import 'task.dart';
 
 /// Location of the dartle directory within a project.
@@ -15,7 +15,7 @@ const dartleDir = '.dartle_tool';
 /// Fail the build for the given [reason].
 ///
 /// This function never returns.
-void failBuild({required String reason, int exitCode = 1}) {
+Never failBuild({required String reason, int exitCode = 1}) {
   throw DartleException(message: reason, exitCode: exitCode);
 }
 
@@ -48,11 +48,17 @@ Future<int> exec(Future<Process> process,
     Function(String)? onStdoutLine,
     Function(String)? onStderrLine}) async {
   final proc = await process;
+  onStdoutLine ??= StdStreamConsumer(printToStdout: true);
+  onStderrLine ??= StdStreamConsumer(printToStderr: true);
+
+  return _exec(proc, name, onStdoutLine, onStderrLine);
+}
+
+Future<int> _exec(Process proc, String name, Function(String) onStdoutLine,
+    Function(String) onStderrLine) async {
   final procDescription = "process${name.isEmpty ? '' : " '$name'"} "
       '(PID=${proc.pid})';
   logger.fine('Started $procDescription');
-  onStdoutLine ??= StdStreamConsumer(printToStdout: true);
-  onStderrLine ??= StdStreamConsumer(printToStderr: true);
 
   proc.stdout
       .transform(utf8.decoder)
@@ -92,8 +98,7 @@ Future<int> execProc(Future<Process> process,
       errorMode == StreamRedirectMode.none;
   final stdoutConsumer = StdStreamConsumer(keepLines: !allDisabled);
   final stderrConsumer = StdStreamConsumer(keepLines: !allDisabled);
-  final code = await exec(process,
-      name: name, onStdoutLine: stdoutConsumer, onStderrLine: stderrConsumer);
+  final code = await _exec(await process, name, stdoutConsumer, stderrConsumer);
   if (allDisabled) return code;
   Future<void> redirect(StreamRedirectMode mode) async {
     switch (mode) {
@@ -121,6 +126,44 @@ Future<int> execProc(Future<Process> process,
 
   await redirect(successCodes.contains(code) ? successMode : errorMode);
   return code;
+}
+
+/// Result of calling [execRead].
+///
+/// The `stdout` and `stderr` lists contain the process output, line by line.
+class ExecReadResult {
+  final int exitCode;
+  final List<String> stdout;
+  final List<String> stderr;
+
+  const ExecReadResult(this.exitCode, this.stdout, this.stderr);
+}
+
+/// Executes the given process, returning its output streams line-by-line.
+///
+/// This method is similar to [exec], but simplifying the process of reading
+/// the process output into Lists.
+///
+/// The returned object contains the process stdout and stderr outputs as
+/// `Lists<String>` where each item is a line of output.
+///
+/// This method throws [ProcessException] in case the process' exit code
+/// is not in the [successExitCodes] Set.
+///
+Future<ExecReadResult> execRead(Future<Process> process,
+    {String name = '',
+    Function(String)? onStdoutLine,
+    Function(String)? onStderrLine,
+    bool Function(String) filter = filterNothing,
+    Set<int> successExitCodes = const {0}}) async {
+  final stdout = StdStreamConsumer(keepLines: true, filter: filter);
+  final stderr = StdStreamConsumer(keepLines: true, filter: filter);
+  final code = await _exec(await process, name, stdout, stderr);
+  final result = ExecReadResult(code, stdout.lines, stderr.lines);
+  if (successExitCodes.contains(code)) {
+    return result;
+  }
+  throw ProcessException(code, name, stdout.lines, stderr.lines);
 }
 
 /// Deletes the outputs of all [tasks].

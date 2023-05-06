@@ -3,8 +3,6 @@ import 'dart:io';
 import 'package:dartle/dartle.dart';
 import 'package:test/test.dart';
 
-import 'test_utils.dart';
-
 void main() {
   group('Build information', () {
     // create a snapshot so we can run the build quickly, several times
@@ -18,14 +16,14 @@ void main() {
       await deleteAll(file(manyTasksBuild.path));
     });
 
-    Future<ProcessResult> runExampleDartBuild(List<String> args,
+    Future<ExecReadResult> runExampleDartBuild(List<String> args,
         {bool noColorEnv = false}) async {
-      return startProcess(
+      return execRead(
           runDartExe(manyTasksBuild,
               environment: noColorEnv ? const {'NO_COLOR': '1'} : null,
               args: args,
               workingDirectory: 'test/test_builds/many_tasks'),
-          'many_tasks test dart build');
+          name: 'many_tasks test dart build');
     }
 
     test('logs expected output', () async {

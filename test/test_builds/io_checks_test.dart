@@ -64,10 +64,10 @@ void main() {
       await _rebuildFileTree(outputFilesAtStart);
     });
 
-    Future<ProcessResult> runExampleDartBuild(List<String> args) async {
-      return startProcess(
+    Future<ExecReadResult> runExampleDartBuild(List<String> args) async {
+      return execRead(
           runDartExe(buildExe, args: args, workingDirectory: _buildDirectory),
-          'io_checks test dart build');
+          name: 'io_checks test dart build');
     }
 
     test('can run simple task and produce expected outputs', () async {

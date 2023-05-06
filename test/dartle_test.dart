@@ -4,8 +4,6 @@ import 'package:dartle/dartle.dart';
 import 'package:path/path.dart' show join;
 import 'package:test/test.dart';
 
-import 'test_utils.dart';
-
 void helloTask(_) {}
 
 void main() {
@@ -43,11 +41,13 @@ void main() {
       await deleteAll(files([outputFile.path, exampleDartleBuild.path]));
     });
 
-    Future<ProcessResult> runExampleDartBuild(List<String> args) async {
-      return startProcess(
+    Future<ExecReadResult> runExampleDartBuild(List<String> args,
+        {Set<int> successExitCodes = const {0}}) async {
+      return execRead(
           runDartExe(exampleDartleBuild,
               args: args, workingDirectory: 'example'),
-          'example dart build');
+          name: 'example dart build',
+          successExitCodes: successExitCodes);
     }
 
     test('logs expected output', () async {
@@ -132,7 +132,8 @@ void main() {
     });
 
     test('errors if task does not exist', () async {
-      var proc = await runExampleDartBuild(['foo']);
+      var proc =
+          await runExampleDartBuild(['foo'], successExitCodes: const {1});
       expect(proc.stdout.length, equals(2));
       expect(proc.stdout[0],
           contains("ERROR - Invocation problem: Task 'foo' does not exist"));
@@ -141,7 +142,8 @@ void main() {
     });
 
     test('errors if option does not exist', () async {
-      var proc = await runExampleDartBuild(['--foo']);
+      var proc =
+          await runExampleDartBuild(['--foo'], successExitCodes: const {4});
       expect(proc.stdout.length, equals(2));
       expect(
           proc.stdout[0],
@@ -152,7 +154,8 @@ void main() {
     });
 
     test('errors if arguments for task are not valid', () async {
-      var proc = await runExampleDartBuild(['hello', ':Joe', ':Mary']);
+      var proc = await runExampleDartBuild(['hello', ':Joe', ':Mary'],
+          successExitCodes: const {1});
       expect(proc.stdout.length, equals(2));
       expect(
           proc.stdout[0],

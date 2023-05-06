@@ -2,10 +2,9 @@
 import 'dart:async';
 import 'dart:io';
 
+import 'package:dartle/dartle.dart';
 import 'package:path/path.dart' as p;
 import 'package:test/test.dart';
-
-import 'test_utils.dart';
 
 const logDateRegex = '\\d{4}-\\d{2}-\\d{2} \\d{2}.\\d{2}.\\d{2}\\.\\d+';
 const infoLogPrefixRegex = '$logDateRegex - dartle\\[main \\d+\\] - INFO -';
@@ -124,11 +123,11 @@ Future<Directory> _createTestProject(
   return dir;
 }
 
-Future<ProcessResult> _runDartle(List<String> args, Directory wrkDir) async {
+Future<ExecReadResult> _runDartle(List<String> args, Directory wrkDir) async {
   final dartle = File('bin/dartle.dart').absolute.path;
-  return startProcess(
+  return execRead(
       Process.start('dart', [dartle, ...args], workingDirectory: wrkDir.path),
-      'dartle');
+      name: 'dartle');
 }
 
 Future<void> _waitForOrTimeout(Future<bool> Function() action, String error,

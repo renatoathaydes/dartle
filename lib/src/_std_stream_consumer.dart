@@ -18,7 +18,7 @@ class StdStreamConsumer {
       {this.printToStdout = false,
       this.printToStderr = false,
       this.keepLines = false,
-      this.filter = _noFilter})
+      this.filter = filterNothing})
       : _linesAccumulator =
             keepLines ? _ActualLinesAccumulator() : _LinesAccumulator();
 
@@ -36,7 +36,7 @@ class StdStreamConsumer {
   List<String> get lines => _linesAccumulator.lines;
 }
 
-bool _noFilter(String line) => true;
+bool filterNothing(String line) => true;
 
 class _LinesAccumulator {
   List<String> get lines => const [];
