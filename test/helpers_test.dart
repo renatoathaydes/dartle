@@ -266,4 +266,56 @@ void main([List<String> args = const []]) {
               .having((e) => e.stderr, 'stderr', isEmpty)));
     });
   });
+
+  group('download', () {
+    HttpServer? httpServer;
+    setUpAll(() async {
+      httpServer = await HttpServer.bind('localhost', 0);
+      print('Listening on port ${httpServer!.port}');
+      httpServer!.listen((req) {
+        print('Handling ${req.method} request: ${req.uri}');
+        switch (req.uri.path) {
+          case '/plain':
+            req.response
+              ..write('plain text response')
+              ..close();
+            return;
+          case '/json':
+            if (req.headers[HttpHeaders.acceptHeader]?.first ==
+                'application/json') {
+              req.response
+                ..write('{"json": true}')
+                ..close();
+              return;
+            }
+            break;
+        }
+        req.response
+          ..statusCode = 400
+          ..close();
+      });
+    });
+
+    tearDownAll(() => httpServer!.close(force: true));
+
+    test('can get plain text response', () async {
+      final uri = Uri.parse('http://localhost:${httpServer!.port}/plain');
+      expect(await downloadText(uri), equals('plain text response'));
+    }, timeout: const Timeout(Duration(seconds: 4)));
+
+    test('can get JSON response', () async {
+      final uri = Uri.parse('http://localhost:${httpServer!.port}/json');
+      expect(await downloadJson(uri), equals(const {'json': true}));
+    }, timeout: const Timeout(Duration(seconds: 4)));
+
+    test('can overwrite header and report error', () async {
+      final uri = Uri.parse('http://localhost:${httpServer!.port}/json');
+      // by sending an unexpected header, we should get a 400 bad request
+      expect(
+          downloadJson(uri,
+              headers: (h) => h.add(HttpHeaders.acceptHeader, 'text/plain')),
+          throwsA(isA<HttpCodeException>()
+              .having((e) => e.statusCode, 'statusCode', equals(400))));
+    }, timeout: const Timeout(Duration(seconds: 4)));
+  });
 }

@@ -21,7 +21,7 @@ void main() {
         runDartExe(parallelTasksBuild,
             args: args, workingDirectory: 'test/test_builds/parallel_tasks'),
         name: 'parallel_tasks test dart build',
-    successExitCodes: successExitCodes);
+        successCodes: successExitCodes);
   }
 
   group('Parallel Tasks', () {

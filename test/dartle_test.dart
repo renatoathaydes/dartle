@@ -47,7 +47,7 @@ void main() {
           runDartExe(exampleDartleBuild,
               args: args, workingDirectory: 'example'),
           name: 'example dart build',
-          successExitCodes: successExitCodes);
+          successCodes: successExitCodes);
     }
 
     test('logs expected output', () async {

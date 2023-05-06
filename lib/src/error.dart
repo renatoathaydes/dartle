@@ -1,3 +1,5 @@
+import 'dart:io';
+
 /// Indicates a fatal error during a dartle build.
 class DartleException implements Exception {
   final String message;
@@ -33,8 +35,8 @@ class MultipleExceptions extends DartleException {
 
   MultipleExceptions(this.exceptionsAndStackTraces)
       : super(
-            message: _computeMessage(exceptionsAndStackTraces),
-            exitCode: _computeExitCode(exceptionsAndStackTraces));
+      message: _computeMessage(exceptionsAndStackTraces),
+      exitCode: _computeExitCode(exceptionsAndStackTraces));
 
   @override
   String toString() {
@@ -73,14 +75,16 @@ class MultipleExceptions extends DartleException {
 /// non-success exit code.
 ///
 /// The `stdout` and `stderr` lists contain the process output, line by line.
-class ProcessExitCodeException implements Exception {
-  final int exitCode;
+class ProcessExitCodeException extends DartleException {
   final String name;
   final List<String> stdout;
   final List<String> stderr;
 
   const ProcessExitCodeException(
-      this.exitCode, this.name, this.stdout, this.stderr);
+      int exitCode, this.name, this.stdout, this.stderr)
+      : super(
+            message: 'process failed with exit code $exitCode',
+            exitCode: exitCode);
 
   @override
   String toString() {
@@ -89,5 +93,25 @@ class ProcessExitCodeException implements Exception {
         '  name: $name, '
         '  stdout:\n${stdout.join('\n')}\n'
         '  stderr:\n${stderr.join('\n')}\n}';
+  }
+}
+
+class HttpCodeException extends DartleException {
+  final HttpClientResponse response;
+  final Uri uri;
+
+  HttpCodeException(this.response, this.uri)
+      : super(
+            message:
+                'http request failed with status code ${response.statusCode}',
+            exitCode: 48);
+
+  int get statusCode => response.statusCode;
+
+  @override
+  String toString() {
+    return 'HttpCodeException{'
+        'statusCode: $statusCode, '
+        'uri: $uri}';
   }
 }

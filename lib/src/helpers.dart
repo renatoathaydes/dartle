@@ -12,6 +12,9 @@ import 'task.dart';
 /// Location of the dartle directory within a project.
 const dartleDir = '.dartle_tool';
 
+/// The default successful status codes for HTTP responses.
+const defaultSuccessfulStatusCodes = {200, 201, 202, 203, 204};
+
 /// Fail the build for the given [reason].
 ///
 /// This function never returns.
@@ -91,7 +94,12 @@ enum StreamRedirectMode { stdout, stderr, stdoutAndStderr, none }
 ///
 /// A [StreamRedirectMode] can be provided to configure whether the process'
 /// output should be redirected to the calling process's streams in case of
-/// success or failure.
+/// success or failure. Whether the result is a success or a failure is
+/// determined by looking at the provided [successCodes] Set.
+///
+/// Notice that in case the exit code is a failure, this method does not throw
+/// an Exception and returns normally. To throw an Exception in case of failure,
+/// use [execRead] instead.
 ///
 /// By default, both streams are redirected in case of failure, but none in case
 /// of success.
@@ -157,24 +165,130 @@ class ExecReadResult {
 /// (the filter must return `true` to keep a line, or `false` to exclude it).
 ///
 /// This method throws [ProcessExitCodeException] in case the process' exit code
-/// is not in the [successExitCodes] Set, or [ProcessException] in case the
+/// is not in the [successCodes] Set, or [ProcessException] in case the
 /// process could not be executed at all.
 ///
 Future<ExecReadResult> execRead(Future<Process> process,
     {String name = '',
-    Function(String)? onStdoutLine,
-    Function(String)? onStderrLine,
     bool Function(String) stdoutFilter = filterNothing,
     bool Function(String) stderrFilter = filterNothing,
-    Set<int> successExitCodes = const {0}}) async {
+    Set<int> successCodes = const {0}}) async {
   final stdout = StdStreamConsumer(keepLines: true, filter: stdoutFilter);
   final stderr = StdStreamConsumer(keepLines: true, filter: stderrFilter);
   final code = await _exec(await process, name, stdout, stderr);
   final result = ExecReadResult(code, stdout.lines, stderr.lines);
-  if (successExitCodes.contains(code)) {
+  if (successCodes.contains(code)) {
     return result;
   }
   throw ProcessExitCodeException(code, name, stdout.lines, stderr.lines);
+}
+
+/// Download binary data from the given [Uri].
+///
+/// It is possible to configure [HttpHeaders] and [Cookie]s sent to the server
+/// by providing the functions [headers] and [cookies], respectively.
+///
+/// A response is considered successful if its status code is in the
+/// [successfulStatusCodes] Set. If the status code is not in this Set,
+/// a [HttpCodeException] is thrown.
+///
+/// A [connectionTimeout] may be provided.
+///
+/// This method opens a single connection to make a GET request, and closes
+/// that connection before returning, so it is not suitable for making
+/// several requests to the same server efficiently.
+///
+Stream<List<int>> download(Uri uri,
+    {void Function(HttpHeaders)? headers,
+    void Function(List<Cookie>)? cookies,
+    Set<int> successfulStatusCodes = defaultSuccessfulStatusCodes,
+    Duration connectionTimeout = const Duration(seconds: 10)}) async* {
+  final client = HttpClient()..connectionTimeout = connectionTimeout;
+  final req = await client.getUrl(uri);
+  try {
+    req.persistentConnection = false;
+    headers?.call(req.headers);
+    cookies?.call(req.cookies);
+    final res = await req.close();
+    if (successfulStatusCodes.contains(res.statusCode)) {
+      yield* res;
+    } else {
+      throw HttpCodeException(res, uri);
+    }
+  } finally {
+    client.close();
+  }
+}
+
+/// Download plain text from the given [Uri].
+///
+/// It is possible to configure [HttpHeaders] and [Cookie]s sent to the server
+/// by providing the functions [headers] and [cookies], respectively.
+///
+/// A response is considered successful if its status code is in the
+/// [successfulStatusCodes] Set. If the status code is not in this Set,
+/// a [HttpCodeException] is thrown.
+///
+/// A [connectionTimeout] and an [Encoding] (UTF-8 by default) may be provided.
+///
+/// This method opens a single connection to make a GET request, and closes
+/// that connection before returning, so it is not suitable for making
+/// several requests to the same server efficiently.
+///
+Future<String> downloadText(Uri uri,
+    {void Function(HttpHeaders)? headers,
+    void Function(List<Cookie>)? cookies,
+    Set<int> successfulStatusCodes = defaultSuccessfulStatusCodes,
+    Duration connectionTimeout = const Duration(seconds: 10),
+    Encoding encoding = utf8}) async {
+  return download(uri,
+          headers: headers,
+          cookies: cookies,
+          connectionTimeout: connectionTimeout,
+          successfulStatusCodes: successfulStatusCodes)
+      .transform(encoding.decoder)
+      .join();
+}
+
+/// Download JSON data from the given [Uri].
+///
+/// It is possible to configure [HttpHeaders] and [Cookie]s sent to the server
+/// by providing the functions [headers] and [cookies], respectively.
+///
+/// By default, the `Accept` header is set to `application/json`.
+///
+/// A response is considered successful if its status code is in the
+/// [successfulStatusCodes] Set. If the status code is not in this Set,
+/// a [HttpCodeException] is thrown.
+///
+/// A [connectionTimeout] and an [Encoding] (UTF-8 by default) may be provided.
+///
+/// This method opens a single connection to make a GET request, and closes
+/// that connection before returning, so it is not suitable for making
+/// several requests to the same server efficiently.
+///
+Future<Object?> downloadJson(Uri uri,
+    {void Function(HttpHeaders)? headers,
+    void Function(List<Cookie>)? cookies,
+    Set<int> successfulStatusCodes = defaultSuccessfulStatusCodes,
+    Duration connectionTimeout = const Duration(seconds: 10),
+    Encoding encoding = utf8}) {
+  void withJsonHeader(HttpHeaders h) {
+    h.add(
+        HttpHeaders.acceptHeader,
+        "${ContentType.json.mimeType}"
+        "${encoding == utf8 ? '' : '; charset=${encoding.name}'}");
+    headers?.call(h);
+  }
+
+  return download(uri,
+          headers: withJsonHeader,
+          cookies: cookies,
+          successfulStatusCodes: successfulStatusCodes,
+          connectionTimeout: connectionTimeout)
+      .transform(encoding.decoder)
+      .transform(json.decoder)
+      .first;
 }
 
 /// Deletes the outputs of all [tasks].
