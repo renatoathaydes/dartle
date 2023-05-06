@@ -656,7 +656,7 @@ Future<void> verifyTaskPhasesConsistency(
 
 /// Create a "clean" task that removes all outputs of the given tasks.
 Task createCleanTask(
-    {required String name,
+    {String name = 'clean',
     String description = '',
     required Iterable<Task> tasks,
     DartleCache? cache,

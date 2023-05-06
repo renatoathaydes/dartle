@@ -7,6 +7,7 @@
 - added new helper functions: `download`, `downloadText` and `downloadJson`.
 - added helper function `homeDir`.
 - added extension function to `File`: `writeBinary`.
+- added default name `clean` for task created by `createCleanTask`.
 
 # 0.21.0
 
