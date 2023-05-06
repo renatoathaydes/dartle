@@ -84,16 +84,18 @@ class DartleAbortException implements Exception {
   }
 }
 
-/// Exception thrown by [execRead] when the process fails.
+/// Exception thrown by [execRead] when the process fails by completing with a
+/// non-success exit code.
 ///
 /// The `stdout` and `stderr` lists contain the process output, line by line.
-class ProcessException implements Exception {
+class ProcessExitCodeException implements Exception {
   final int exitCode;
   final String name;
   final List<String> stdout;
   final List<String> stderr;
 
-  const ProcessException(this.exitCode, this.name, this.stdout, this.stderr);
+  const ProcessExitCodeException(
+      this.exitCode, this.name, this.stdout, this.stderr);
 
   @override
   String toString() {

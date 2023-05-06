@@ -207,4 +207,63 @@ void main([List<String> args = const []]) {
               .toSet()));
     });
   });
+
+  group('execRead', () {
+    test('captures output successfully', () async {
+      final result = await execRead(Process.start('dart', const ['--version']));
+      expect(result.exitCode, equals(0));
+      expect(result.stdout, hasLength(1));
+      expect(result.stdout[0], equals('Dart SDK version: ${Platform.version}'));
+      expect(result.stderr, isEmpty);
+    });
+
+    test('captures error output successfully', () async {
+      final tempFile =
+          await File(p.join(Directory.systemTemp.path, 'temp.dart'))
+              .writeAsString("import 'dart:io';"
+                  "main() => stderr.writeln('hello');");
+      final result = await execRead(
+          Process.start('dart', ['run', '--no-serve-devtools', tempFile.path]));
+      expect(result.exitCode, equals(0));
+      expect(result.stdout, isEmpty);
+      expect(result.stderr, hasLength(1));
+      expect(result.stderr[0], equals('hello'));
+    });
+
+    test('can filter output successfully', () async {
+      final tempFile =
+          await File(p.join(Directory.systemTemp.path, 'temp.dart'))
+              .writeAsString("""import 'dart:io';
+                  main() {
+                    stdout.writeln('hello');
+                    stdout.writeln('foo');
+                    stdout.writeln('bye');
+                    stderr.writeln('hey');
+                    stderr.writeln('bar');
+                    stderr.writeln('bye');
+                  }""");
+      final result = await execRead(
+          Process.start('dart', ['run', '--no-serve-devtools', tempFile.path]),
+          stdoutFilter: (msg) => msg != 'bye',
+          stderrFilter: (msg) => msg != 'bar');
+      expect(result.exitCode, equals(0));
+      expect(result.stdout, equals(const ['hello', 'foo']));
+      expect(result.stderr, equals(const ['hey', 'bye']));
+    });
+
+    test('handles error correctly', () async {
+      final tempFile =
+          await File(p.join(Directory.systemTemp.path, 'temp.dart'))
+              .writeAsString("import 'dart:io';"
+                  "main() { print('exiting'); exitCode = 2; }");
+
+      expect(
+          () => execRead(Process.start(
+              'dart', ['run', '--no-serve-devtools', tempFile.path])),
+          throwsA(isA<ProcessExitCodeException>()
+              .having((e) => e.exitCode, 'exitCode', equals(2))
+              .having((e) => e.stdout, 'stdout', equals(const ['exiting']))
+              .having((e) => e.stderr, 'stderr', isEmpty)));
+    });
+  });
 }

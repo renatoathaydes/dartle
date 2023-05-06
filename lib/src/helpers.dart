@@ -60,17 +60,23 @@ Future<int> _exec(Process proc, String name, Function(String) onStdoutLine,
       '(PID=${proc.pid})';
   logger.fine('Started $procDescription');
 
+  final streamsDone = StreamController<bool>();
+
   proc.stdout
       .transform(utf8.decoder)
       .transform(const LineSplitter())
-      .listen(onStdoutLine);
+      .listen(onStdoutLine, onDone: () => streamsDone.add(true));
   proc.stderr
       .transform(utf8.decoder)
       .transform(const LineSplitter())
-      .listen(onStderrLine);
+      .listen(onStderrLine, onDone: () => streamsDone.add(true));
 
   final code = await proc.exitCode;
   logger.fine('$procDescription exited with code $code');
+
+  // block until the streams are done
+  await streamsDone.stream.take(2).last;
+
   return code;
 }
 
@@ -147,23 +153,28 @@ class ExecReadResult {
 /// The returned object contains the process stdout and stderr outputs as
 /// `Lists<String>` where each item is a line of output.
 ///
-/// This method throws [ProcessException] in case the process' exit code
-/// is not in the [successExitCodes] Set.
+/// Output lines may be filtered out by providing [stdoutFilter] or [stderrFilter]
+/// (the filter must return `true` to keep a line, or `false` to exclude it).
+///
+/// This method throws [ProcessExitCodeException] in case the process' exit code
+/// is not in the [successExitCodes] Set, or [ProcessException] in case the
+/// process could not be executed at all.
 ///
 Future<ExecReadResult> execRead(Future<Process> process,
     {String name = '',
     Function(String)? onStdoutLine,
     Function(String)? onStderrLine,
-    bool Function(String) filter = filterNothing,
+    bool Function(String) stdoutFilter = filterNothing,
+    bool Function(String) stderrFilter = filterNothing,
     Set<int> successExitCodes = const {0}}) async {
-  final stdout = StdStreamConsumer(keepLines: true, filter: filter);
-  final stderr = StdStreamConsumer(keepLines: true, filter: filter);
+  final stdout = StdStreamConsumer(keepLines: true, filter: stdoutFilter);
+  final stderr = StdStreamConsumer(keepLines: true, filter: stderrFilter);
   final code = await _exec(await process, name, stdout, stderr);
   final result = ExecReadResult(code, stdout.lines, stderr.lines);
   if (successExitCodes.contains(code)) {
     return result;
   }
-  throw ProcessException(code, name, stdout.lines, stderr.lines);
+  throw ProcessExitCodeException(code, name, stdout.lines, stderr.lines);
 }
 
 /// Deletes the outputs of all [tasks].
