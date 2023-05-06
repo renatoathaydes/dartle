@@ -69,21 +69,6 @@ class MultipleExceptions extends DartleException {
   }
 }
 
-/// Exception thrown when the build must be aborted immediately.
-///
-/// On platforms supporting dart:io, this is not normally thrown as the
-/// build may exit directly.
-class DartleAbortException implements Exception {
-  final int exitCode;
-
-  const DartleAbortException({this.exitCode = 1});
-
-  @override
-  String toString() {
-    return 'DartleAbortException{exitCode: $exitCode}';
-  }
-}
-
 /// Exception thrown by [execRead] when the process fails by completing with a
 /// non-success exit code.
 ///
