@@ -4,6 +4,10 @@
 
 ## done, waiting for next release
 
+- added new helper functions: `download`, `downloadText` and `downloadJson`.
+- added helper function `homeDir`.
+- added extension function to `File`: `writeBinary`.
+
 # 0.21.0
 
 ### Dartle Cache

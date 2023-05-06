@@ -34,6 +34,11 @@ FutureOr<bool> ignoreExceptions(FutureOr Function() action) async {
   }
 }
 
+/// Get the user HOME directory if possible.
+String? homeDir() => Platform.isWindows
+    ? Platform.environment['USERPROFILE']
+    : Platform.environment['HOME'];
+
 /// Executes the given process, returning its exit code.
 ///
 /// [onStdoutLine] and [onStderrLine] can be provided in order to consume
@@ -322,5 +327,35 @@ Future<void> deleteAll(FileCollection fileCollection) async {
     if (!ok) {
       logger.warning('Failed to delete: ${entry.path}');
     }
+  }
+}
+
+extension FileHelpers on File {
+  /// Write a binary stream to a file.
+  ///
+  /// Creates the parent directory if necessary.
+  ///
+  /// If [makeExecutable] is set to `true`, this method attempts to make this
+  /// [File] executable. This currently only works on Linux and MacOS.
+  Future<File> writeBinary(
+    Stream<List<int>> stream, {
+    bool makeExecutable = false,
+  }) async {
+    await parent.create(recursive: true);
+    final handle = openWrite();
+    try {
+      await handle.addStream(stream);
+      await handle.flush();
+    } finally {
+      await handle.close();
+    }
+    if (makeExecutable && (Platform.isLinux || Platform.isMacOS)) {
+      final exitCode = await execProc(
+          Process.start('chmod', ['+x', path], runInShell: true));
+      if (exitCode != 0) {
+        throw DartleException(message: 'Unable to make file $path executable');
+      }
+    }
+    return this;
   }
 }
