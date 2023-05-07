@@ -4,6 +4,10 @@
 
 ## done, waiting for next release
 
+# 0.22.0
+
+### Dartle Core
+
 - added new helper functions: `download`, `downloadText` and `downloadJson`.
 - added helper function `homeDir`.
 - added extension function to `File`: `writeBinary`.
