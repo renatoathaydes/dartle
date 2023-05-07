@@ -95,16 +95,16 @@ enum StreamRedirectMode { stdout, stderr, stdoutAndStderr, none }
 /// Executes the given process, returning its exit code.
 ///
 /// This method is similar to [exec], but simpler to use for cases where
-/// it is desirable to redirect the process' streams.
+/// it is desirable to redirect the process' streams and automatically fail
+/// depending on the exit code.
 ///
 /// A [StreamRedirectMode] can be provided to configure whether the process'
 /// output should be redirected to the calling process's streams in case of
 /// success or failure. Whether the result is a success or a failure is
 /// determined by looking at the provided [successCodes] Set.
 ///
-/// Notice that in case the exit code is a failure, this method does not throw
-/// an Exception and returns normally. To throw an Exception in case of failure,
-/// use [execRead] instead.
+/// In case the process exit code is a failure, this method throws a
+/// [ProcessExitCodeException].
 ///
 /// By default, both streams are redirected in case of failure, but none in case
 /// of success.
@@ -118,7 +118,11 @@ Future<int> execProc(Future<Process> process,
   final stdoutConsumer = StdStreamConsumer(keepLines: !allDisabled);
   final stderrConsumer = StdStreamConsumer(keepLines: !allDisabled);
   final code = await _exec(await process, name, stdoutConsumer, stderrConsumer);
-  if (allDisabled) return code;
+  final success = successCodes.contains(code);
+  if (allDisabled) {
+    if (!success) failBuild(reason: 'Process "$name" failed with code $code');
+    return code;
+  }
   Future<void> redirect(StreamRedirectMode mode) async {
     switch (mode) {
       case StreamRedirectMode.none:
@@ -144,6 +148,7 @@ Future<int> execProc(Future<Process> process,
   }
 
   await redirect(successCodes.contains(code) ? successMode : errorMode);
+  if (!success) failBuild(reason: 'Process "$name" failed with code $code');
   return code;
 }
 

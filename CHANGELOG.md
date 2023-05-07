@@ -8,6 +8,7 @@
 - added helper function `homeDir`.
 - added extension function to `File`: `writeBinary`.
 - added default name `clean` for task created by `createCleanTask`.
+- made `execProc` fail with `DartleException` if the process exit code is not zero (configurable via parameter `successCodes`).
 
 # 0.21.0
 
