@@ -120,8 +120,12 @@ Future<int> execProc(Future<Process> process,
   final code = await _exec(await process, name, stdoutConsumer, stderrConsumer);
   final success = successCodes.contains(code);
   if (allDisabled) {
-    if (!success) failBuild(reason: 'Process "$name" failed with code $code');
-    return code;
+    if (success) {
+      return code;
+    } else {
+      throw ProcessExitCodeException(
+          code, name, stdoutConsumer.lines, stderrConsumer.lines);
+    }
   }
   Future<void> redirect(StreamRedirectMode mode) async {
     switch (mode) {
@@ -148,8 +152,11 @@ Future<int> execProc(Future<Process> process,
   }
 
   await redirect(successCodes.contains(code) ? successMode : errorMode);
-  if (!success) failBuild(reason: 'Process "$name" failed with code $code');
-  return code;
+  if (success) {
+    return code;
+  }
+  throw ProcessExitCodeException(
+      code, name, stdoutConsumer.lines, stderrConsumer.lines);
 }
 
 /// Result of calling [execRead].
