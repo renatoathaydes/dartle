@@ -8,7 +8,9 @@
 - added helper function `homeDir`.
 - added extension function to `File`: `writeBinary`.
 - added default name `clean` for task created by `createCleanTask`.
+- stopped exporting `StdStreamConsumer`. Use `execRead`, `execProc` or `exec` functions configuration instead.
 - made `execProc` fail with `DartleException` if the process exit code is not zero (configurable via parameter `successCodes`).
+- `failBuild` now returns `Never`, given it always throws `DartleException`.
 
 # 0.21.0
 
