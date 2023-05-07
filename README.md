@@ -5,10 +5,12 @@
 
 A simple _task runner_/_build system_/_build library_ written in Dart.
 
+[📚 Dartle Documentation](https://renatoathaydes.github.io/dartle-website/)
+
 ## Purpose
 
 The goal with Dartle is to define a (sometimes large) number of tasks where only a few of them
-are actually explicitly invoked by a human. This is accomplished by defining task phases and
+are explicitly invoked by a human. This is accomplished by defining task phases and
 declaring interdependencies between tasks.
 
 Dartle makes sure that every task that _needs to run_, but no others, actually run when you ask it to run
@@ -37,6 +39,8 @@ Tasks declared in this build:
 ==> Setup Phase:
   * clean
       Deletes the outputs of all other tasks in this build.
+  * cleanWorkingDirs [up-to-date]
+      Cleanup working dir before builds. Avoids caching generated files.
 ==> Build Phase:
   * analyzeCode [up-to-date]
       Analyzes Dart source code
@@ -54,21 +58,22 @@ Tasks declared in this build:
       Runs the Dart build_runner tool.
   * runPubGet [up-to-date]
       Runs "pub get" in order to update dependencies.
-  * test [up-to-date]
-      Runs all tests. Arguments can be used to provide the platforms the tests should run on.
+  * test [out-of-date]
+      Runs Dart tests.
 ==> TearDown Phase:
   No tasks in this phase.
 
 The following tasks were selected to run, in order:
 
-  runPubGet
-  generateDartSources
-      checkImports
-      runBuildRunner
-          format
-              analyzeCode
-                  test
-                      build
+  cleanWorkingDirs
+      runPubGet
+      generateDartSources
+          runBuildRunner
+              checkImports
+              format
+                  analyzeCode
+                      test
+                          build
 ```
 
 > Note: Tasks on the same _column_ may run in parallel.
@@ -108,14 +113,12 @@ _dartle.dart_
 ```dart
 import 'package:dartle/dartle.dart';
 
-final allTasks = [
-  Task(hello, argsValidator: const ArgsCount.range(min: 0, max: 1)),
-  Task(bye, dependsOn: const {'hello'}),
-  Task(clean),
-];
+final helloTask = Task(hello, argsValidator: const ArgsCount.range(min: 0, max: 1));
+final byeTask = Task(bye, dependsOn: const {'hello'});
+final cleanTask = createCleanTask(tasks: {helloTask, byeTask});
 
 main(List<String> args) async =>
-    run(args, tasks: allTasks.toSet(), defaultTasks: {allTasks[0]});
+    run(args, tasks: {helloTask, byeTask, cleanTask}, defaultTasks: {helloTask});
 
 /// To pass an argument to a task, use a ':' prefix, e.g.:
 /// dartle hello :joe
@@ -124,11 +127,9 @@ hello(List<String> args) =>
 
 /// If no arguments are expected, use `_` as the function parameter.
 bye(_) => print("Bye!");
-
-clean(_) => deleteOutputs(allTasks);
 ```
 
-Notice that `dartle.dart` should be very simple (a basic invocation to Dartle's `run`, ideally), so it's clear at a
+Notice that the `dartle.dart` script should be very simple (a basic invocation to Dartle's `run`, ideally), so it's clear at a
 glance what the tasks are.
 
 Put any logic you may need to write for tasks (and even the task declarations) in source file inside the
