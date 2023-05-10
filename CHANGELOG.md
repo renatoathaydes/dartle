@@ -4,6 +4,10 @@
 
 ## done, waiting for next release
 
+# 0.22.2
+
+- fixed metadata for Dartle 3.
+
 # 0.22.1
 
 ### DartleCache
