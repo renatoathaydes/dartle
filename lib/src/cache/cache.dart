@@ -209,6 +209,7 @@ class DartleCache {
   /// taskNames and keys.
   Future<void> removeNotMatching(
       Set<String> taskNames, Set<String> keys) async {
+    final encodedKeys = keys.map(_encodeKey).toSet();
     var removedCount = 0;
     final oldTasks = Directory(_tasksDir).list();
     await for (final oldTask in oldTasks) {
@@ -219,12 +220,12 @@ class DartleCache {
         removedCount++;
       }
     }
-    final oldKeys = Directory(_hashesDir).list();
-    await for (final oldKey in oldKeys) {
-      if (!keys.contains(path.basename(oldKey.path))) {
+    final oldEncodedKeys = Directory(_hashesDir).list();
+    await for (final oldEncodedKey in oldEncodedKeys) {
+      if (!encodedKeys.contains(path.basename(oldEncodedKey.path))) {
         logger.fine(() =>
-            "Removing key '${oldKey.path}' as key is not part of the build");
-        await oldKey.delete(recursive: true);
+            "Removing key '${oldEncodedKey.path}' as key is not part of the build");
+        await oldEncodedKey.delete(recursive: true);
         removedCount++;
       }
     }
