@@ -4,6 +4,12 @@
 
 ## done, waiting for next release
 
+# 0.22.1
+
+### DartleCache
+
+- fixed mistake that caused build tasks' cached artifacts to be deleted accidentally.
+
 # 0.22.0
 
 ### Dartle Core
