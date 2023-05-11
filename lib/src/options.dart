@@ -2,32 +2,39 @@ import 'dart:io';
 
 import 'package:args/args.dart';
 import 'package:logging/logging.dart' as log;
-import 'package:freezed_annotation/freezed_annotation.dart';
 
 import '_log.dart';
 import 'dartle_version.g.dart';
 import 'error.dart';
 
-part 'options.freezed.dart';
+class Options {
+  final log.Level logLevel;
+  final bool colorfulLog;
+  final bool showHelp;
+  final bool showVersion;
+  final bool showTasks;
+  final bool showTaskGraph;
+  final bool forceTasks;
+  final bool parallelizeTasks;
+  final bool resetCache;
+  final bool logBuildTime;
+  final bool runPubGet;
+  final List<String> tasksInvocation;
 
-@freezed
-class Options with _$Options {
-  const Options._();
-
-  const factory Options({
-    @Default(log.Level.INFO) log.Level logLevel,
-    @Default(true) bool colorfulLog,
-    @Default(false) bool showHelp,
-    @Default(false) bool showVersion,
-    @Default(false) bool showTasks,
-    @Default(false) bool showTaskGraph,
-    @Default(false) bool forceTasks,
-    @Default(true) bool parallelizeTasks,
-    @Default(false) bool resetCache,
-    @Default(true) bool logBuildTime,
-    @Default(true) bool runPubGet,
-    @Default([]) List<String> tasksInvocation,
-  }) = _Options;
+  const Options({
+    this.logLevel = log.Level.INFO,
+    this.colorfulLog = true,
+    this.showHelp = false,
+    this.showVersion = false,
+    this.showTasks = false,
+    this.showTaskGraph = false,
+    this.forceTasks = false,
+    this.parallelizeTasks = true,
+    this.resetCache = false,
+    this.logBuildTime = true,
+    this.runPubGet = true,
+    this.tasksInvocation = const [],
+  });
 
   bool get showInfoOnly =>
       showTasks || showTaskGraph || showHelp || showVersion;
@@ -48,6 +55,16 @@ class Options with _$Options {
       if (!logBuildTime) '--no-log-build-time',
       if (includeTasks) ...tasksInvocation,
     ];
+  }
+
+  @override
+  String toString() {
+    return 'Options{logLevel: $logLevel, colorfulLog: $colorfulLog, '
+        'showHelp: $showHelp, showVersion: $showVersion, showTasks: $showTasks, '
+        'showTaskGraph: $showTaskGraph, forceTasks: $forceTasks, '
+        'parallelizeTasks: $parallelizeTasks, resetCache: $resetCache, '
+        'logBuildTime: $logBuildTime, runPubGet: $runPubGet, '
+        'tasksInvocation: $tasksInvocation}';
   }
 }
 

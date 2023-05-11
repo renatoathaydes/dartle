@@ -6,7 +6,7 @@ version: 0.22.2
 homepage: https://github.com/renatoathaydes/dartle
 
 environment:
-  sdk: '>=2.15.0 <4.0.0'
+  sdk: '>=3.0.0 <4.0.0'
 
 dependencies:
   args: ^2.0.0
@@ -28,8 +28,7 @@ dev_dependencies:
   test: ^1.16.8
   lints: ^2.0.1
   build_runner: ^2.2.0
-  freezed: ^2.1.0+1
-  isolate_current_directory: ^1.2.0
+  isolate_current_directory: ^2.0.0
 
 executables:
   dartle:

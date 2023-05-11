@@ -1,9 +1,6 @@
-import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:io/ansi.dart' as ansi;
 
 import 'message.dart';
-
-part 'ansi_message.freezed.dart';
 
 final _reset = [ansi.resetAll.escape];
 
@@ -30,15 +27,54 @@ class AnsiMessage with Message {
   }
 
   bool _endsWithReset() {
-    final index = parts.lastIndexWhere((part) => part is Code);
+    final index = parts.lastIndexWhere((part) => part is CodeAnsiMessagePart);
     if (index < 0) return true; // as there's no code
     return parts[index] == const AnsiMessagePart.code(ansi.resetAll);
   }
 }
 
-@freezed
-class AnsiMessagePart with _$AnsiMessagePart {
-  const factory AnsiMessagePart.code(ansi.AnsiCode code) = Code;
+sealed class AnsiMessagePart {
+  const factory AnsiMessagePart.code(ansi.AnsiCode code) = CodeAnsiMessagePart;
 
-  const factory AnsiMessagePart.text(String text) = Text;
+  const factory AnsiMessagePart.text(String text) = TextAnsiMessagePart;
+
+  T when<T>(
+      {required T Function(ansi.AnsiCode) code,
+      required T Function(String) text});
+}
+
+class CodeAnsiMessagePart implements AnsiMessagePart {
+  final ansi.AnsiCode code;
+
+  const CodeAnsiMessagePart(this.code);
+
+  @override
+  T when<T>(
+      {required T Function(ansi.AnsiCode p1) code,
+      required T Function(String p1) text}) {
+    return code(this.code);
+  }
+
+  @override
+  String toString() {
+    return 'CodeAnsiMessagePart{code: $code}';
+  }
+}
+
+class TextAnsiMessagePart implements AnsiMessagePart {
+  final String text;
+
+  const TextAnsiMessagePart(this.text);
+
+  @override
+  T when<T>(
+      {required T Function(ansi.AnsiCode p1) code,
+      required T Function(String p1) text}) {
+    return text(this.text);
+  }
+
+  @override
+  String toString() {
+    return 'TextAnsiMessagePart{text: $text}';
+  }
 }

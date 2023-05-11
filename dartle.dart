@@ -2,18 +2,10 @@ import 'package:dartle/dartle_dart.dart';
 import 'package:path/path.dart' show join;
 
 import 'dartle-src/check_imports.dart';
-import 'dartle-src/metadata_generator.dart';
 import 'dartle-src/clean_working_dirs.dart';
+import 'dartle-src/metadata_generator.dart';
 
-String _src(String name) => join('lib', 'src', name);
-
-final dartleDart = DartleDart(DartConfig(
-    buildRunnerRunCondition: RunOnChanges(
-        inputs: files([_src('options.dart'), _src('ansi_message.dart')]),
-        outputs: files([
-          _src('options.freezed.dart'),
-          _src('ansi_message.freezed.dart'),
-        ]))));
+final dartleDart = DartleDart();
 
 final libDirDartFiles = dir(join(dartleDart.rootDir, 'lib'),
     fileExtensions: const {'dart'}, exclusions: const {'options.freezed.dart'});
@@ -24,7 +16,7 @@ void main(List<String> args) {
       DartleVersionFileGenerator(dartleDart.rootDir).task;
   final cleanupTask = createCleanWorkingDirsTask();
 
-  checkImportsTask.dependsOn(const {'runBuildRunner', 'cleanWorkingDirs'});
+  checkImportsTask.dependsOn(const {'cleanWorkingDirs'});
   dartleDart.analyzeCode
       .dependsOn(const {'generateDartSources', 'checkImports'});
   dartleDart.formatCode.dependsOn(const {'generateDartSources'});
