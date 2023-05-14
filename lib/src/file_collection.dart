@@ -142,13 +142,15 @@ FileCollection files(Iterable<String> paths) =>
 /// If `includeHidden` is set to `true` (default is `false`), files and
 /// directories starting with a `.` are included, otherwise they are ignored.
 ///
-/// Only relative (to the root project directory) directories are allowed.
+/// Only relative (to the root project directory) directories are allowed
+/// by default. Using absolute paths may cause builds to become unportable.
 FileCollection dir(
   String directory, {
   Set<String> fileExtensions = const {},
   Set<String> exclusions = const {},
   bool recurse = true,
   bool includeHidden = false,
+  bool allowAbsolutePaths = false,
 }) =>
     _FileCollection(
         const {},
@@ -159,7 +161,7 @@ FileCollection dir(
               exclusions: exclusions,
               recurse: recurse,
               includeHidden: includeHidden)
-        ])));
+        ], allowAbsolutePaths: allowAbsolutePaths)));
 
 /// Create a [FileCollection] consisting of multiple directories, possibly
 /// filtering which files within each directory may be included.
@@ -177,21 +179,26 @@ FileCollection dir(
 /// The provided directories must be disjoint and unique, otherwise an
 /// [ArgumentError] is thrown.
 ///
-/// Only relative (to the root project directory) directories are allowed.
-FileCollection dirs(Iterable<String> directories,
-        {Set<String> fileExtensions = const {},
-        Set<String> exclusions = const {},
-        bool recurse = true,
-        bool includeHidden = false}) =>
+/// Only relative (to the root project directory) directories are allowed
+/// by default. Using absolute paths may cause builds to become unportable.
+FileCollection dirs(
+  Iterable<String> directories, {
+  Set<String> fileExtensions = const {},
+  Set<String> exclusions = const {},
+  bool recurse = true,
+  bool includeHidden = false,
+  bool allowAbsolutePaths = false,
+}) =>
     _FileCollection(
         const {},
-        List.unmodifiable(_ensureValidDirs(directories.map((d) =>
-            DirectoryEntry(
+        List.unmodifiable(_ensureValidDirs(
+            directories.map((d) => DirectoryEntry(
                 path: d,
                 fileExtensions: fileExtensions,
                 exclusions: exclusions,
                 recurse: recurse,
-                includeHidden: includeHidden)))));
+                includeHidden: includeHidden)),
+            allowAbsolutePaths: allowAbsolutePaths)));
 
 /// A File collection including the given files as well as
 /// [DirectoryEntry]'s.
@@ -442,11 +449,12 @@ String _ensurePosixPath(String path) {
   return p.posix.canonicalize(path);
 }
 
-Iterable<DirectoryEntry> _ensureValidDirs(Iterable<DirectoryEntry> dirs) sync* {
+Iterable<DirectoryEntry> _ensureValidDirs(Iterable<DirectoryEntry> dirs,
+    {bool allowAbsolutePaths = false}) sync* {
   final seenDirs = <String>{};
   for (final dir in dirs) {
     final pdir = _ensurePosixPath(dir.path);
-    if (p.isAbsolute(pdir)) {
+    if (!allowAbsolutePaths && p.isAbsolute(pdir)) {
       throw DartleException(
           message: 'Absolute directory not allowed: ${dir.path}');
     }

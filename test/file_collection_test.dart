@@ -1,8 +1,10 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:dartle/dartle.dart';
 import 'package:test/test.dart';
+
 import 'test_utils.dart';
 
 void main() {
@@ -389,7 +391,7 @@ class Entry {
   Entry.fileWithText(String name, String text)
       : _name = name,
         _isFile = true,
-        _bytes = text.runes.toList();
+        _bytes = utf8.encode(text);
 
   Entry.fileWithBytes(String name, List<int> bytes)
       : _name = name,

@@ -4,9 +4,16 @@
 
 ## done, waiting for next release
 
+### Dartle Core
+
+- require Dart 3.
+- removed Freezed build dependency.
+- added helper functions: `taskOutputs`, `tar`, `untar`, `tempFile`, `tempDir`.
+- added parameter `FileCollection`: `allowAbsolutePaths` (not recommended to set to `true` in normal builds).
+
 # 0.22.2
 
-- fixed metadata for Dartle 3.
+- fixed metadata for Dart 3.
 
 # 0.22.1
 

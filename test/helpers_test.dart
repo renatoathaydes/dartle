@@ -6,6 +6,7 @@ import 'package:logging/logging.dart';
 import 'package:path/path.dart' as p;
 import 'package:test/test.dart';
 
+import 'file_collection_test.dart';
 import 'test_utils.dart';
 
 void main([List<String> args = const []]) {
@@ -317,5 +318,60 @@ void main([List<String> args = const []]) {
           throwsA(isA<HttpCodeException>()
               .having((e) => e.statusCode, 'statusCode', equals(400))));
     }, timeout: const Timeout(Duration(seconds: 4)));
+  });
+
+  group('tar', () {
+    test('Can tar and untar using gzip by default', () async {
+      final fs = await createFileSystem([
+        Entry.directory('tar-d1'),
+        Entry.directory(p.join('tar-d1', 'tar-d2')),
+        Entry.fileWithText(p.join('tar-d1', 'f1.txt'), 'f1'),
+        Entry.fileWithText(p.join('tar-d1', 'f2.txt'), 'f2'),
+        Entry.fileWithText(p.join('tar-d1', 'tar-d2', 'f3.txt'), 'f3'),
+      ]);
+
+      final tarFile = await tar(dir(fs.root, allowAbsolutePaths: true),
+          destination: tempFile(extension: '.tar.gz').path,
+          destinationPath: (path) => p.relative(path, from: fs.root));
+
+      expect(await tarFile.exists(), isTrue);
+
+      final decodedDir =
+          await untar(tarFile.path, destinationDir: tempDir().path);
+
+      await expectFileTree(decodedDir.path, {
+        'tar-d1/': '',
+        p.join('tar-d1', 'tar-d2/'): '',
+        p.join('tar-d1', 'f1.txt'): 'f1',
+        p.join('tar-d1', 'f2.txt'): 'f2',
+        p.join('tar-d1', 'tar-d2', 'f3.txt'): 'f3',
+      });
+    });
+
+    test('Can tar and untar using no encoding', () async {
+      final fs = await createFileSystem([
+        Entry.directory('d1'),
+        Entry.fileWithText(p.join('f1.txt'), 'Some f1'),
+        Entry.fileWithText(p.join('f2.txt'), 'Some f2'),
+        Entry.fileWithText(p.join('d1', 'f3.txt'), 'Some f3'),
+      ]);
+
+      final tarFile = await tar(dir(fs.root, allowAbsolutePaths: true),
+          destination: tempFile(extension: '.tar').path,
+          encoder: (i, o) async => o.writeInputStream(i),
+          destinationPath: (path) => p.relative(path, from: fs.root));
+
+      expect(await tarFile.exists(), isTrue);
+
+      final decodedDir =
+          await untar(tarFile.path, destinationDir: tempDir().path);
+
+      await expectFileTree(decodedDir.path, {
+        'd1/': '',
+        p.join('f1.txt'): 'Some f1',
+        p.join('f2.txt'): 'Some f2',
+        p.join('d1', 'f3.txt'): 'Some f3',
+      });
+    });
   });
 }

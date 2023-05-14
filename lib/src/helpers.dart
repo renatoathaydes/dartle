@@ -1,6 +1,10 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
+import 'dart:math';
+
+import 'package:archive/archive_io.dart';
+import 'package:path/path.dart' as p;
 
 import '_log.dart';
 import '_std_stream_consumer.dart';
@@ -308,15 +312,28 @@ Future<Object?> downloadJson(Uri uri,
       .first;
 }
 
+/// Get the outputs of a [Task].
+///
+/// This method can only return the outputs of a Task if its [RunCondition]
+/// implements [FilesCondition], otherwise `null` is returned.
+FileCollection? taskOutputs(Task task) {
+  switch (task.runCondition) {
+    case FilesCondition(outputs: var out):
+      return out;
+    default:
+      return null;
+  }
+}
+
 /// Deletes the outputs of all [tasks].
 ///
 /// This method only works if the task's [RunCondition]s are instances of
 /// [FilesCondition].
 Future<void> deleteOutputs(Iterable<Task> tasks) async {
   for (final task in tasks) {
-    final cond = task.runCondition;
-    if (cond is FilesCondition) {
-      await deleteAll(cond.outputs);
+    final outputs = taskOutputs(task);
+    if (outputs != null) {
+      await deleteAll(outputs);
     }
   }
 }
@@ -340,6 +357,126 @@ Future<void> deleteAll(FileCollection fileCollection) async {
       logger.warning('Failed to delete: ${entry.path}');
     }
   }
+}
+
+final _random = Random();
+
+/// Get a [File] with a random name inside the `Directory.systemTemp` directory.
+///
+/// The file is created automatically.
+File tempFile({String extension = ''}) {
+  final dir = Directory.systemTemp.path;
+  return File(
+      p.join(dir, 'dtemp-${_random.nextInt(pow(2, 31).toInt())}$extension'))
+    ..createSync();
+}
+
+/// Get a [Directory] with a random name inside the `Directory.systemTemp` directory.
+///
+/// The directory is created automatically.
+Directory tempDir({String suffix = ''}) {
+  final dir = Directory.systemTemp.path;
+  return Directory(
+      p.join(dir, 'dtemp-${_random.nextInt(pow(2, 31).toInt())}$suffix'))
+    ..createSync();
+}
+
+Future<void> _gzipEncode(InputStreamBase input, OutputStreamBase output) async {
+  final gzip = GZipEncoder();
+  gzip.encode(input, output: output);
+  await input.close();
+  if (output is OutputFileStream) {
+    await output.close();
+  }
+}
+
+/// Tar all files in the given fileCollection into the destination file.
+///
+/// The destination file is overwritten if it already exists.
+///
+/// By default, the tar contents are gzipped. By passing an `encoder` function,
+/// it's possible to use other encoding, or no encoding at all.
+///
+/// The tar file is returned.
+///
+Future<File> tar(FileCollection fileCollection,
+    {required String destination,
+    String Function(String)? destinationPath,
+    Future<Object?> Function(InputStreamBase, OutputStreamBase) encoder =
+        _gzipEncode}) async {
+  final tarEncoder = TarFileEncoder();
+  final tempTar = tempFile(extension: '.tar');
+  tarEncoder.create(tempTar.path);
+  await for (final file in fileCollection.resolveFiles()) {
+    final path = destinationPath?.call(file.path) ?? file.path;
+    await tarEncoder.addFile(file, path);
+  }
+  await tarEncoder.close();
+
+  final dest = File(destination);
+  await dest.parent.create(recursive: true);
+
+  final tarStream = InputFileStream(tempTar.path);
+  final destinationStream = OutputFileStream(destination);
+  try {
+    await encoder(tarStream, destinationStream);
+  } finally {
+    await ignoreExceptions(() async => await tempTar.delete());
+  }
+  return dest;
+}
+
+/// Untar a tar file's contents into the given destinationDir.
+///
+/// A `decode` function can be provided to decode the tarFile before its
+/// contents are unpacked. The function must return the path to the decoded
+/// file, typically in a temporary location (the file is not deleted).
+///
+/// By default, the tarFile is assumed to be gzipped if its name ends
+/// with either `.tar.gz` or `.tgz`, otherwise the tarFile is assumed to be
+/// a simple tar archive.
+///
+/// The destination directory is created if necessary and returned.
+Future<Directory> untar(String tarFile,
+    {required String destinationDir, String Function()? decode}) async {
+  String tarPath;
+  if (decode == null) {
+    if (tarFile.endsWith('.tar.gz') || tarFile.endsWith('.tgz')) {
+      tarPath = tempFile().path;
+      final inStream = InputFileStream(tarFile);
+      final outStream = OutputFileStream(tarPath);
+      GZipDecoder().decodeStream(inStream, outStream);
+      inStream.close();
+      outStream.close();
+    } else {
+      tarPath = tarFile;
+    }
+  } else {
+    tarPath = decode();
+  }
+  final tarStream = InputFileStream(tarPath);
+  final archive = TarDecoder().decodeBuffer(tarStream);
+  try {
+    for (final entry in archive) {
+      final name = entry.name
+          .split('/')
+          .where((e) => e != '..' && e != '.')
+          .where((e) => e.trim().isNotEmpty)
+          .join(Platform.pathSeparator);
+      if (entry.isFile && name.isNotEmpty) {
+        final output = File(p.join(destinationDir, name));
+        await output.parent.create(recursive: true);
+        final outStream = OutputFileStream(output.path);
+        entry.writeContent(outStream);
+        await outStream.close();
+      } else {
+        await Directory(p.join(destinationDir, name)).create(recursive: true);
+      }
+    }
+  } finally {
+    await tarStream.close();
+  }
+  return Directory(destinationDir);
 }
 
 extension FileHelpers on File {
