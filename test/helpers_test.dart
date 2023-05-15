@@ -358,13 +358,13 @@ void main([List<String> args = const []]) {
 
       final tarFile = await tar(dir(fs.root, allowAbsolutePaths: true),
           destination: tempFile(extension: '.tar').path,
-          encoder: (i, o) async => o.writeInputStream(i),
+          encoder: const NoEncoding(),
           destinationPath: (path) => p.relative(path, from: fs.root));
 
       expect(await tarFile.exists(), isTrue);
 
-      final decodedDir =
-          await untar(tarFile.path, destinationDir: tempDir().path);
+      final decodedDir = await untar(tarFile.path,
+          decoder: const NoEncoding(), destinationDir: tempDir().path);
 
       await expectFileTree(decodedDir.path, {
         'd1/': '',

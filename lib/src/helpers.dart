@@ -3,8 +3,8 @@ import 'dart:convert';
 import 'dart:io';
 import 'dart:math';
 
-import 'package:archive/archive_io.dart';
 import 'package:path/path.dart' as p;
+import 'package:tar/tar.dart';
 
 import '_log.dart';
 import '_std_stream_consumer.dart';
@@ -381,12 +381,14 @@ Directory tempDir({String suffix = ''}) {
     ..createSync();
 }
 
-Future<void> _gzipEncode(InputStreamBase input, OutputStreamBase output) async {
-  final gzip = GZipEncoder();
-  gzip.encode(input, output: output);
-  await input.close();
-  if (output is OutputFileStream) {
-    await output.close();
+Stream<TarEntry> _tarEntries(
+    Stream<File> files, String Function(String)? destinationPath) async* {
+  await for (final file in files) {
+    final path = destinationPath?.call(file.path) ?? file.path;
+    final stat = file.statSync();
+    yield TarEntry(
+        TarHeader(name: path, mode: stat.mode, modified: stat.modified),
+        file.openRead());
   }
 }
 
@@ -394,89 +396,107 @@ Future<void> _gzipEncode(InputStreamBase input, OutputStreamBase output) async {
 ///
 /// The destination file is overwritten if it already exists.
 ///
-/// By default, the tar contents are gzipped. By passing an `encoder` function,
-/// it's possible to use other encoding, or no encoding at all.
+/// If `encoder` is `null` (the default), the tarFile will be gzipped
+/// in case its name ends with either `.tar.gz` or `.tgz`, or use no further
+/// encoding otherwise.
+///
+/// Provide an `encoder` explicitly to use another
+/// encoding, or no encoding at all by using [NoEncoding].
+///
+/// A `destinationPath` function can be provided to map source file paths into
+/// destination paths. That allows the path inside the tar archive to be chosen
+/// for each included file. By default, the path of the source file is also used
+/// for its destination path inside the tar.
 ///
 /// The tar file is returned.
 ///
 Future<File> tar(FileCollection fileCollection,
     {required String destination,
     String Function(String)? destinationPath,
-    Future<Object?> Function(InputStreamBase, OutputStreamBase) encoder =
-        _gzipEncode}) async {
-  final tarEncoder = TarFileEncoder();
-  final tempTar = tempFile(extension: '.tar');
-  tarEncoder.create(tempTar.path);
-  await for (final file in fileCollection.resolveFiles()) {
-    final path = destinationPath?.call(file.path) ?? file.path;
-    await tarEncoder.addFile(file, path);
-  }
-  await tarEncoder.close();
-
+    Converter<List<int>, List<int>>? encoder}) async {
+  logger.finer(() => 'Tar $fileCollection to $destination');
+  final entries = _tarEntries(fileCollection.resolveFiles(), destinationPath);
   final dest = File(destination);
   await dest.parent.create(recursive: true);
-
-  final tarStream = InputFileStream(tempTar.path);
-  final destinationStream = OutputFileStream(destination);
-  try {
-    await encoder(tarStream, destinationStream);
-  } finally {
-    await ignoreExceptions(() async => await tempTar.delete());
-  }
+  await entries
+      .transform(tarWriter)
+      .transform(encoder ?? gzip.encoder)
+      .pipe(dest.openWrite());
   return dest;
 }
 
 /// Untar a tar file's contents into the given destinationDir.
 ///
-/// A `decode` function can be provided to decode the tarFile before its
-/// contents are unpacked. The function must return the path to the decoded
-/// file, typically in a temporary location (the file is not deleted).
+/// If `decoder` is provided, it's used to decode the file contents before
+/// processing it (e.g. [gzip.decoder] could be used to decode the file).
 ///
-/// By default, the tarFile is assumed to be gzipped if its name ends
-/// with either `.tar.gz` or `.tgz`, otherwise the tarFile is assumed to be
-/// a simple tar archive.
+/// If `decoder` is `null` (the default), the tarFile is assumed to be gzipped
+/// in case its name ends with either `.tar.gz` or `.tgz`, or to be a simple
+/// tar archive otherwise.
+///
+/// Use [NoEncoding] to ensure the tar is always treated as a plain archive.
+///
+/// If a tar entry's name has any `..` or `.` components in its path,
+/// these components are removed.
+///
+/// File permissions are set only on MacOS and Linux. The `lastModified` value
+/// is set for all created files.
 ///
 /// The destination directory is created if necessary and returned.
 Future<Directory> untar(String tarFile,
-    {required String destinationDir, String Function()? decode}) async {
-  String tarPath;
-  if (decode == null) {
+    {required String destinationDir,
+    Converter<List<int>, List<int>>? decoder}) async {
+  logger.finer(() => 'Untar $tarFile');
+  var tarStream = File(tarFile).openRead();
+  if (decoder == null) {
     if (tarFile.endsWith('.tar.gz') || tarFile.endsWith('.tgz')) {
-      tarPath = tempFile().path;
-      final inStream = InputFileStream(tarFile);
-      final outStream = OutputFileStream(tarPath);
-      GZipDecoder().decodeStream(inStream, outStream);
-      inStream.close();
-      outStream.close();
-    } else {
-      tarPath = tarFile;
+      tarStream = tarStream.transform(gzip.decoder);
     }
   } else {
-    tarPath = decode();
+    tarStream = tarStream.transform(decoder);
   }
-  final tarStream = InputFileStream(tarPath);
-  final archive = TarDecoder().decodeBuffer(tarStream);
-  try {
-    for (final entry in archive) {
-      final name = entry.name
-          .split('/')
-          .where((e) => e != '..' && e != '.')
-          .where((e) => e.trim().isNotEmpty)
-          .join(Platform.pathSeparator);
-      if (entry.isFile && name.isNotEmpty) {
-        final output = File(p.join(destinationDir, name));
-        await output.parent.create(recursive: true);
-        final outStream = OutputFileStream(output.path);
-        entry.writeContent(outStream);
-        await outStream.close();
-      } else {
-        await Directory(p.join(destinationDir, name)).create(recursive: true);
-      }
+  final tarReader = TarReader(tarStream);
+
+  while (await tarReader.moveNext()) {
+    final entry = tarReader.current;
+    final name = entry.name
+        .split('/')
+        .where((e) => e != '..' && e != '.')
+        .where((e) => e.trim().isNotEmpty)
+        .join(Platform.pathSeparator);
+    if (entry.type == TypeFlag.dir) {
+      logger.finer(() => 'Extracting tar entry directory: $name');
+      await Directory(p.join(destinationDir, name)).create(recursive: true);
+    } else if (entry.type case TypeFlag.reg || TypeFlag.regA) {
+      final mode = (0xfff & entry.header.mode).toRadixString(8);
+      logger.finer(() => 'Extracting tar entry file: $name (mode=${mode})');
+      final output = File(p.join(destinationDir, name));
+      await output.parent.create(recursive: true);
+      final outStream = output.openWrite();
+      await entry.contents.pipe(outStream);
+      output.setLastModified(entry.header.modified);
+      output._setPermissions(mode);
+    } else {
+      logger.fine(
+          () => 'Ignoring tar entry with unrecognized typeFlag: ${entry.type}');
     }
-  } finally {
-    await tarStream.close();
   }
   return Directory(destinationDir);
+}
+
+/// A no-op implementation of [Converter].
+class NoEncoding extends Converter<List<int>, List<int>> {
+  const NoEncoding();
+
+  @override
+  List<int> convert(List<int> input) {
+    return input;
+  }
+
+  @override
+  Sink<List<int>> startChunkedConversion(Sink<List<int>> sink) {
+    return ByteConversionSink.from(sink);
+  }
 }
 
 extension FileHelpers on File {
@@ -506,5 +526,16 @@ extension FileHelpers on File {
       }
     }
     return this;
+  }
+
+  Future<void> _setPermissions(String unixPermissions) async {
+    if (!(Platform.isLinux || Platform.isMacOS)) return;
+    try {
+      await execProc(Process.start('chmod', [unixPermissions, path]),
+          name: 'chmod');
+    } on ProcessExitCodeException catch (e) {
+      logger.fine('Unable to set file permissions ($path), '
+          'chmod exitCode=${e.exitCode}');
+    }
   }
 }
