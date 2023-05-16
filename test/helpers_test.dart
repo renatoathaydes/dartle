@@ -341,10 +341,10 @@ void main([List<String> args = const []]) {
 
       await expectFileTree(decodedDir.path, {
         'tar-d1/': '',
-        p.join('tar-d1', 'tar-d2/'): '',
-        p.join('tar-d1', 'f1.txt'): 'f1',
-        p.join('tar-d1', 'f2.txt'): 'f2',
-        p.join('tar-d1', 'tar-d2', 'f3.txt'): 'f3',
+        'tar-d1/tar-d2/': '',
+        'tar-d1/f1.txt': 'f1',
+        'tar-d1/f2.txt': 'f2',
+        'tar-d1/tar-d2/f3.txt': 'f3',
       });
     });
 
@@ -368,9 +368,9 @@ void main([List<String> args = const []]) {
 
       await expectFileTree(decodedDir.path, {
         'd1/': '',
-        p.join('f1.txt'): 'Some f1',
-        p.join('f2.txt'): 'Some f2',
-        p.join('d1', 'f3.txt'): 'Some f3',
+        'f1.txt': 'Some f1',
+        'f2.txt': 'Some f2',
+        'd1/f3.txt': 'Some f3',
       });
     });
   });
