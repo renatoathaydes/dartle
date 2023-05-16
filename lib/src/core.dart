@@ -216,7 +216,8 @@ Future<void> _runAll(
     List<ParallelTasks> executableTasks, Options options) async {
   final results = await runTasks(executableTasks,
       parallelize: options.parallelizeTasks,
-      disableCache: options.disableCache);
+      disableCache: options.disableCache,
+      force: options.forceTasks);
 
   final taskErrors = results
       .map((f) => f.exceptionAndStackTrace)

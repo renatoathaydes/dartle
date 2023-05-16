@@ -4,6 +4,7 @@ import 'package:dartle/dartle_cache.dart';
 import 'package:dartle/src/task_invocation.dart';
 
 class CacheMock implements DartleCache {
+  bool throwOnAnyCheck = false;
   Map<FileCollection, bool> hasChangedInvocations = {};
   Map<String, DateTime> invocationTimes = {};
   Map<String, List<bool>> invocationChanges = {};
@@ -34,6 +35,9 @@ class CacheMock implements DartleCache {
   @override
   Future<bool> hasChanged(FileCollection fileCollection,
       {String key = ''}) async {
+    if (throwOnAnyCheck) {
+      throw Exception('hasChanged($fileCollection, key=$key)');
+    }
     final value = hasChangedInvocations[fileCollection];
     if (value == null) {
       throw 'invocation not mocked';
@@ -54,6 +58,9 @@ class CacheMock implements DartleCache {
 
   @override
   Future<bool> hasTaskInvocationChanged(TaskInvocation invocation) async {
+    if (throwOnAnyCheck) {
+      throw Exception('hasTaskInvocationChanged($invocation)');
+    }
     final changes = invocationChanges[invocation.name];
     if (changes == null) {
       throw 'invocation not mocked';
@@ -71,18 +78,27 @@ class CacheMock implements DartleCache {
 
   @override
   Future<void> removeTaskInvocation(String taskName) async {
+    if (throwOnAnyCheck) {
+      throw Exception('removeTaskInvocation($taskName)');
+    }
     invocationChanges.remove(taskName);
     invocationTimes.remove(taskName);
   }
 
   @override
   Future<DateTime?> getLatestInvocationTime(TaskInvocation invocation) async {
+    if (throwOnAnyCheck) {
+      throw Exception('getLatestInvocationTime($invocation)');
+    }
     return invocationTimes[invocation.name];
   }
 
   @override
   Future<void> removeNotMatching(
       Set<String> taskNames, Set<String> keys) async {
+    if (throwOnAnyCheck) {
+      throw Exception('removeNotMatching($taskNames, $keys)');
+    }
     invocationTimes.removeWhere((name, value) => !taskNames.contains(name));
   }
 

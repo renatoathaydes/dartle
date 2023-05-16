@@ -4,6 +4,8 @@ import 'package:dartle/dartle.dart';
 import 'package:path/path.dart' show join;
 import 'package:test/test.dart';
 
+import 'cache_mock.dart';
+
 void helloTask(_) {}
 
 void main() {
@@ -129,6 +131,37 @@ void main() {
       expect(proc.stdout.length, equals(3));
       expect(proc.exitCode, equals(0));
       expect(proc.stderr, isEmpty);
+    });
+
+    test('does not touch the cache if cache is disabled', () async {
+      final inDir = tempDir(suffix: 'dartle_test');
+      final inFile = File(join(inDir.path, 'in-file'));
+      final outDir = tempDir(suffix: 'dartle_test');
+      final outFile = File(join(outDir.path, 'out-file'));
+      await inFile.writeAsString('hello');
+      final mockCache = CacheMock()..throwOnAnyCheck = true;
+
+      final task = Task(
+          (List<String> args, [ChangeSet? changes]) async =>
+              await outFile.writeAsString(await inFile.readAsString()),
+          name: 'write',
+          runCondition: RunOnChanges(
+              inputs: dir(outDir.path, allowAbsolutePaths: true),
+              outputs: file(outFile.path),
+              cache: mockCache));
+
+      // the test fails if the Cache is touched
+      go() async => await runBasic(
+          {task},
+          const {},
+          Options(
+            disableCache: true,
+            tasksInvocation: ['write'],
+          ),
+          mockCache);
+
+      await go();
+      await go();
     });
 
     test('errors if task does not exist', () async {

@@ -83,7 +83,9 @@ class ChangeSet {
 /// This method does not throw any Exception, failures are returned
 /// as [TaskResult] instances with errors.
 Future<List<TaskResult>> runTasks(List<ParallelTasks> tasks,
-    {required bool parallelize, bool disableCache = false}) async {
+    {required bool parallelize,
+    bool disableCache = false,
+    bool force = false}) async {
   if (logger.isLoggable(Level.FINE)) {
     final execMode = parallelize
         ? 'in parallel where possible, using separate Isolates for parallelizable Tasks'
@@ -92,11 +94,13 @@ Future<List<TaskResult>> runTasks(List<ParallelTasks> tasks,
   }
 
   return await _run(tasks,
-      parallelize: parallelize, disableCache: disableCache);
+      parallelize: parallelize, disableCache: disableCache, force: force);
 }
 
 Future<List<TaskResult>> _run(List<ParallelTasks> tasks,
-    {required bool parallelize, required bool disableCache}) async {
+    {required bool parallelize,
+    required bool disableCache,
+    required bool force}) async {
   final results = <TaskResult>[];
   final phaseResults = <TaskResult>[];
   final phaseErrors = <ExceptionAndStackTrace>[];
@@ -124,7 +128,8 @@ Future<List<TaskResult>> _run(List<ParallelTasks> tasks,
     final futureResults = CancellableFuture.stream(parTasks.tasks
         .where(_taskMustRun)
         .map((pTask) => () => runTask(pTask.invocation,
-            runInIsolate: useIsolate, allowIncremental: !disableCache)));
+            runInIsolate: useIsolate,
+            allowIncremental: !force && !disableCache)));
 
     await for (final result in futureResults) {
       results.add(result);
@@ -222,8 +227,8 @@ Future<ChangeSet?> _prepareIncrementalAction(
 
   logger.log(
       profile,
-          () =>
-      "Collected ${inputChanges.length} input and ${outputChanges.length} output "
+      () =>
+          "Collected ${inputChanges.length} input and ${outputChanges.length} output "
           "change(s) for '$taskName' in ${elapsedTime(stopwatch)}");
 
   return ChangeSet(inputChanges, outputChanges);
@@ -247,15 +252,12 @@ Future<List<ExceptionAndStackTrace>> _onNewPhaseStarted(
     List<TaskResult> phaseResults,
     TaskPhase? phaseEnded,
     bool disableCache) async {
-  if (phaseResults.isEmpty) return const [];
+  if (phaseResults.isEmpty || disableCache) return const [];
   logger.fine(() {
     final phaseMsg =
         phaseEnded == null ? '' : " after phase '${phaseEnded.name}' ended";
     return 'Running post-run actions$phaseMsg.';
   });
-  if (disableCache) {
-    return const [];
-  }
   return await runTasksPostRun(phaseResults);
 }
 

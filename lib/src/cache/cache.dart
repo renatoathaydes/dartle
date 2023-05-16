@@ -73,9 +73,12 @@ class DartleCache {
       if (requiresUpdate) {
         logger.info(
             'Dartle cache version change detected. Performing full cleanup.');
-        Directory(_hashesDir).deleteSync(recursive: true);
-        Directory(_tasksDir).deleteSync(recursive: true);
-        Directory(_executablesDir).deleteSync(recursive: true);
+        ignoreExceptions(
+            () => Directory(_hashesDir).deleteSync(recursive: true));
+        ignoreExceptions(
+            () => Directory(_tasksDir).deleteSync(recursive: true));
+        ignoreExceptions(
+            () => Directory(_executablesDir).deleteSync(recursive: true));
       }
     } else {
       root.createSync(recursive: true);
