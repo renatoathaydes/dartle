@@ -91,6 +91,10 @@ class DartleCache {
         'Cache initialized at ${path.join(Directory.current.path, rootDir)}');
   }
 
+  File _taskFile(String taskName) {
+    return File(path.join(_tasksDir, taskName.escapePathSeparator()));
+  }
+
   bool _isCurrentVersion(File versionFile) {
     if (versionFile.existsSync()) {
       final version = versionFile.readAsStringSync();
@@ -154,8 +158,7 @@ class DartleCache {
 
   /// Cache the given task invocation.
   Future<void> cacheTaskInvocation(TaskInvocation invocation) async {
-    final file =
-        File(path.join(_tasksDir, invocation.name.escapePathSeparator()));
+    final file = _taskFile(invocation.name);
     logger.fine(() =>
         'Caching invocation of task "${invocation.name}" at ${file.path}');
     await file.writeAsString(invocation.args.toString());
@@ -166,12 +169,17 @@ class DartleCache {
   /// This time is only known if the [TaskInvocation] was previously cached via
   /// [cacheTaskInvocation].
   Future<DateTime?> getLatestInvocationTime(TaskInvocation invocation) async {
-    final file =
-        File(path.join(_tasksDir, invocation.name.escapePathSeparator()));
+    final file = _taskFile(invocation.name);
     if (await file.exists()) {
       return await file.lastModified();
     }
     return null;
+  }
+
+  /// Check if a task invocation with the given name has been cached before.
+  Future<bool> hasTask(String taskName) async {
+    final taskFile = _taskFile(taskName);
+    return await taskFile.exists();
   }
 
   /// Check if the given task had been invoked with the same arguments before.
@@ -179,8 +187,7 @@ class DartleCache {
   /// Only successful task invocations are normally cached, hence this method
   /// will normally return `true` when the previous invocation of [Task] failed.
   Future<bool> hasTaskInvocationChanged(TaskInvocation invocation) async {
-    final taskFile =
-        File(path.join(_tasksDir, invocation.name.escapePathSeparator()));
+    final taskFile = _taskFile(invocation.name);
     if (await taskFile.exists()) {
       final taskArgs = await taskFile.readAsString();
       final isChanged = invocation.args.toString() != taskArgs;
@@ -201,7 +208,7 @@ class DartleCache {
   /// Remove any previous invocations of a task with the given name
   /// from the cache.
   Future<void> removeTaskInvocation(String taskName) async {
-    final file = File(path.join(_tasksDir, taskName.escapePathSeparator()));
+    final file = _taskFile(taskName);
     await ignoreExceptions(file.delete);
   }
 

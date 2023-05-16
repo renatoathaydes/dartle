@@ -48,6 +48,11 @@ class CacheMock implements DartleCache {
   }
 
   @override
+  Future<bool> hasTask(String taskName) {
+    throw UnimplementedError();
+  }
+
+  @override
   Future<bool> hasTaskInvocationChanged(TaskInvocation invocation) async {
     final changes = invocationChanges[invocation.name];
     if (changes == null) {

@@ -171,8 +171,7 @@ Future<TaskResult> runTask(TaskInvocation invocation,
         await _prepareIncrementalAction(stopwatch, task.name, runCondition);
   }
 
-  final action =
-      _createTaskAction(task, runInIsolate && task.isParallelizable, changeSet);
+  final action = _createTaskAction(task, runInIsolate && task.isParallelizable);
 
   logger.log(task.name.startsWith('_') ? Level.FINE : Level.INFO,
       "Running task '${task.name}'");
@@ -207,10 +206,12 @@ Future<TaskResult> runTask(TaskInvocation invocation,
   return result;
 }
 
-Future<ChangeSet> _prepareIncrementalAction(
+Future<ChangeSet?> _prepareIncrementalAction(
     Stopwatch stopwatch, String taskName, RunOnChanges runCondition) async {
+  if (!await runCondition.cache.hasTask(taskName)) {
+    return null;
+  }
   logger.fine(() => "Collecting changes for incremental task '$taskName'");
-
   final inputChanges = await runCondition.cache
       .findChanges(runCondition.inputs, key: taskName)
       .toList();
@@ -221,8 +222,8 @@ Future<ChangeSet> _prepareIncrementalAction(
 
   logger.log(
       profile,
-      () =>
-          "Collected ${inputChanges.length} input and ${outputChanges.length} output "
+          () =>
+      "Collected ${inputChanges.length} input and ${outputChanges.length} output "
           "change(s) for '$taskName' in ${elapsedTime(stopwatch)}");
 
   return ChangeSet(inputChanges, outputChanges);
@@ -236,8 +237,7 @@ bool _taskMustRun(TaskWithStatus pTask) {
   return willRun;
 }
 
-MaybeIncrementalAction _createTaskAction(
-    Task task, bool runInIsolate, ChangeSet? changes) {
+MaybeIncrementalAction _createTaskAction(Task task, bool runInIsolate) {
   return runInIsolate
       ? actorAction(task.action)
       : (args, changes) async => await runAction(task.action, args, changes);
