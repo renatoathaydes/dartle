@@ -19,6 +19,7 @@ class Options {
   final bool resetCache;
   final bool logBuildTime;
   final bool runPubGet;
+  final bool disableCache;
   final List<String> tasksInvocation;
 
   const Options({
@@ -33,6 +34,7 @@ class Options {
     this.resetCache = false,
     this.logBuildTime = true,
     this.runPubGet = true,
+    this.disableCache = false,
     this.tasksInvocation = const [],
   });
 
@@ -64,7 +66,7 @@ class Options {
         'showTaskGraph: $showTaskGraph, forceTasks: $forceTasks, '
         'parallelizeTasks: $parallelizeTasks, resetCache: $resetCache, '
         'logBuildTime: $logBuildTime, runPubGet: $runPubGet, '
-        'tasksInvocation: $tasksInvocation}';
+        'disableCache: $disableCache, tasksInvocation: $tasksInvocation}';
   }
 }
 
@@ -140,6 +142,13 @@ final _parser = ArgParser()
     defaultsTo: true,
     hide: true,
     help: 'Whether to run "dart pub get" if dependencies not downloaded.',
+  )
+  ..addFlag(
+    'disable-cache',
+    negatable: false,
+    abbr: 'd',
+    defaultsTo: false,
+    help: 'Whether to disable the Dartle cache.',
   );
 
 /// Dartle usage message.
@@ -200,6 +209,7 @@ Options parseOptions(List<String> args) {
     resetCache: parseResult['reset-cache'] as bool,
     logBuildTime: parseResult['log-build-time'] as bool,
     runPubGet: parseResult['run-pub-get'] as bool,
+    disableCache: parseResult['disable-cache'] as bool,
     tasksInvocation: parseResult.rest,
   );
 }

@@ -63,7 +63,8 @@ class ChangeSet {
 /// Calls [runTask] with each given task that must run.
 ///
 /// At the end of each [TaskPhase], the executed
-/// tasks' [RunCondition.postRun] actions are also run.
+/// tasks' [RunCondition.postRun] actions are also run, unless `disableCache`
+/// is set to `true`.
 ///
 /// Returns the result of each executed task. If a task fails, execution
 /// stops and only the results thus far accumulated are returned.
@@ -82,7 +83,7 @@ class ChangeSet {
 /// This method does not throw any Exception, failures are returned
 /// as [TaskResult] instances with errors.
 Future<List<TaskResult>> runTasks(List<ParallelTasks> tasks,
-    {required bool parallelize}) async {
+    {required bool parallelize, bool disableCache = false}) async {
   if (logger.isLoggable(Level.FINE)) {
     final execMode = parallelize
         ? 'in parallel where possible, using separate Isolates for parallelizable Tasks'
@@ -90,11 +91,12 @@ Future<List<TaskResult>> runTasks(List<ParallelTasks> tasks,
     logger.fine('Will execute tasks $execMode');
   }
 
-  return await _run(tasks, parallelize);
+  return await _run(tasks,
+      parallelize: parallelize, disableCache: disableCache);
 }
 
-Future<List<TaskResult>> _run(
-    List<ParallelTasks> tasks, bool parallelize) async {
+Future<List<TaskResult>> _run(List<ParallelTasks> tasks,
+    {required bool parallelize, required bool disableCache}) async {
   final results = <TaskResult>[];
   final phaseResults = <TaskResult>[];
   final phaseErrors = <ExceptionAndStackTrace>[];
@@ -104,7 +106,9 @@ Future<List<TaskResult>> _run(
     if (parTasks.tasks.isEmpty) continue;
     final isNewPhase = parTasks.phase != currentPhase;
     if (isNewPhase) {
-      phaseErrors.addAll(await _onNewPhaseStarted(phaseResults, currentPhase));
+      phaseErrors.addAll(
+          await _onNewPhaseStarted(phaseResults, currentPhase, disableCache));
+      phaseResults.clear();
       currentPhase = parTasks.phase;
       if (phaseErrors.isNotEmpty) {
         logger.fine('Aborting task execution due to task post-run error');
@@ -119,8 +123,8 @@ Future<List<TaskResult>> _run(
 
     final futureResults = CancellableFuture.stream(parTasks.tasks
         .where(_taskMustRun)
-        .map((pTask) =>
-            () => runTask(pTask.invocation, runInIsolate: useIsolate)));
+        .map((pTask) => () => runTask(pTask.invocation,
+            runInIsolate: useIsolate, allowIncremental: !disableCache)));
 
     await for (final result in futureResults) {
       results.add(result);
@@ -133,7 +137,8 @@ Future<List<TaskResult>> _run(
     }
   }
 
-  phaseErrors.addAll(await _onNewPhaseStarted(phaseResults, currentPhase));
+  phaseErrors.addAll(
+      await _onNewPhaseStarted(phaseResults, currentPhase, disableCache));
 
   if (results.any((r) => r.isFailure) || phaseErrors.isNotEmpty) {
     final all = results
@@ -151,7 +156,7 @@ Future<List<TaskResult>> _run(
 ///
 /// The task's [Task.runCondition] is not checked or used by this method.
 Future<TaskResult> runTask(TaskInvocation invocation,
-    {required bool runInIsolate}) async {
+    {required bool runInIsolate, bool allowIncremental = true}) async {
   final task = invocation.task;
   final runCondition = task.runCondition;
 
@@ -159,7 +164,9 @@ Future<TaskResult> runTask(TaskInvocation invocation,
 
   ChangeSet? changeSet;
 
-  if (runCondition is RunOnChanges && task.action is IncrementalAction) {
+  if (allowIncremental &&
+      runCondition is RunOnChanges &&
+      task.action is IncrementalAction) {
     changeSet =
         await _prepareIncrementalAction(stopwatch, task.name, runCondition);
   }
@@ -237,18 +244,19 @@ MaybeIncrementalAction _createTaskAction(
 }
 
 Future<List<ExceptionAndStackTrace>> _onNewPhaseStarted(
-    List<TaskResult> phaseResults, TaskPhase? phaseEnded) async {
+    List<TaskResult> phaseResults,
+    TaskPhase? phaseEnded,
+    bool disableCache) async {
   if (phaseResults.isEmpty) return const [];
   logger.fine(() {
     final phaseMsg =
         phaseEnded == null ? '' : " after phase '${phaseEnded.name}' ended";
     return 'Running post-run actions$phaseMsg.';
   });
-  try {
-    return await runTasksPostRun(phaseResults);
-  } finally {
-    phaseResults.clear();
+  if (disableCache) {
+    return const [];
   }
+  return await runTasksPostRun(phaseResults);
 }
 
 ExceptionAndStackTrace? _toDisplayError(TaskResult result) {

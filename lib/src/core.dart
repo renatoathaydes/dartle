@@ -1,8 +1,6 @@
 import 'dart:async';
 
 import 'package:collection/collection.dart';
-
-import 'helpers.dart';
 import 'package:logging/logging.dart' as log;
 
 import '_log.dart';
@@ -12,6 +10,7 @@ import '_utils.dart';
 import 'cache/cache.dart';
 import 'dartle_version.g.dart';
 import 'error.dart';
+import 'helpers.dart';
 import 'options.dart';
 import 'run_condition.dart';
 import 'task.dart';
@@ -150,8 +149,10 @@ Future<void> runBasic(Set<Task> tasks, Set<Task> defaultTasks, Options options,
     try {
       await _runAll(executableTasks, options);
     } finally {
-      await _cleanCache(
-          cache, taskMap.keys.followedBy(const ['_compileDartleFile']).toSet());
+      if (!options.disableCache) {
+        await _cleanCache(cache,
+            taskMap.keys.followedBy(const ['_compileDartleFile']).toSet());
+      }
     }
   }
 }
@@ -213,8 +214,9 @@ void _logTasksInfo(
 
 Future<void> _runAll(
     List<ParallelTasks> executableTasks, Options options) async {
-  final results =
-      await runTasks(executableTasks, parallelize: options.parallelizeTasks);
+  final results = await runTasks(executableTasks,
+      parallelize: options.parallelizeTasks,
+      disableCache: options.disableCache);
 
   final taskErrors = results
       .map((f) => f.exceptionAndStackTrace)
@@ -239,8 +241,11 @@ Future<List<ParallelTasks>> _getExecutableTasks(
   }
   final invocations = parseInvocation(tasksInvocation, taskMap, options);
 
-  return await getInOrderOfExecution(invocations, options.forceTasks,
-      options.showTasks, tasksAffectedByDeletion);
+  // also force tasks if the cache is disabled
+  final force = options.forceTasks || options.disableCache;
+
+  return await getInOrderOfExecution(
+      invocations, force, options.showTasks, tasksAffectedByDeletion);
 }
 
 /// Get the tasks in the order that they should be executed, taking into account

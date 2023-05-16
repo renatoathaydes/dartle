@@ -8,6 +8,7 @@
 
 - require Dart 3.
 - removed Freezed build dependency.
+- added `--disable-cache`, `-d` command-line option.
 - added helper functions: `taskOutputs`, `tar`, `untar`, `tempFile`, `tempDir`.
 - added parameter `FileCollection`: `allowAbsolutePaths` (not recommended to set to `true` in normal builds).
 

@@ -23,6 +23,8 @@ mixin RunCondition {
 
   /// Action to run after a task associated with this [RunCondition]
   /// has run, whether successfully or not.
+  ///
+  /// This method will not be called if the Dartle cache has been disabled.
   FutureOr<void> postRun(TaskResult result);
 }
 
