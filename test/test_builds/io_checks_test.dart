@@ -144,11 +144,7 @@ void main() {
       expect(proc.exitCode, equals(0), reason: 'STDOUT: ${proc.stdout}');
       expect(proc.stdout[0], contains(oneOfTwoTasksExecutingMessage));
       await expectFileTree(incOutputsDir.path, {
-        'out.txt': 'inputChanges\n'
-            'added: inc-inputs\n'
-            'added: ${path.join('inc-inputs', 'bye.txt')}\n'
-            'added: ${path.join('inc-inputs', 'hello.txt')}\n'
-            'outputChanges' // none
+        'out.txt': '<null>' // none
       });
 
       // run again (no changes)

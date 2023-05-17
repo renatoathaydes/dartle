@@ -50,8 +50,10 @@ class ExampleIncrementalAction {
 
     List<String> toWrite;
 
-    if (inputChanges.isEmpty && outputChanges.isEmpty) {
-      toWrite = ['<no changes>'];
+    if (changeSet == null) {
+      toWrite = const ['<null>'];
+    } else if (inputChanges.isEmpty && outputChanges.isEmpty) {
+      toWrite = const ['<no changes>'];
     } else {
       toWrite = [
         'inputChanges',
