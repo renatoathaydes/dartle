@@ -30,7 +30,7 @@ final sampleTask = Task(sample,
 
 Future<void> sample(_) async {
   final inputFiles = await sources.resolveFiles().toList();
-  await Directory(target, recursive: true).create();
+  await Directory(target).create(recursive: true);
   await File('$target/output.txt').writeAsString(
       inputFiles.map((e) => '${e.path}: ${e.statSync().size}').join('\n'));
 }
