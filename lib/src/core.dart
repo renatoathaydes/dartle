@@ -30,7 +30,7 @@ Future<void> run(List<String> args,
     {required Set<Task> tasks,
     Set<Task> defaultTasks = const {},
     bool doNotExit = false}) async {
-  await checkDartleFileExists(doNotExit);
+  await checkProjectInit(doNotExit);
 
   await runSafely(args, doNotExit, (stopWatch, options) async {
     if (options.showHelp) {

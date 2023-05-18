@@ -12,17 +12,25 @@ import 'helpers.dart';
 final _capitalLetterPattern = RegExp(r'[A-Z]');
 
 Future<void> runPubGet(_) async {
-  final code = await execProc(Process.start('dart', const ['pub', 'get']),
+  await execProc(Process.start('dart', const ['pub', 'get']),
       name: 'Dart pub get', successMode: StreamRedirectMode.stdoutAndStderr);
-  if (code != 0) failBuild(reason: 'Dart "pub get"" failed');
 }
 
-Future<void> checkDartleFileExists(bool doNotExit) async {
+Future<void> checkProjectInit(bool doNotExit, [bool pubGet = true]) async {
   final dartleFile = File('dartle.dart');
   if (await dartleFile.exists()) {
-    logger.fine('Dartle file exists.');
+    logger.finer('Dartle file exists.');
+    final pubspec = File('pubspec.yaml');
+    if (!await pubspec.exists()) {
+      await onNoPubSpec(pubspec, doNotExit);
+    }
   } else {
     await onNoDartleFile(doNotExit);
+  }
+  if (pubGet && !await Directory('.dart_tool').exists()) {
+    logger.info('Dart dependencies not downloaded yet. Executing '
+        "'dart pub get'");
+    await runPubGet(const []);
   }
 }
 

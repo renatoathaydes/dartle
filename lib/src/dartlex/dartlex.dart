@@ -1,12 +1,11 @@
 import 'dart:io';
 
-import '../options.dart';
 import '../_log.dart';
 import '../_utils.dart';
 import '../core.dart';
-import '../error.dart';
 import '../file_collection.dart';
 import '../io/exec.dart';
+import '../options.dart';
 import '../run_condition.dart';
 import '../task.dart';
 import '../task_invocation.dart';
@@ -29,8 +28,7 @@ Future<void> dartlexMain(List<String> args) async {
 /// appropriate code. To avoid that, set [doNotExit] to [true].
 Future<void> runDartlex(List<String> args, Options options,
     {bool doNotExit = false}) async {
-  if (options.runPubGet) await _checkDartProject();
-  await checkDartleFileExists(doNotExit);
+  await checkProjectInit(doNotExit, options.runPubGet);
 
   final compileTask = await _createDartCompileTask();
   final recompileCondition = compileTask.runCondition as RunOnChanges;
@@ -74,18 +72,6 @@ Future<void> runDartlex(List<String> args, Options options,
     }
   } else {
     exit(exitCode);
-  }
-}
-
-Future<void> _checkDartProject() async {
-  if (!await File('pubspec.yaml').exists()) {
-    throw DartleException(
-        message: "File 'pubspec.yaml' not found. Cannot execute Dartle.");
-  }
-  if (!await Directory('.dart_tool').exists()) {
-    logger.info('Dart dependencies not downloaded yet. Executing '
-        "'dart pub get'");
-    await runPubGet(const []);
   }
 }
 

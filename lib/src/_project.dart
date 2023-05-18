@@ -1,6 +1,5 @@
 import 'dart:io';
 
-import 'package:logging/logging.dart' as log;
 import 'package:path/path.dart' as p;
 
 import '_log.dart';
@@ -18,18 +17,21 @@ import 'dart:io';
 
 import 'package:dartle/dartle.dart';
 
-/// The task name is the name of the function given to it unless overridden.
+final sources = dir('source');
+const target = 'target';
+
+/// The task name is the name of the function given to it, unless overridden.
 final sampleTask = Task(sample,
     description: 'Sample Task',
     // This task will only run if the inputs/outputs changed
     // since the last time it ran
-    runCondition: RunOnChanges(inputs: dir('source'), outputs: dir('target')));
+    runCondition: RunOnChanges(inputs: sources, outputs: dir(target)));
 
 Future<void> sample(_) async {
-  final inputFiles = await Directory('source').list(recursive: true).toList();
-  await Directory('target').create();
-  await File('target/output.txt')
-      .writeAsString(inputFiles.map((e) => e.path).join('\n'));
+  final inputFiles = await sources.resolveFiles().toList();
+  await Directory(target, recursive: true).create();
+  await File('$target/output.txt').writeAsString(
+      inputFiles.map((e) => '${e.path}: ${e.statSync().size}').join('\n'));
 }
 ''';
 
@@ -64,12 +66,12 @@ void main(List<String> args) {
 
 String _basicPubSpec(String name) => '''
 name: ${name.replaceAll('-', '_')}
-description: Builds this project
+description: Build script for this project. Check Dartle Documentation at https://renatoathaydes.github.io/dartle-website/.
 version: 0.0.0
 publish_to: none
 
 environment:
-  sdk: '>=2.12.0 <3.0.0'
+  sdk: ^${Platform.version.split(' ').first}
 
 dev_dependencies:
   dartle: ^$dartleVersion
@@ -79,11 +81,23 @@ Never abort(int code) {
   exit(code);
 }
 
+Future<void> onNoPubSpec(File pubspecFile, bool doNotExit) async {
+  stdout.write('There is no pubspec.yaml file in the current directory.\n'
+      'Would you like to create one [y/N]? ');
+  final answer = stdin.readLineSync()?.toLowerCase();
+  if (answer == 'y' || answer == 'yes') {
+    await _createPubSpec(pubspecFile);
+  } else if (doNotExit) {
+    throw DartleException(message: dartleFileMissingMessage, exitCode: 4);
+  } else {
+    logger.severe(dartleFileMissingMessage);
+    abort(4);
+  }
+}
+
 Future<void> onNoDartleFile(bool doNotExit) async {
-  if (logger.isLoggable(log.Level.INFO)) {
-    stdout.write('There is no dartle.dart file in the current directory.\n'
-        'Would you like to create one [y/N]? ');
-  } else {}
+  stdout.write('There is no dartle.dart file in the current directory.\n'
+      'Would you like to create one [y/N]? ');
   final answer = stdin.readLineSync()?.toLowerCase();
   if (answer == 'y' || answer == 'yes') {
     await _createNewProject();
@@ -103,19 +117,11 @@ Future<void> _createNewProject() async {
   } else {
     await _createNewBasicProject(pubspecFile);
   }
-  logger.fine('Installing new project\'s dependencies');
-  final code = await exec(Process.start('dart', const ['pub', 'get']));
-  if (code != 0) {
-    throw DartleException(
-        message: '"dart pub get" program failed with code $code');
-  }
 }
 
 Future<void> _createNewBasicProject(File pubspecFile) async {
   logger.fine('Creating basic Dartle Project.');
-  await pubspecFile.writeAsString(
-      _basicPubSpec(p.basename(Directory.current.path)),
-      flush: true);
+  await _createPubSpec(pubspecFile);
   await File('dartle.dart').writeAsString(_basicDartleFile, flush: true);
   await Directory('dartle-src').create();
   await File(p.join('dartle-src', 'tasks.dart'))
@@ -123,6 +129,12 @@ Future<void> _createNewBasicProject(File pubspecFile) async {
   await Directory('source').create();
   await File(p.join('source', 'input.txt'))
       .writeAsString(_basicInputFile, flush: true);
+}
+
+Future<void> _createPubSpec(File pubspecFile) async {
+  await pubspecFile.writeAsString(
+      _basicPubSpec(p.basename(Directory.current.path)),
+      flush: true);
 }
 
 Future<void> _createNewDartProject() async {
