@@ -14,13 +14,7 @@ const oneTaskExecutingMessage = 'Executing 1 task out of a total of 1 task:'
 const oneOfTwoTasksExecutingMessage =
     'Executing 1 task out of a total of 2 tasks:'
     ' 1 task selected';
-
-const noTasksOfOneExecutingMessage =
-    'Executing 0 tasks out of a total of 1 task:'
-    ' 1 task selected, 1 up-to-date';
-const noTasksOfTwoExecutingMessage =
-    'Executing 0 tasks out of a total of 2 tasks:'
-    ' 1 task selected, 1 up-to-date';
+const allUpToDate = 'Everything is up-to-date!';
 
 Future<void> _deleteDartleToolDir() async {
   await deleteAll(
@@ -87,7 +81,7 @@ void main() {
       proc = await runExampleDartBuild(const ['--no-color', 'base64']);
       expect(proc.exitCode, equals(0));
 
-      expect(proc.stdout[0], contains(noTasksOfTwoExecutingMessage));
+      expect(proc.stdout[0], contains(allUpToDate));
       expect(proc.stderr, isEmpty);
       await _expectFileTreeAfterBase64TaskRuns(
           outputsDir.path, outputFilesAtStart);
@@ -151,7 +145,7 @@ void main() {
       proc = await runExampleDartBuild(const ['--no-color', 'incremental']);
       expect(proc.exitCode, equals(0));
 
-      expect(proc.stdout[0], contains(noTasksOfTwoExecutingMessage));
+      expect(proc.stdout[0], contains(allUpToDate));
       expect(proc.stderr, isEmpty);
 
       // change one of the input files

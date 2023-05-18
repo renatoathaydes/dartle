@@ -143,8 +143,8 @@ Future<void> runBasic(Set<Task> tasks, Set<Task> defaultTasks, Options options,
     showTasksInfo(executableTasks, taskMap, defaultTasks, options);
   } else {
     if (logger.isLoggable(log.Level.INFO)) {
-      _logTasksInfo(tasks, executableTasks, tasksInvocation, directTasksCount,
-          defaultTasks);
+      logTasksInfo(tasks, executableTasks, options.tasksInvocation,
+          directTasksCount, defaultTasks);
     }
 
     try {
@@ -168,49 +168,6 @@ FutureOr<void> _cleanCache(DartleCache cache, Set<String> taskNames) {
           profile, 'Garbage-collected cache in ${elapsedTime(stopWatch)}');
     }
   });
-}
-
-void _logTasksInfo(
-    Set<Task> tasks,
-    List<ParallelTasks> executableTasks,
-    List<String> tasksInvocation,
-    int directTasksCount,
-    Set<Task> defaultTasks) {
-  String taskPhrase(int count,
-          [String singular = 'task', String plural = 'tasks']) =>
-      '$count ${count == 1 ? singular : plural}';
-
-  // collect counts
-  final totalTasksCount = tasks.length;
-
-  if (directTasksCount == 0 && defaultTasks.isEmpty) {
-    return logger.info('Executing ${style('0 tasks', LogStyle.bold)}'
-        ' out of a total of $totalTasksCount '
-        '${taskPhrase(totalTasksCount)}.');
-  }
-
-  final runnableTasksCount = executableTasks.map((t) => t.mustRunCount).sum;
-  final dependentTasksCount =
-      executableTasks.map((t) => t.length).sum - tasksInvocation.length;
-  final upToDateCount = executableTasks.map((t) => t.upToDateCount).sum;
-
-  // build log phrases
-  final totalTasksPhrase = taskPhrase(totalTasksCount);
-  final requestedTasksPhrase = directTasksCount == 0
-      ? '${taskPhrase(defaultTasks.length)} (${colorize('default', LogColor.gray)})'
-      : '${taskPhrase(directTasksCount)} selected';
-  final runnableTasksPhrase =
-      style(taskPhrase(runnableTasksCount), LogStyle.bold);
-  final dependenciesPhrase = dependentTasksCount == 0
-      ? ''
-      : ', ${taskPhrase(dependentTasksCount, 'dependency', 'dependencies')}';
-  final upToDatePhrase = upToDateCount > 0
-      ? ', $upToDateCount ${colorize('up-to-date', LogColor.green)}'
-      : '';
-
-  logger.info('Executing $runnableTasksPhrase out of a total of '
-      '$totalTasksPhrase: $requestedTasksPhrase'
-      '$dependenciesPhrase$upToDatePhrase');
 }
 
 Future<void> _runAll(
@@ -279,24 +236,21 @@ Future<List<ParallelTasks>> getInOrderOfExecution(
   }
 
   final taskStatuses = <String, TaskWithStatus>{};
+
+  Future<void> addInvocation(TaskInvocation invocation) async {
+    final taskWithStatus = await _createTaskWithStatus(
+        invocation, taskStatuses, forceTasks, tasksAffectedByDeletion);
+    taskStatuses[invocation.name] = taskWithStatus;
+    addTaskToParallelTasks(taskWithStatus);
+  }
+
   final seenTasks = <String>{};
 
   for (final inv in invocations) {
     for (final dep in inv.task.dependencies) {
-      if (seenTasks.add(dep.name)) {
-        final invocation = TaskInvocation(dep);
-        final taskWithStatus = await _createTaskWithStatus(
-            invocation, taskStatuses, false, tasksAffectedByDeletion);
-        taskStatuses[dep.name] = taskWithStatus;
-        addTaskToParallelTasks(taskWithStatus);
-      }
+      if (seenTasks.add(dep.name)) await addInvocation(TaskInvocation(dep));
     }
-    if (seenTasks.add(inv.name)) {
-      final taskWithStatus = await _createTaskWithStatus(
-          inv, taskStatuses, forceTasks, tasksAffectedByDeletion);
-      taskStatuses[inv.name] = taskWithStatus;
-      addTaskToParallelTasks(taskWithStatus);
-    }
+    if (seenTasks.add(inv.name)) await addInvocation(inv);
   }
 
   return result;

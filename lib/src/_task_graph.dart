@@ -31,7 +31,7 @@ void showAll(List<ParallelTasks> executableTasks, Map<String, Task> taskMap,
   final defaultSet = defaultTasks.map((t) => t.name).toSet();
   final taskList = taskMap.values.toList()
     ..sort((t1, t2) => t1.name.compareTo(t2.name));
-  final tasksByName = groupBy(executableTasks.expand((t) => t.tasks),
+  final tasksByName = lastBy(executableTasks.expand((t) => t.tasks),
       (TaskWithStatus t) => t.task.name);
 
   void show(TaskPhase phase, Iterable<Task> taskList) {
@@ -54,7 +54,7 @@ void showAll(List<ParallelTasks> executableTasks, Map<String, Task> taskMap,
         final isDefault = defaultSet.contains(task.name)
             ? style(' [default]', LogStyle.dim)
             : '';
-        final status = (tasksByName[task.name]?.first.status).describe();
+        final status = (tasksByName[task.name]?.status).describe();
         print('  * ${style(task.name, LogStyle.bold)}$isDefault$status'
             '$desc$io$args');
       }

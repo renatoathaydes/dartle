@@ -11,6 +11,11 @@
 - added `--disable-cache`, `-d` command-line option.
 - added helper functions: `taskOutputs`, `tar`, `untar`, `tempFile`, `tempDir`.
 - added parameter `FileCollection`: `allowAbsolutePaths` (not recommended to set to `true` in normal builds).
+- improved reporting of how many tasks will run/dependencies/defaults.
+
+### Dartle Cache
+
+- new method: `hasTask` to determine whether a task has been executed.
 
 # 0.22.2
 

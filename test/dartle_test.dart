@@ -111,10 +111,7 @@ void main() {
 
       // now the output exists, it should not run again
       proc = await runExampleDartBuild(['--no-color', 'encode']);
-      expect(
-          proc.stdout[0],
-          contains('Executing 0 tasks out of a total of 4 tasks:'
-              ' 1 task selected, 1 up-to-date'));
+      expect(proc.stdout[0], contains('Everything is up-to-date!'));
       expect(proc.stdout[1], contains('Build succeeded'));
       expect(proc.stdout.length, equals(2));
       expect(proc.exitCode, equals(0));
