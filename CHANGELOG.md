@@ -4,6 +4,8 @@
 
 ## done, waiting for next release
 
+# 0.23.0
+
 ### Dartle Core
 
 - require Dart 3.
