@@ -146,12 +146,12 @@ class DartleCache {
     }
     // visit entities that do not exist but may have existed before
     for (final file in collection.files.where(visitedEntities.add)) {
-      _removeEntity(File(file), key: key);
+      await _removeEntity(File(file), key: key);
     }
     for (final dir in collection.directories
         .map((e) => e.path)
         .where(visitedEntities.add)) {
-      _removeEntity(Directory(dir), key: key);
+      await _removeEntity(Directory(dir), key: key);
     }
   }
 

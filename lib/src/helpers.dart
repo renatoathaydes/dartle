@@ -469,13 +469,13 @@ Future<Directory> untar(String tarFile,
       await Directory(p.join(destinationDir, name)).create(recursive: true);
     } else if (entry.type case TypeFlag.reg || TypeFlag.regA) {
       final mode = (0xfff & entry.header.mode).toRadixString(8);
-      logger.finer(() => 'Extracting tar entry file: $name (mode=${mode})');
+      logger.finer(() => 'Extracting tar entry file: $name (mode=$mode)');
       final output = File(p.join(destinationDir, name));
       await output.parent.create(recursive: true);
       final outStream = output.openWrite();
       await entry.contents.pipe(outStream);
-      output.setLastModified(entry.header.modified);
-      output._setPermissions(mode);
+      await output.setLastModified(entry.header.modified);
+      await output._setPermissions(mode);
     } else {
       logger.fine(
           () => 'Ignoring tar entry with unrecognized typeFlag: ${entry.type}');

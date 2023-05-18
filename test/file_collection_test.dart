@@ -314,7 +314,7 @@ void main() {
 
     test('union of dirs and files', () async {
       final union = dir('A/B/C').union(files(['dartle.dart', 'b/b.txt']));
-      _expectFileCollection(fs, union,
+      await _expectFileCollection(fs, union,
           files: const {'A/B/C/c.txt', 'dartle.dart', 'b/b.txt'},
           dirs: const {'A/B/C'});
     });
@@ -322,14 +322,14 @@ void main() {
     test('union of files and files', () async {
       final union =
           files(const ['A/B/C/c.txt']) + files(['dartle.dart', 'b/b.txt']);
-      _expectFileCollection(fs, union,
+      await _expectFileCollection(fs, union,
           files: const {'A/B/C/c.txt', 'dartle.dart', 'b/b.txt'});
     });
 
     test('union containing dirs conflicts (hidden)', () async {
       final union = dir('A/B/D')
           .union(dirs(const ['A/B/C', 'A/B/D/E'], includeHidden: true));
-      _expectFileCollection(fs, union, files: const {
+      await _expectFileCollection(fs, union, files: const {
         'A/B/C/c.txt',
         'A/B/D/d.txt',
         'A/B/D/E/e.txt',
@@ -344,7 +344,7 @@ void main() {
     test('union containing dirs conflicts (exclusion)', () async {
       final union = dirs(['A/B', 'b'], exclusions: {'D', 'c.txt'})
           .union(dirs(const ['A/B/C', 'A/B/D/E'], includeHidden: true));
-      _expectFileCollection(fs, union, files: const {
+      await _expectFileCollection(fs, union, files: const {
         'b/b.txt',
         'A/B/C/c.txt',
         'A/B/D/E/e.txt',

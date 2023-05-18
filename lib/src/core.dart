@@ -6,6 +6,7 @@ import 'package:logging/logging.dart' as log;
 import '_log.dart';
 import '_project.dart';
 import '_task_graph.dart';
+import '_tasks_info.dart';
 import '_utils.dart';
 import 'cache/cache.dart';
 import 'dartle_version.g.dart';

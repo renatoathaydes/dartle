@@ -72,7 +72,7 @@ class ExampleIncrementalAction {
     try {
       await handle.writeString(toWrite.join('\n'));
     } finally {
-      handle.close();
+      await handle.close();
     }
   }
 }
