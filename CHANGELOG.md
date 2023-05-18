@@ -10,6 +10,7 @@
 
 - removed double warning on missing task invocation.
 - report single Exception without wrapping it into MultipleExceptions.
+- fixed creation of new project if dartle.dart or pubspec.yaml files are missing.
 
 # 0.23.0
 
