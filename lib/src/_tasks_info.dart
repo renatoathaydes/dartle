@@ -20,8 +20,7 @@ void logTasksInfo(
     int directTasksCount,
     Set<Task> defaultTasks) {
   if (directTasksCount == 0 && defaultTasks.isEmpty) {
-    return logger.warning('No tasks have been selected '
-        'and there is no default task to run.');
+    return;
   }
 
   final runnableTasksCount = executableTasks.map((t) => t.mustRunCount).sum;
