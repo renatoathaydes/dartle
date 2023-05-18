@@ -4,6 +4,13 @@
 
 ## done, waiting for next release
 
+# 0.23.1
+
+### Dartle Core
+
+- removed double warning on missing task invocation.
+- report single Exception without wrapping it into MultipleExceptions.
+
 # 0.23.0
 
 ### Dartle Core
