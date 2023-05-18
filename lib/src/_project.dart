@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:path/path.dart' as p;
 
 import '_log.dart';
+import '_utils.dart';
 import 'core.dart' show dartleFileMissingMessage;
 import 'dartle_version.g.dart';
 import 'error.dart';
@@ -81,14 +82,14 @@ Never abort(int code) {
   exit(code);
 }
 
-Future<void> onNoPubSpec(File pubspecFile, bool doNotExit) async {
+Future<void> onNoPubSpec(bool doNotExit) async {
   stdout.write('There is no pubspec.yaml file in the current directory.\n'
       'Would you like to create one [y/N]? ');
   final answer = stdin.readLineSync()?.toLowerCase();
   if (answer == 'y' || answer == 'yes') {
-    await _createPubSpec(pubspecFile);
+    await _createPubSpec();
   } else if (doNotExit) {
-    throw DartleException(message: dartleFileMissingMessage, exitCode: 4);
+    throw DartleException(message: 'Missing pubspec.yaml', exitCode: 4);
   } else {
     logger.severe(dartleFileMissingMessage);
     abort(4);
@@ -111,17 +112,17 @@ Future<void> onNoDartleFile(bool doNotExit) async {
 
 Future<void> _createNewProject() async {
   logger.fine('Creating new Dartle project');
-  final pubspecFile = File('pubspec.yaml');
+  final pubspecFile = File(pubspec);
   if (await pubspecFile.exists()) {
     await _createNewDartProject();
   } else {
-    await _createNewBasicProject(pubspecFile);
+    await _createNewBasicProject();
   }
 }
 
-Future<void> _createNewBasicProject(File pubspecFile) async {
+Future<void> _createNewBasicProject() async {
   logger.fine('Creating basic Dartle Project.');
-  await _createPubSpec(pubspecFile);
+  await _createPubSpec();
   await File('dartle.dart').writeAsString(_basicDartleFile, flush: true);
   await Directory('dartle-src').create();
   await File(p.join('dartle-src', 'tasks.dart'))
@@ -131,8 +132,8 @@ Future<void> _createNewBasicProject(File pubspecFile) async {
       .writeAsString(_basicInputFile, flush: true);
 }
 
-Future<void> _createPubSpec(File pubspecFile) async {
-  await pubspecFile.writeAsString(
+Future<void> _createPubSpec() async {
+  await File(pubspec).writeAsString(
       _basicPubSpec(p.basename(Directory.current.path)),
       flush: true);
 }

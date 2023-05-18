@@ -4,12 +4,16 @@ import 'dart:typed_data';
 
 import 'package:convert/convert.dart';
 import 'package:crypto/crypto.dart';
+import 'package:path/path.dart' as paths;
 
 import '_log.dart';
 import '_project.dart';
 import 'helpers.dart';
 
 final _capitalLetterPattern = RegExp(r'[A-Z]');
+
+const pubspec = 'pubspec.yaml';
+const dartToolDir = '.dartle_tool';
 
 Future<void> runPubGet(_) async {
   await execProc(Process.start('dart', const ['pub', 'get']),
@@ -20,18 +24,43 @@ Future<void> checkProjectInit(bool doNotExit, [bool pubGet = true]) async {
   final dartleFile = File('dartle.dart');
   if (await dartleFile.exists()) {
     logger.finer('Dartle file exists.');
-    final pubspec = File('pubspec.yaml');
-    if (!await pubspec.exists()) {
-      await onNoPubSpec(pubspec, doNotExit);
+    if (!await _findPubSpec()) {
+      logger.fine(() => '$pubspec was not found');
+      await onNoPubSpec(doNotExit);
     }
   } else {
     await onNoDartleFile(doNotExit);
   }
-  if (pubGet && !await Directory('.dart_tool').exists()) {
+  if (pubGet && !await _findDartToolDir()) {
     logger.info('Dart dependencies not downloaded yet. Executing '
         "'dart pub get'");
     await runPubGet(const []);
   }
+}
+
+Future<bool> _findPubSpec() async {
+  final e = await findEntity(pubspec, dir: false);
+  return e != null;
+}
+
+Future<bool> _findDartToolDir() async {
+  final e = await findEntity(dartToolDir, dir: true);
+  return e != null;
+}
+
+Future<FileSystemEntity?> findEntity(String name,
+    {required bool dir, int maxDepth = 4}) async {
+  var depth = 0;
+  var currentDir = Directory.current;
+  FileSystemEntity entity(String p) => dir ? Directory(p) : File(p);
+  while (depth < maxDepth) {
+    final e = entity(paths.join(currentDir.path, name));
+    logger.finer(() => 'Checking if ${e.path} exists');
+    if (await e.exists()) return e;
+    currentDir = currentDir.parent;
+    depth++;
+  }
+  return null;
 }
 
 String decapitalize(String text) {
