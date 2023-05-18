@@ -2,7 +2,7 @@ name: dartle
 description: >
   A simple build system written in Dart. Tasks can be declared in a regular Dart file,
   or Dart applications can use this package to create their own build systems.
-version: 0.23.1
+version: 0.23.2
 homepage: https://github.com/renatoathaydes/dartle
 
 environment:

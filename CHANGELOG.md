@@ -4,6 +4,12 @@
 
 ## done, waiting for next release
 
+# 0.23.2
+
+### Dartle Core
+
+- fixed mistake in newly created project.
+
 # 0.23.1
 
 ### Dartle Core
