@@ -3,6 +3,7 @@ import 'dart:io' show Directory;
 import 'package:dartle/dartle_dart.dart';
 
 FileCollection _deletions = dirs(const [
+  'build',
   'example/dartle-cache',
   'test/test_builds/io_checks/.dartle_tool',
   'test/test_builds/many_tasks/.dartle_tool',
