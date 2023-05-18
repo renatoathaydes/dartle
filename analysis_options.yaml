@@ -2,5 +2,10 @@
 include: package:lints/recommended.yaml
 
 analyzer:
+  exclude: [ build/** ]
   language:
     strict-casts: true
+
+linter:
+  rules:
+    - unawaited_futures
