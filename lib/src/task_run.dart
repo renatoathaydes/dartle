@@ -151,7 +151,7 @@ Future<List<TaskResult>> _run(List<ParallelTasks> tasks,
         .followedBy(phaseErrors)
         .whereNotNull()
         .toList(growable: false);
-    if (all.length == 1) throw all.first;
+
     throw MultipleExceptions(all);
   }
 
