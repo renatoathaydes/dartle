@@ -105,16 +105,17 @@ enum StreamRedirectMode { stdout, stderr, stdoutAndStderr, none }
 /// A [StreamRedirectMode] can be provided to configure whether the process'
 /// output should be redirected to the calling process's streams in case of
 /// success or failure. Whether the result is a success or a failure is
-/// determined by looking at the provided [successCodes] Set.
+/// determined by the [isCodeSuccessful] function (only 0 is success, by default).
 ///
-/// In case the process exit code is a failure, this method throws a
-/// [ProcessExitCodeException].
+/// This method throws [ProcessExitCodeException] in case the process' exit code
+/// is not considered successful by [isCodeSuccessful],
+/// or [ProcessException] in case the process could not be executed at all.
 ///
 /// By default, both streams are redirected in case of failure, but none in case
 /// of success.
 Future<int> execProc(Future<Process> process,
     {String name = '',
-    Set<int> successCodes = const {0},
+    bool Function(int) isCodeSuccessful = _onlyZero,
     StreamRedirectMode successMode = StreamRedirectMode.none,
     StreamRedirectMode errorMode = StreamRedirectMode.stdoutAndStderr}) async {
   final allDisabled = successMode == StreamRedirectMode.none &&
@@ -122,7 +123,7 @@ Future<int> execProc(Future<Process> process,
   final stdoutConsumer = StdStreamConsumer(keepLines: !allDisabled);
   final stderrConsumer = StdStreamConsumer(keepLines: !allDisabled);
   final code = await _exec(await process, name, stdoutConsumer, stderrConsumer);
-  final success = successCodes.contains(code);
+  final success = isCodeSuccessful(code);
   if (allDisabled) {
     if (success) {
       return code;
@@ -155,7 +156,7 @@ Future<int> execProc(Future<Process> process,
     }
   }
 
-  await redirect(successCodes.contains(code) ? successMode : errorMode);
+  await redirect(success ? successMode : errorMode);
   if (success) {
     return code;
   }
@@ -174,6 +175,8 @@ class ExecReadResult {
   const ExecReadResult(this.exitCode, this.stdout, this.stderr);
 }
 
+bool _onlyZero(int i) => i == 0;
+
 /// Executes the given process, returning its output streams line-by-line.
 ///
 /// This method is similar to [exec], but simplifying the process of reading
@@ -186,19 +189,19 @@ class ExecReadResult {
 /// (the filter must return `true` to keep a line, or `false` to exclude it).
 ///
 /// This method throws [ProcessExitCodeException] in case the process' exit code
-/// is not in the [successCodes] Set, or [ProcessException] in case the
-/// process could not be executed at all.
+/// is not considered successful by [isCodeSuccessful],
+/// or [ProcessException] in case the process could not be executed at all.
 ///
 Future<ExecReadResult> execRead(Future<Process> process,
     {String name = '',
     bool Function(String) stdoutFilter = filterNothing,
     bool Function(String) stderrFilter = filterNothing,
-    Set<int> successCodes = const {0}}) async {
+    bool Function(int) isCodeSuccessful = _onlyZero}) async {
   final stdout = StdStreamConsumer(keepLines: true, filter: stdoutFilter);
   final stderr = StdStreamConsumer(keepLines: true, filter: stderrFilter);
   final code = await _exec(await process, name, stdout, stderr);
   final result = ExecReadResult(code, stdout.lines, stderr.lines);
-  if (successCodes.contains(code)) {
+  if (isCodeSuccessful(code)) {
     return result;
   }
   throw ProcessExitCodeException(code, name, stdout.lines, stderr.lines);
