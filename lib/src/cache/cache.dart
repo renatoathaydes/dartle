@@ -426,6 +426,7 @@ class DartleCache {
     return change;
   }
 
+  /// Get a location for storing an executable file created from the given file.
   File getExecutablesLocation(File file) =>
       File(path.join(_executablesDir, hash(file.path).toString()));
 

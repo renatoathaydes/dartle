@@ -44,12 +44,12 @@ void main() {
     });
 
     Future<ExecReadResult> runExampleDartBuild(List<String> args,
-        {Set<int> successExitCodes = const {0}}) async {
+        {bool Function(int) isCodeSuccessful = onlyZero}) async {
       return execRead(
           runDartExe(exampleDartleBuild,
               args: args, workingDirectory: 'example'),
           name: 'example dart build',
-          successCodes: successExitCodes);
+          isCodeSuccessful: isCodeSuccessful);
     }
 
     test('logs expected output', () async {
@@ -163,7 +163,7 @@ void main() {
 
     test('errors if task does not exist', () async {
       var proc =
-          await runExampleDartBuild(['foo'], successExitCodes: const {1});
+          await runExampleDartBuild(['foo'], isCodeSuccessful: (i) => i == 1);
       expect(proc.stdout.length, equals(2));
       expect(proc.stdout[0],
           contains("ERROR - Invocation problem: Task 'foo' does not exist"));
@@ -173,7 +173,7 @@ void main() {
 
     test('errors if option does not exist', () async {
       var proc =
-          await runExampleDartBuild(['--foo'], successExitCodes: const {4});
+          await runExampleDartBuild(['--foo'], isCodeSuccessful: (i) => i == 4);
       expect(proc.stdout.length, equals(2));
       expect(
           proc.stdout[0],
@@ -185,7 +185,7 @@ void main() {
 
     test('errors if arguments for task are not valid', () async {
       var proc = await runExampleDartBuild(['hello', ':Joe', ':Mary'],
-          successExitCodes: const {1});
+          isCodeSuccessful: (i) => i == 1);
       expect(proc.stdout.length, equals(2));
       expect(
           proc.stdout[0],
@@ -197,3 +197,5 @@ void main() {
     });
   });
 }
+
+bool onlyZero(int i) => i == 0;
