@@ -229,8 +229,10 @@ Stream<List<int>> download(Uri uri,
     {void Function(HttpHeaders)? headers,
     void Function(List<Cookie>)? cookies,
     bool Function(int) isSuccessfulStatusCode = _isSuccessfulStatusCode,
+    SecurityContext? context,
     Duration connectionTimeout = const Duration(seconds: 10)}) async* {
-  final client = HttpClient()..connectionTimeout = connectionTimeout;
+  final client = HttpClient(context: context)
+    ..connectionTimeout = connectionTimeout;
   final req = await client.getUrl(uri);
   try {
     req.persistentConnection = false;
@@ -243,14 +245,24 @@ Stream<List<int>> download(Uri uri,
       throw HttpCodeException(res, uri);
     }
   } finally {
-    client.close();
+    client.close(force: true);
   }
+}
+
+void _plainTextHeader(HttpHeaders headers) {
+  headers.add('Accept', 'plain/text');
+}
+
+void _jsonHeader(HttpHeaders headers) {
+  headers.add('Accept', 'application/json');
 }
 
 /// Download plain text from the given [Uri].
 ///
 /// It is possible to configure [HttpHeaders] and [Cookie]s sent to the server
 /// by providing the functions [headers] and [cookies], respectively.
+///
+/// By default, the `Accept` header is set to `text/plain`.
 ///
 /// A response is considered successful if the [isSuccessfulStatusCode]
 /// function returns `true`. If it is not, an [HttpCodeException] is thrown.
@@ -263,14 +275,16 @@ Stream<List<int>> download(Uri uri,
 /// several requests to the same server efficiently.
 ///
 Future<String> downloadText(Uri uri,
-    {void Function(HttpHeaders)? headers,
+    {void Function(HttpHeaders) headers = _plainTextHeader,
     void Function(List<Cookie>)? cookies,
     bool Function(int) isSuccessfulStatusCode = _isSuccessfulStatusCode,
+    SecurityContext? context,
     Duration connectionTimeout = const Duration(seconds: 10),
     Encoding encoding = utf8}) async {
   return download(uri,
           headers: headers,
           cookies: cookies,
+          context: context,
           connectionTimeout: connectionTimeout,
           isSuccessfulStatusCode: isSuccessfulStatusCode)
       .transform(encoding.decoder)
@@ -295,22 +309,16 @@ Future<String> downloadText(Uri uri,
 /// several requests to the same server efficiently.
 ///
 Future<Object?> downloadJson(Uri uri,
-    {void Function(HttpHeaders)? headers,
+    {void Function(HttpHeaders) headers = _jsonHeader,
     void Function(List<Cookie>)? cookies,
     bool Function(int) isSuccessfulStatusCode = _isSuccessfulStatusCode,
+    SecurityContext? context,
     Duration connectionTimeout = const Duration(seconds: 10),
     Encoding encoding = utf8}) {
-  void withJsonHeader(HttpHeaders h) {
-    h.add(
-        HttpHeaders.acceptHeader,
-        "${ContentType.json.mimeType}"
-        "${encoding == utf8 ? '' : '; charset=${encoding.name}'}");
-    headers?.call(h);
-  }
-
   return download(uri,
-          headers: withJsonHeader,
+          headers: headers,
           cookies: cookies,
+          context: context,
           isSuccessfulStatusCode: isSuccessfulStatusCode,
           connectionTimeout: connectionTimeout)
       .transform(encoding.decoder)
