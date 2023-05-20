@@ -4,6 +4,17 @@
 
 ## done, waiting for next release
 
+# 0.24.0
+
+### Dartle Core
+
+- fixed regression (in 0.23.1) reporting task errors.
+- changed signature of `execProc` and `execRead` to take a function instead of `Set<int>`
+  to determine when exit code is success.
+- changed signature of `download` and related functions to take a function instead of `Set<int>`
+  to determine when status code is success.
+- added optional `SecurityContext` argument to `download` functions.
+
 # 0.23.2
 
 ### Dartle Core
