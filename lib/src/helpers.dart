@@ -19,6 +19,9 @@ const dartleDir = '.dartle_tool';
 /// The default successful status codes for HTTP responses.
 const defaultSuccessfulStatusCodes = {200, 201, 202, 203, 204};
 
+bool _isSuccessfulStatusCode(int code) =>
+    defaultSuccessfulStatusCodes.contains(code);
+
 /// Fail the build for the given [reason].
 ///
 /// This function never returns.
@@ -212,9 +215,9 @@ Future<ExecReadResult> execRead(Future<Process> process,
 /// It is possible to configure [HttpHeaders] and [Cookie]s sent to the server
 /// by providing the functions [headers] and [cookies], respectively.
 ///
-/// A response is considered successful if its status code is in the
-/// [successfulStatusCodes] Set. If the status code is not in this Set,
-/// a [HttpCodeException] is thrown.
+/// A response is considered successful if the [isSuccessfulStatusCode]
+/// function returns `true`. If it is not, an [HttpCodeException] is thrown.
+/// By default, [defaultSuccessfulStatusCodes] is used.
 ///
 /// A [connectionTimeout] may be provided.
 ///
@@ -225,7 +228,7 @@ Future<ExecReadResult> execRead(Future<Process> process,
 Stream<List<int>> download(Uri uri,
     {void Function(HttpHeaders)? headers,
     void Function(List<Cookie>)? cookies,
-    Set<int> successfulStatusCodes = defaultSuccessfulStatusCodes,
+    bool Function(int) isSuccessfulStatusCode = _isSuccessfulStatusCode,
     Duration connectionTimeout = const Duration(seconds: 10)}) async* {
   final client = HttpClient()..connectionTimeout = connectionTimeout;
   final req = await client.getUrl(uri);
@@ -234,7 +237,7 @@ Stream<List<int>> download(Uri uri,
     headers?.call(req.headers);
     cookies?.call(req.cookies);
     final res = await req.close();
-    if (successfulStatusCodes.contains(res.statusCode)) {
+    if (isSuccessfulStatusCode(res.statusCode)) {
       yield* res;
     } else {
       throw HttpCodeException(res, uri);
@@ -249,9 +252,9 @@ Stream<List<int>> download(Uri uri,
 /// It is possible to configure [HttpHeaders] and [Cookie]s sent to the server
 /// by providing the functions [headers] and [cookies], respectively.
 ///
-/// A response is considered successful if its status code is in the
-/// [successfulStatusCodes] Set. If the status code is not in this Set,
-/// a [HttpCodeException] is thrown.
+/// A response is considered successful if the [isSuccessfulStatusCode]
+/// function returns `true`. If it is not, an [HttpCodeException] is thrown.
+/// By default, [defaultSuccessfulStatusCodes] is used.
 ///
 /// A [connectionTimeout] and an [Encoding] (UTF-8 by default) may be provided.
 ///
@@ -262,14 +265,14 @@ Stream<List<int>> download(Uri uri,
 Future<String> downloadText(Uri uri,
     {void Function(HttpHeaders)? headers,
     void Function(List<Cookie>)? cookies,
-    Set<int> successfulStatusCodes = defaultSuccessfulStatusCodes,
+    bool Function(int) isSuccessfulStatusCode = _isSuccessfulStatusCode,
     Duration connectionTimeout = const Duration(seconds: 10),
     Encoding encoding = utf8}) async {
   return download(uri,
           headers: headers,
           cookies: cookies,
           connectionTimeout: connectionTimeout,
-          successfulStatusCodes: successfulStatusCodes)
+          isSuccessfulStatusCode: isSuccessfulStatusCode)
       .transform(encoding.decoder)
       .join();
 }
@@ -281,9 +284,9 @@ Future<String> downloadText(Uri uri,
 ///
 /// By default, the `Accept` header is set to `application/json`.
 ///
-/// A response is considered successful if its status code is in the
-/// [successfulStatusCodes] Set. If the status code is not in this Set,
-/// a [HttpCodeException] is thrown.
+/// A response is considered successful if the [isSuccessfulStatusCode]
+/// function returns `true`. If it is not, an [HttpCodeException] is thrown.
+/// By default, [defaultSuccessfulStatusCodes] is used.
 ///
 /// A [connectionTimeout] and an [Encoding] (UTF-8 by default) may be provided.
 ///
@@ -294,7 +297,7 @@ Future<String> downloadText(Uri uri,
 Future<Object?> downloadJson(Uri uri,
     {void Function(HttpHeaders)? headers,
     void Function(List<Cookie>)? cookies,
-    Set<int> successfulStatusCodes = defaultSuccessfulStatusCodes,
+    bool Function(int) isSuccessfulStatusCode = _isSuccessfulStatusCode,
     Duration connectionTimeout = const Duration(seconds: 10),
     Encoding encoding = utf8}) {
   void withJsonHeader(HttpHeaders h) {
@@ -308,7 +311,7 @@ Future<Object?> downloadJson(Uri uri,
   return download(uri,
           headers: withJsonHeader,
           cookies: cookies,
-          successfulStatusCodes: successfulStatusCodes,
+          isSuccessfulStatusCode: isSuccessfulStatusCode,
           connectionTimeout: connectionTimeout)
       .transform(encoding.decoder)
       .transform(json.decoder)
