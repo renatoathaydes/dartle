@@ -9,8 +9,6 @@ import '../_log.dart';
 import '../_utils.dart';
 import '../file_collection.dart';
 import '../helpers.dart';
-import '../task.dart';
-import '../task_invocation.dart';
 
 /// Current version of the Dartle Cache.
 const cacheFormatVersion = '0.2';
@@ -160,19 +158,19 @@ class DartleCache {
       _getCacheLocation(entity, key: key).existsSync();
 
   /// Cache the given task invocation.
-  Future<void> cacheTaskInvocation(TaskInvocation invocation) async {
-    final file = _taskFile(invocation.name);
-    logger.fine(() =>
-        'Caching invocation of task "${invocation.name}" at ${file.path}');
-    await file.writeAsString(invocation.args.toString());
+  Future<void> cacheTaskInvocation(String taskName,
+      [List<String> args = const []]) async {
+    final file = _taskFile(taskName);
+    logger.fine(() => 'Caching invocation of task "$taskName" at ${file.path}');
+    await file.writeAsString(args.toString());
   }
 
   /// Get the [DateTime] when this task was last invoked successfully.
   ///
-  /// This time is only known if the [TaskInvocation] was previously cached via
+  /// This time is only known if the invocation was previously cached via
   /// [cacheTaskInvocation].
-  Future<DateTime?> getLatestInvocationTime(TaskInvocation invocation) async {
-    final file = _taskFile(invocation.name);
+  Future<DateTime?> getLatestInvocationTime(String taskName) async {
+    final file = _taskFile(taskName);
     if (await file.exists()) {
       return await file.lastModified();
     }
@@ -189,21 +187,22 @@ class DartleCache {
   ///
   /// Only successful task invocations are normally cached, hence this method
   /// will normally return `true` when the previous invocation of [Task] failed.
-  Future<bool> hasTaskInvocationChanged(TaskInvocation invocation) async {
-    final taskFile = _taskFile(invocation.name);
+  Future<bool> hasTaskInvocationChanged(String taskName,
+      [List<String> args = const []]) async {
+    final taskFile = _taskFile(taskName);
     if (await taskFile.exists()) {
       final taskArgs = await taskFile.readAsString();
-      final isChanged = invocation.args.toString() != taskArgs;
+      final isChanged = args.toString() != taskArgs;
       if (isChanged) {
-        logger.fine(() => 'Task "${invocation.name}" invocation changed '
-            'because args were $taskArgs, but is now ${invocation.args}.');
+        logger.fine(() => 'Task "$taskName" invocation changed '
+            'because args were $taskArgs, but is now $args.');
       } else {
-        logger.finest(() => 'Task "${invocation.name}" invocation has not '
+        logger.finest(() => 'Task "$taskName" invocation has not '
             'changed, args are $taskArgs');
       }
       return isChanged;
     } else {
-      logger.fine(() => 'Task "${invocation.name}" has not been executed yet');
+      logger.fine(() => 'Task "$taskName" has not been executed yet');
       return true;
     }
   }

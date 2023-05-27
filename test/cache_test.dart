@@ -473,8 +473,7 @@ void main([List<String> args = const []]) {
     });
 
     test('first-time task invocation has always changed', () async {
-      expect(
-          await cache.hasTaskInvocationChanged(taskInvocation('foo')), isTrue);
+      expect(await cache.hasTaskInvocationChanged('foo'), isTrue);
     });
 
     test(
@@ -482,16 +481,16 @@ void main([List<String> args = const []]) {
         () async {
       final interactions = <String, bool>{};
       await withFileSystem(fs, () async {
-        await cache.cacheTaskInvocation(taskInvocation('foo'));
+        await cache.cacheTaskInvocation('foo');
 
-        interactions['with one arg'] = await cache
-            .hasTaskInvocationChanged(taskInvocation('foo', ['bar']));
+        interactions['with one arg'] =
+            await cache.hasTaskInvocationChanged('foo', ['bar']);
         interactions['with one other arg'] =
-            await cache.hasTaskInvocationChanged(taskInvocation('foo', ['bz']));
-        interactions['with two args'] = await cache
-            .hasTaskInvocationChanged(taskInvocation('foo', ['hey', 'ho']));
+            await cache.hasTaskInvocationChanged('foo', ['bz']);
+        interactions['with two args'] =
+            await cache.hasTaskInvocationChanged('foo', ['hey', 'ho']);
         interactions['with no args'] =
-            await cache.hasTaskInvocationChanged(taskInvocation('foo'));
+            await cache.hasTaskInvocationChanged('foo');
       });
 
       expect(
@@ -509,23 +508,22 @@ void main([List<String> args = const []]) {
         'after invocation with arguments', () async {
       final interactions = <String, bool>{};
       await withFileSystem(fs, () async {
-        await cache.cacheTaskInvocation(taskInvocation('foo', ['a', 'b']));
+        await cache.cacheTaskInvocation('foo', ['a', 'b']);
 
         interactions['with one arg'] =
-            await cache.hasTaskInvocationChanged(taskInvocation('foo', ['a']));
+            await cache.hasTaskInvocationChanged('foo', ['a']);
         interactions['with one other arg'] =
-            await cache.hasTaskInvocationChanged(taskInvocation('foo', ['b']));
-        interactions['with same args, different order'] = await cache
-            .hasTaskInvocationChanged(taskInvocation('foo', ['b', 'a']));
+            await cache.hasTaskInvocationChanged('foo', ['b']);
+        interactions['with same args, different order'] =
+            await cache.hasTaskInvocationChanged('foo', ['b', 'a']);
         interactions['with no args'] =
-            await cache.hasTaskInvocationChanged(taskInvocation('foo'));
-        interactions['with two different args'] = await cache
-            .hasTaskInvocationChanged(taskInvocation('foo', ['x', 'y']));
+            await cache.hasTaskInvocationChanged('foo');
+        interactions['with two different args'] =
+            await cache.hasTaskInvocationChanged('foo', ['x', 'y']);
         interactions['with two first args the same, but more args'] =
-            await cache.hasTaskInvocationChanged(
-                taskInvocation('foo', ['a', 'b', 'c']));
-        interactions['with same args'] = await cache
-            .hasTaskInvocationChanged(taskInvocation('foo', ['a', 'b']));
+            await cache.hasTaskInvocationChanged('foo', ['a', 'b', 'c']);
+        interactions['with same args'] =
+            await cache.hasTaskInvocationChanged('foo', ['a', 'b']);
       });
 
       expect(
@@ -544,33 +542,33 @@ void main([List<String> args = const []]) {
     test('task invocation can be removed', () async {
       final interactions = <String, bool>{};
       await withFileSystem(fs, () async {
-        await cache.cacheTaskInvocation(taskInvocation('foo'));
+        await cache.cacheTaskInvocation('foo');
 
         interactions['invocation changed after caching it'] =
-            await cache.hasTaskInvocationChanged(taskInvocation('foo'));
+            await cache.hasTaskInvocationChanged('foo');
 
         await cache.removeTaskInvocation('foo');
 
         interactions['invocation changed after removed'] =
-            await cache.hasTaskInvocationChanged(taskInvocation('foo'));
+            await cache.hasTaskInvocationChanged('foo');
 
         // try another task with one arg
-        await cache.cacheTaskInvocation(taskInvocation('bar', ['a']));
+        await cache.cacheTaskInvocation('bar', ['a']);
 
         interactions['invocation changed after cache (one arg)'] =
-            await cache.hasTaskInvocationChanged(taskInvocation('bar', ['a']));
+            await cache.hasTaskInvocationChanged('bar', ['a']);
 
         // remove wrong task
         await cache.removeTaskInvocation('foo');
 
         interactions['invocation changed after removed wrong task'] =
-            await cache.hasTaskInvocationChanged(taskInvocation('bar', ['a']));
+            await cache.hasTaskInvocationChanged('bar', ['a']);
 
         // remove right task
         await cache.removeTaskInvocation('bar');
 
         interactions['invocation changed after removed right task'] =
-            await cache.hasTaskInvocationChanged(taskInvocation('bar', ['a']));
+            await cache.hasTaskInvocationChanged('bar', ['a']);
       });
 
       expect(
@@ -588,24 +586,24 @@ void main([List<String> args = const []]) {
       const trickyName = '../../tricky';
       final interactions = <String, bool>{};
       await withFileSystem(fs, () async {
-        await cache.cacheTaskInvocation(taskInvocation(trickyName));
+        await cache.cacheTaskInvocation(trickyName);
 
         interactions['invocation changed after caching it'] =
-            await cache.hasTaskInvocationChanged(taskInvocation(trickyName));
+            await cache.hasTaskInvocationChanged(trickyName);
 
         await cache.removeTaskInvocation(trickyName);
 
         interactions['invocation changed after removed'] =
-            await cache.hasTaskInvocationChanged(taskInvocation(trickyName));
+            await cache.hasTaskInvocationChanged(trickyName);
 
         // try with args
-        await cache.cacheTaskInvocation(taskInvocation(trickyName, ['a']));
+        await cache.cacheTaskInvocation(trickyName, ['a']);
 
-        interactions['invocation changed after cache (one arg)'] = await cache
-            .hasTaskInvocationChanged(taskInvocation(trickyName, ['a']));
+        interactions['invocation changed after cache (one arg)'] =
+            await cache.hasTaskInvocationChanged(trickyName, ['a']);
 
-        interactions['invocation with different arg'] = await cache
-            .hasTaskInvocationChanged(taskInvocation(trickyName, ['b']));
+        interactions['invocation with different arg'] =
+            await cache.hasTaskInvocationChanged(trickyName, ['b']);
       });
 
       expect(
@@ -620,8 +618,8 @@ void main([List<String> args = const []]) {
 
     test('tasks are cached in the correct locations', () async {
       await withFileSystem(fs, () async {
-        await cache.cacheTaskInvocation(taskInvocation('abc'));
-        await cache.cacheTaskInvocation(taskInvocation('../def'));
+        await cache.cacheTaskInvocation('abc');
+        await cache.cacheTaskInvocation('../def');
       });
 
       await expectFileTree(

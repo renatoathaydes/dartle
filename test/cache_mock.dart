@@ -1,7 +1,6 @@
 import 'dart:io';
 
 import 'package:dartle/dartle_cache.dart';
-import 'package:dartle/src/task_invocation.dart';
 
 class CacheMock implements DartleCache {
   bool throwOnAnyCheck = false;
@@ -13,7 +12,8 @@ class CacheMock implements DartleCache {
   String get rootDir => throw UnimplementedError();
 
   @override
-  Future<void> cacheTaskInvocation(TaskInvocation invocation) {
+  Future<void> cacheTaskInvocation(String name,
+      [List<String> args = const []]) {
     throw UnimplementedError();
   }
 
@@ -57,11 +57,12 @@ class CacheMock implements DartleCache {
   }
 
   @override
-  Future<bool> hasTaskInvocationChanged(TaskInvocation invocation) async {
+  Future<bool> hasTaskInvocationChanged(String name,
+      [List<String> args = const []]) async {
     if (throwOnAnyCheck) {
-      throw Exception('hasTaskInvocationChanged($invocation)');
+      throw Exception('hasTaskInvocationChanged($name, $args)');
     }
-    final changes = invocationChanges[invocation.name];
+    final changes = invocationChanges[name];
     if (changes == null) {
       throw 'invocation not mocked';
     }
@@ -86,11 +87,11 @@ class CacheMock implements DartleCache {
   }
 
   @override
-  Future<DateTime?> getLatestInvocationTime(TaskInvocation invocation) async {
+  Future<DateTime?> getLatestInvocationTime(String name) async {
     if (throwOnAnyCheck) {
-      throw Exception('getLatestInvocationTime($invocation)');
+      throw Exception('getLatestInvocationTime($name)');
     }
-    return invocationTimes[invocation.name];
+    return invocationTimes[name];
   }
 
   @override

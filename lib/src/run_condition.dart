@@ -95,7 +95,7 @@ class RunOnChanges with RunCondition, FilesCondition {
 
   @override
   FutureOr<bool> shouldRun(TaskInvocation invocation) async {
-    if (await cache.hasTaskInvocationChanged(invocation)) return true;
+    if (await cache.hasInvocationChanged(invocation)) return true;
     final inputsChanged = await cache.hasChanged(inputs, key: invocation.name);
     if (inputsChanged) {
       logger.fine('Changes detected on task inputs: $inputs');
@@ -133,7 +133,7 @@ class RunOnChanges with RunCondition, FilesCondition {
       await cache.clean(key: taskName);
       await cache(inputs, key: taskName);
       await cache(outputs, key: taskName);
-      await cache.cacheTaskInvocation(result.invocation);
+      await cache.cacheInvocation(result.invocation);
     } else {
       if (outputs.isEmpty) {
         // the task failed without any outputs, so for it to run again next
@@ -183,7 +183,7 @@ class RunAtMostEvery with RunCondition {
   @override
   FutureOr<void> postRun(TaskResult result) async {
     if (result.isSuccess) {
-      await cache.cacheTaskInvocation(result.invocation);
+      await cache.cacheInvocation(result.invocation);
     } else {
       await cache.removeTaskInvocation(result.invocation.name);
     }
@@ -191,8 +191,8 @@ class RunAtMostEvery with RunCondition {
 
   @override
   FutureOr<bool> shouldRun(TaskInvocation invocation) async {
-    if (await cache.hasTaskInvocationChanged(invocation)) return true;
-    final lastTime = await cache.getLatestInvocationTime(invocation);
+    if (await cache.hasInvocationChanged(invocation)) return true;
+    final lastTime = await cache.getLatestInvocationTime(invocation.name);
     if (lastTime == null) {
       return true;
     }
@@ -234,6 +234,7 @@ class RunToDelete with RunCondition, FilesCondition {
     return await deletions.resolveFiles().asyncAny((f) => f.exists());
   }
 
+//
   @override
   FutureOr<void> postRun(TaskResult result) async {
     if (verifyDeletions) {
@@ -329,4 +330,14 @@ class AndCondition with RunConditionCombiner {
 
   @override
   String toString() => conditions.join(' AND ');
+}
+
+extension CacheTasks on DartleCache {
+  Future<bool> hasInvocationChanged(TaskInvocation invocation) {
+    return hasTaskInvocationChanged(invocation.name, invocation.args);
+  }
+
+  Future<void> cacheInvocation(TaskInvocation invocation) {
+    return cacheTaskInvocation(invocation.name, invocation.args);
+  }
 }
