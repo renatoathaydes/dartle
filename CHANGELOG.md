@@ -4,11 +4,19 @@
 
 ## done, waiting for next release
 
+# 0.25.0
+
 ### Dartle Core
 
 - removed `cache` option to `createCleanTask` function and `RunToDelete` class.
 - fixed handling of `FINER` log messages to match `TRACE` log level.
 - fixed bug in `RunToDelete`: do not remove full directory as it may contain files filtered out by file-collection.
+- big internal reorganization of Dart files. Should not affect users importing `packge:dartle/dartle.dart`.
+
+### Dartle Cache
+
+- changed methods that took `TaskInvocation` to use `name` and `args`. Avoids taking up dependencies on Dartle Core
+  types.
 
 # 0.24.0
 

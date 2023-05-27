@@ -55,8 +55,8 @@ class MultipleExceptions extends DartleException {
 
   MultipleExceptions(this.exceptionsAndStackTraces)
       : super(
-      message: _computeMessage(exceptionsAndStackTraces),
-      exitCode: _computeExitCode(exceptionsAndStackTraces));
+            message: _computeMessage(exceptionsAndStackTraces),
+            exitCode: _computeExitCode(exceptionsAndStackTraces));
 
   @override
   String toString() {
@@ -100,10 +100,11 @@ class ProcessExitCodeException extends DartleException {
   final List<String> stdout;
   final List<String> stderr;
 
-  const ProcessExitCodeException(int exitCode, this.name, this.stdout, this.stderr)
+  const ProcessExitCodeException(
+      int exitCode, this.name, this.stdout, this.stderr)
       : super(
-      message: 'process failed with exit code $exitCode',
-      exitCode: exitCode);
+            message: 'process failed with exit code $exitCode',
+            exitCode: exitCode);
 
   @override
   String toString() {
@@ -121,9 +122,9 @@ class HttpCodeException extends DartleException {
 
   HttpCodeException(this.response, this.uri)
       : super(
-      message:
-      'http request failed with status code ${response.statusCode}',
-      exitCode: 48);
+            message:
+                'http request failed with status code ${response.statusCode}',
+            exitCode: 48);
 
   int get statusCode => response.statusCode;
 
