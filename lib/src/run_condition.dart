@@ -213,7 +213,6 @@ class RunAtMostEvery with RunCondition {
 class RunToDelete with RunCondition, FilesCondition {
   @override
   final FileCollection deletions;
-  final DartleCache cache;
 
   /// Whether to verify that all declared deletions have been performed
   /// after the task has run.
@@ -222,8 +221,7 @@ class RunToDelete with RunCondition, FilesCondition {
   RunToDelete(
     this.deletions, {
     this.verifyDeletions = true,
-    DartleCache? cache,
-  }) : cache = cache ?? DartleCache.instance;
+  });
 
   @override
   FileCollection get inputs => FileCollection.empty;
