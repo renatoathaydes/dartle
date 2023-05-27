@@ -12,14 +12,15 @@ final outputs = dir('outputs', fileExtensions: const {'b64.txt'});
 final incInputs = dir('inc-inputs', fileExtensions: const {'txt'});
 final incOutputs = dir('inc-outputs', fileExtensions: const {'txt'});
 
-final allTasks = {
+final buildTasks = {
   Task(base64, runCondition: RunOnChanges(inputs: inputs, outputs: outputs)),
-  Task(ExampleIncrementalAction(),
+  Task(const ExampleIncrementalAction(),
       name: 'incremental',
       runCondition: RunOnChanges(inputs: incInputs, outputs: incOutputs)),
 };
 
-void main(List<String> args) async => await run(args, tasks: allTasks);
+void main(List<String> args) async =>
+    await run(args, tasks: {...buildTasks, createCleanTask(tasks: buildTasks)});
 
 Future base64(_) async {
   final inputDir = inputs.directories.first.path;
@@ -36,6 +37,8 @@ Future base64(_) async {
 }
 
 class ExampleIncrementalAction {
+  const ExampleIncrementalAction();
+
   Future<void> call(List<String> _, [ChangeSet? changeSet]) async {
     final inputDir = Directory(incInputs.directories.first.path);
     if (!await inputDir.exists()) {

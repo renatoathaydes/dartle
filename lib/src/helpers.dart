@@ -368,7 +368,7 @@ Future<void> deleteAll(FileCollection fileCollection) async {
     final ok =
         await ignoreExceptions(() => entry.entity.delete(recursive: false));
     if (!ok) {
-      logger.warning('Failed to delete: ${entry.path}');
+      logger.fine(() => 'Did not delete: ${entry.path}');
     }
   }
 }

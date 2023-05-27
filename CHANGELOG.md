@@ -4,6 +4,12 @@
 
 ## done, waiting for next release
 
+### Dartle Core
+
+- removed `cache` option to `createCleanTask` function and `RunToDelete` class.
+- fixed handling of `FINER` log messages to match `TRACE` log level.
+- fixed bug in `RunToDelete`: do not remove full directory as it may contain files filtered out by file-collection.
+
 # 0.24.0
 
 ### Dartle Core

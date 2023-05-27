@@ -231,7 +231,7 @@ class RunToDelete with RunCondition, FilesCondition {
 
   @override
   FutureOr<bool> shouldRun(TaskInvocation invocation) async {
-    return await deletions.resolve().asyncAny((f) => f.entity.exists());
+    return await deletions.resolveFiles().asyncAny((f) => f.exists());
   }
 
   @override
@@ -248,10 +248,10 @@ class RunToDelete with RunCondition, FilesCondition {
     }
   }
 
-  Stream<FileSystemEntity> _collectNotDeleted() async* {
-    await for (final entry in deletions.resolve()) {
-      if (await entry.entity.exists()) {
-        yield entry.entity;
+  Stream<File> _collectNotDeleted() async* {
+    await for (final entry in deletions.resolveFiles()) {
+      if (await entry.exists()) {
+        yield entry;
       }
     }
   }
