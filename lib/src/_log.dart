@@ -57,6 +57,7 @@ const levelByName = <String, log.Level>{
 
 final nameByLevel = <log.Level, String>{
   log.Level.FINEST: 'TRACE',
+  log.Level.FINER: 'TRACE',
   log.Level.FINE: 'DEBUG',
   log.Level.INFO: 'INFO',
   log.Level.WARNING: 'WARN',
@@ -66,6 +67,7 @@ final nameByLevel = <log.Level, String>{
 
 final _logByLevel = <log.Level, _Log>{
   log.Level.FINEST: const _Log(LogColor.gray),
+  log.Level.FINER: const _Log(LogColor.gray),
   log.Level.FINE: const _Log(LogColor.blue),
   log.Level.INFO: const _Log(null),
   log.Level.WARNING: const _Log(LogColor.yellow),
