@@ -4,7 +4,7 @@ import 'dart:io';
 import '../_log.dart';
 import '../cache/cache.dart';
 import '../error.dart';
-import '../helpers.dart';
+import '../io_helpers.dart';
 
 /// Get the location Dartle would store binaries created with the [createDartExe]
 /// method.

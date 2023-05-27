@@ -11,17 +11,18 @@ library dartle;
 
 export 'src/_log.dart'
     show activateLogging, profile, LogColor, ColoredLogMessage;
-export 'src/message.dart';
+export 'src/_text_helpers.dart' show elapsedTime;
 export 'src/ansi_message.dart';
-export 'src/_utils.dart' show elapsedTime;
+export 'src/constants.dart';
 export 'src/core.dart';
-export 'src/io/exec.dart';
 export 'src/dartle_version.g.dart';
 export 'src/error.dart';
 export 'src/file_collection.dart';
-export 'src/helpers.dart';
+export 'src/io_helpers.dart';
+export 'src/message.dart';
 export 'src/options.dart';
 export 'src/run_condition.dart';
 export 'src/task.dart';
+export 'src/task_helpers.dart';
 export 'src/task_invocation.dart';
 export 'src/task_run.dart';

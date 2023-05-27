@@ -1,13 +1,16 @@
 import 'dart:io';
 
 import 'package:path/path.dart' as p;
+import 'package:path/path.dart' as paths;
 
 import '_log.dart';
-import '_utils.dart';
+import 'constants.dart';
 import 'core.dart' show dartleFileMissingMessage;
 import 'dartle_version.g.dart';
 import 'error.dart';
-import 'helpers.dart';
+import 'io_helpers.dart';
+
+const pubspec = 'pubspec.yaml';
 
 const _basicInputFile = r'''
 Hello Dartle!
@@ -80,6 +83,54 @@ dev_dependencies:
 
 Never abort(int code) {
   exit(code);
+}
+
+Future<void> runPubGet(_) async {
+  await execProc(Process.start('dart', const ['pub', 'get']),
+      name: 'Dart pub get', successMode: StreamRedirectMode.stdoutAndStderr);
+}
+
+Future<void> checkProjectInit(bool doNotExit, [bool pubGet = true]) async {
+  final dartleFile = File('dartle.dart');
+  if (await dartleFile.exists()) {
+    logger.finer('Dartle file exists.');
+    if (!await _findPubSpec()) {
+      logger.fine(() => '$pubspec was not found');
+      await onNoPubSpec(doNotExit);
+    }
+  } else {
+    await onNoDartleFile(doNotExit);
+  }
+  if (pubGet && !await _findDartToolDir()) {
+    logger.info('Dart dependencies not downloaded yet. Executing '
+        "'dart pub get'");
+    await runPubGet(const []);
+  }
+}
+
+Future<bool> _findPubSpec() async {
+  final e = await _findEntity(pubspec, dir: false);
+  return e != null;
+}
+
+Future<bool> _findDartToolDir() async {
+  final e = await _findEntity(dartleDir, dir: true);
+  return e != null;
+}
+
+Future<FileSystemEntity?> _findEntity(String name,
+    {required bool dir, int maxDepth = 4}) async {
+  var depth = 0;
+  var currentDir = Directory.current;
+  FileSystemEntity entity(String p) => dir ? Directory(p) : File(p);
+  while (depth < maxDepth) {
+    final e = entity(paths.join(currentDir.path, name));
+    logger.finer(() => 'Checking if ${e.path} exists');
+    if (await e.exists()) return e;
+    currentDir = currentDir.parent;
+    depth++;
+  }
+  return null;
 }
 
 Future<void> onNoPubSpec(bool doNotExit) async {

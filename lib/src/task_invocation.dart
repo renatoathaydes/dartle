@@ -1,5 +1,5 @@
 import '_log.dart';
-import '_utils.dart';
+import '_text_helpers.dart';
 import 'error.dart';
 import 'options.dart';
 import 'task.dart';

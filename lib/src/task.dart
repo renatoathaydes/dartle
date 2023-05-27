@@ -2,11 +2,10 @@ import 'dart:async';
 
 import 'package:collection/collection.dart';
 
-import '_utils.dart';
 import 'error.dart';
 import 'file_collection.dart';
-import 'helpers.dart';
 import 'run_condition.dart';
+import 'task_helpers.dart';
 import 'task_invocation.dart';
 
 final _functionNamePatttern = RegExp('[a-zA-Z_0-9]+');
@@ -669,4 +668,15 @@ Task createCleanTask(
       name: name,
       phase: phase,
       description: description);
+}
+
+extension _MultiMapUtils<K, V> on Map<K, Set<V>> {
+  void accumulate(K key, V value) {
+    var current = this[key];
+    if (current == null) {
+      current = <V>{};
+      this[key] = current;
+    }
+    current.add(value);
+  }
 }

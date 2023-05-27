@@ -4,8 +4,8 @@ import 'package:path/path.dart';
 import 'package:yaml/yaml.dart';
 
 import '../../dartle_cache.dart';
-import '../_utils.dart' as utils;
-import '../helpers.dart';
+import '../_project.dart' as utils;
+import '../io_helpers.dart';
 import '../run_condition.dart';
 import '../task.dart';
 import '../task_run.dart' show ChangeSet;

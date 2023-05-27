@@ -1,4 +1,24 @@
+import 'dart:async';
 import 'dart:io';
+
+/// Fail the build for the given [reason].
+///
+/// This function never returns.
+Never failBuild({required String reason, int exitCode = 1}) {
+  throw DartleException(message: reason, exitCode: exitCode);
+}
+
+/// Run the given action ignoring any Exceptions thrown by it.
+/// Returns `true` if the action succeeded, `false` otherwise.
+FutureOr<bool> ignoreExceptions(FutureOr Function() action) async {
+  try {
+    await action();
+    return true;
+  } on Exception {
+    // ignore
+    return false;
+  }
+}
 
 /// Indicates a fatal error during a dartle build.
 class DartleException implements Exception {
@@ -35,8 +55,8 @@ class MultipleExceptions extends DartleException {
 
   MultipleExceptions(this.exceptionsAndStackTraces)
       : super(
-            message: _computeMessage(exceptionsAndStackTraces),
-            exitCode: _computeExitCode(exceptionsAndStackTraces));
+      message: _computeMessage(exceptionsAndStackTraces),
+      exitCode: _computeExitCode(exceptionsAndStackTraces));
 
   @override
   String toString() {
@@ -80,11 +100,10 @@ class ProcessExitCodeException extends DartleException {
   final List<String> stdout;
   final List<String> stderr;
 
-  const ProcessExitCodeException(
-      int exitCode, this.name, this.stdout, this.stderr)
+  const ProcessExitCodeException(int exitCode, this.name, this.stdout, this.stderr)
       : super(
-            message: 'process failed with exit code $exitCode',
-            exitCode: exitCode);
+      message: 'process failed with exit code $exitCode',
+      exitCode: exitCode);
 
   @override
   String toString() {
@@ -102,9 +121,9 @@ class HttpCodeException extends DartleException {
 
   HttpCodeException(this.response, this.uri)
       : super(
-            message:
-                'http request failed with status code ${response.statusCode}',
-            exitCode: 48);
+      message:
+      'http request failed with status code ${response.statusCode}',
+      exitCode: 48);
 
   int get statusCode => response.statusCode;
 

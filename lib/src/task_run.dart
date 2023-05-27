@@ -6,7 +6,7 @@ import 'package:structured_async/structured_async.dart';
 
 import '_actor_task.dart';
 import '_log.dart';
-import '_utils.dart';
+import '_text_helpers.dart';
 import 'cache/cache.dart';
 import 'error.dart';
 import 'run_condition.dart';

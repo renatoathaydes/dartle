@@ -1,15 +1,16 @@
 import 'dart:io';
 
 import '../_log.dart';
-import '../_utils.dart';
+import '../_project.dart';
+import '../_text_helpers.dart';
 import '../core.dart';
 import '../file_collection.dart';
-import '../io/exec.dart';
 import '../options.dart';
 import '../run_condition.dart';
 import '../task.dart';
 import '../task_invocation.dart';
 import '../task_run.dart';
+import 'exec.dart';
 
 final _cachedDartlex = getExeLocation(File('dartle.dart'));
 

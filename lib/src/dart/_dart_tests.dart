@@ -3,8 +3,9 @@ import 'dart:io';
 import 'package:test_report_parser/test_report_parser.dart';
 
 import '../../src/_log.dart';
-import '../../src/_utils.dart';
-import '../../src/helpers.dart';
+import '../../src/_text_helpers.dart';
+import '../../src/error.dart';
+import '../../src/io_helpers.dart';
 
 /// The type of outputs to use for tests.
 enum DartTestOutput {

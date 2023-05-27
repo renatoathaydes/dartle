@@ -1,7 +1,7 @@
 import 'dart:io';
 
 import 'package:dartle/dartle.dart';
-import 'package:dartle/src/_utils.dart';
+import 'package:dartle/src/_text_helpers.dart';
 import 'package:logging/logging.dart';
 import 'package:path/path.dart' as p;
 import 'package:test/test.dart';

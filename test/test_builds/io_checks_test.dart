@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:dartle/dartle.dart';
+import 'package:dartle/dartlex.dart';
 import 'package:path/path.dart' as path;
 import 'package:test/test.dart';
 

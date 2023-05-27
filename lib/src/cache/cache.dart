@@ -6,9 +6,11 @@ import 'package:collection/collection.dart';
 import 'package:path/path.dart' as path;
 
 import '../_log.dart';
-import '../_utils.dart';
+import '../constants.dart';
+import '../error.dart' show ignoreExceptions;
 import '../file_collection.dart';
-import '../helpers.dart';
+import '_fs_utils.dart';
+import '_hash.dart';
 
 /// Current version of the Dartle Cache.
 const cacheFormatVersion = '0.2';

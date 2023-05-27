@@ -10,36 +10,12 @@ import '_log.dart';
 import '_std_stream_consumer.dart';
 import 'error.dart';
 import 'file_collection.dart';
-import 'run_condition.dart';
-import 'task.dart';
-
-/// Location of the dartle directory within a project.
-const dartleDir = '.dartle_tool';
 
 /// The default successful status codes for HTTP responses.
 const defaultSuccessfulStatusCodes = {200, 201, 202, 203, 204};
 
 bool _isSuccessfulStatusCode(int code) =>
     defaultSuccessfulStatusCodes.contains(code);
-
-/// Fail the build for the given [reason].
-///
-/// This function never returns.
-Never failBuild({required String reason, int exitCode = 1}) {
-  throw DartleException(message: reason, exitCode: exitCode);
-}
-
-/// Run the given action ignoring any Exceptions thrown by it.
-/// Returns `true` if the action succeeded, `false` otherwise.
-FutureOr<bool> ignoreExceptions(FutureOr Function() action) async {
-  try {
-    await action();
-    return true;
-  } on Exception {
-    // ignore
-    return false;
-  }
-}
 
 /// Get the user HOME directory if possible.
 String? homeDir() => Platform.isWindows
@@ -324,32 +300,6 @@ Future<Object?> downloadJson(Uri uri,
       .transform(encoding.decoder)
       .transform(json.decoder)
       .first;
-}
-
-/// Get the outputs of a [Task].
-///
-/// This method can only return the outputs of a Task if its [RunCondition]
-/// implements [FilesCondition], otherwise `null` is returned.
-FileCollection? taskOutputs(Task task) {
-  switch (task.runCondition) {
-    case FilesCondition(outputs: var out):
-      return out;
-    default:
-      return null;
-  }
-}
-
-/// Deletes the outputs of all [tasks].
-///
-/// This method only works if the task's [RunCondition]s are instances of
-/// [FilesCondition].
-Future<void> deleteOutputs(Iterable<Task> tasks) async {
-  for (final task in tasks) {
-    final outputs = taskOutputs(task);
-    if (outputs != null) {
-      await deleteAll(outputs);
-    }
-  }
 }
 
 /// Delete all files and possibly directories included in the given

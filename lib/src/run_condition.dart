@@ -5,7 +5,6 @@ import 'package:clock/clock.dart';
 import 'package:meta/meta.dart';
 
 import '_log.dart';
-import '_utils.dart';
 import 'cache/cache.dart';
 import 'error.dart';
 import 'file_collection.dart';
@@ -231,7 +230,10 @@ class RunToDelete with RunCondition, FilesCondition {
 
   @override
   FutureOr<bool> shouldRun(TaskInvocation invocation) async {
-    return await deletions.resolveFiles().asyncAny((f) => f.exists());
+    await for (final file in deletions.resolveFiles()) {
+      if (await file.exists()) return true;
+    }
+    return false;
   }
 
 //

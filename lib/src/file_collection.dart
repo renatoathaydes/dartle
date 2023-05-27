@@ -3,7 +3,7 @@ import 'dart:io';
 
 import 'package:path/path.dart' as p;
 
-import '../dartle.dart';
+import 'error.dart';
 
 /// A directory entry, usually used within a [FileCollection].
 ///

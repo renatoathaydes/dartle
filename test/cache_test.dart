@@ -3,7 +3,7 @@ import 'dart:io';
 import 'package:collection/collection.dart';
 import 'package:dartle/dartle_cache.dart';
 import 'package:dartle/src/_log.dart';
-import 'package:dartle/src/_utils.dart';
+import 'package:dartle/src/cache/_hash.dart';
 import 'package:logging/logging.dart';
 import 'package:path/path.dart' show join;
 import 'package:test/test.dart';

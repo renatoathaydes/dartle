@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:dartle/dartle.dart';
+import 'package:dartle/dartlex.dart';
 import 'package:test/test.dart';
 
 void main() {
