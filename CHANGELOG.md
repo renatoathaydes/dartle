@@ -4,6 +4,10 @@
 
 ## done, waiting for next release
 
+# 0.26.0
+
+- bumped all libraries versions.
+
 # 0.25.0
 
 ### Dartle Core
