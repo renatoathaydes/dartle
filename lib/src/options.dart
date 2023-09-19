@@ -7,6 +7,7 @@ import '_log.dart';
 import 'dartle_version.g.dart';
 import 'error.dart';
 
+/// Dartle configuration options.
 class Options {
   final log.Level logLevel;
   final bool colorfulLog;
@@ -38,6 +39,7 @@ class Options {
     this.tasksInvocation = const [],
   });
 
+  /// Whether any of the informational options is true.
   bool get showInfoOnly =>
       showTasks || showTaskGraph || showHelp || showVersion;
 
