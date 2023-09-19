@@ -13,7 +13,7 @@ import 'task_run.dart' show IncrementalAction, ChangeSet;
 typedef MaybeIncrementalAction = Function(
     List<String> args, ChangeSet? changes);
 
-class _ActorMessage {
+final class _ActorMessage {
   final List<String> args;
   final ChangeSet? changes;
 

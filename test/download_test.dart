@@ -24,13 +24,14 @@ final class _ActorGotRequest extends _ActorResponse {
 }
 
 final class _ServerActor implements Handler<_ServerMessage, _ActorResponse?> {
-  Future<HttpServer>? _server;
+  late final HttpServer _server;
   HttpHeaders? _latestRequestHeaders;
 
-  Future<HttpServer> init() async {
-    final server = await HttpServer.bind('localhost', 0);
+  @override
+  Future<void> init() async {
+    _server = await HttpServer.bind('localhost', 0);
 
-    server.listen((req) {
+    _server.listen((req) {
       void send(Object body, [int status = 200]) async {
         req.response
           ..statusCode = status
@@ -51,15 +52,13 @@ final class _ServerActor implements Handler<_ServerMessage, _ActorResponse?> {
           return send('Not found', 404);
       }
     });
-    return server;
   }
 
   @override
   FutureOr<_ActorResponse?> handle(_ServerMessage message) async {
     switch (message) {
       case _ServerMessage.start:
-        final server = await init();
-        return _ActorRunning(server.port);
+        return _ActorRunning(_server.port);
       case _ServerMessage.request:
         return _ActorGotRequest(_latestRequestHeaders);
       case _ServerMessage.reset:
@@ -70,13 +69,13 @@ final class _ServerActor implements Handler<_ServerMessage, _ActorResponse?> {
 
   @override
   FutureOr<void> close() {
-    _server?.then((s) => s.close());
+    _server.close();
   }
 }
 
 void main() async {
   // run in Isolate to avoid Dart Test waiting for it
-  final serverActor = Actor(_ServerActor());
+  final serverActor = Actor.create(_ServerActor.new);
 
   final runningResponse = await serverActor.send(_ServerMessage.start);
   final port = (runningResponse as _ActorRunning).port;
