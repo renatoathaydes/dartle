@@ -1,8 +1,10 @@
+import 'dart:io' show Platform;
+
 import 'package:dartle/dartle.dart';
 
-const _executable = 'build/bin/dartle';
 const tarFile = 'build/dartle.tar.gz';
-final tarContents = files(const ['README.md', 'LICENSE', _executable]);
+final _executable = 'build/bin/dartle${Platform.isWindows ? '.exe' : ''}';
+final tarContents = files(['README.md', 'LICENSE', _executable]);
 
 final distributionTask = Task(distribution,
     description: 'Create binary executable distribution.',
