@@ -180,7 +180,7 @@ Future<TaskResult> runTask(TaskInvocation invocation,
   final action = _createTaskAction(task, runInIsolate && task.isParallelizable);
 
   logger.log(task.name.startsWith('_') ? Level.FINE : Level.INFO,
-      "Running task '${task.name}'");
+      "Running task '${style(task.name, LogStyle.bold)}'");
 
   stopwatch.reset();
 
