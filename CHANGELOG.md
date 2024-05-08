@@ -4,6 +4,11 @@
 
 ## done, waiting for next release
 
+# 0.27.0
+
+- log task name in bold.
+- bumped all libraries versions.
+
 # 0.26.0
 
 - bumped all libraries versions.
