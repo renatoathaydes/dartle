@@ -14,7 +14,7 @@ final incOutputs = dir('inc-outputs', fileExtensions: const {'txt'});
 
 final buildTasks = {
   Task(base64, runCondition: RunOnChanges(inputs: inputs, outputs: outputs)),
-  Task(const ExampleIncrementalAction(),
+  Task(const ExampleIncrementalAction().call,
       name: 'incremental',
       runCondition: RunOnChanges(inputs: incInputs, outputs: incOutputs)),
 };

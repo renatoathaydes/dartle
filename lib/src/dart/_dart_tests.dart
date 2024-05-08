@@ -45,7 +45,7 @@ Future<void> runTests(
             ...testsToRun
           ]),
           name: 'Dart Tests',
-          onStdoutLine: jsonReporter,
+          onStdoutLine: jsonReporter.call,
           onStderrLine: jsonReporter.error);
       jsonReporter.close();
       break;

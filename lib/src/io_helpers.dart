@@ -39,8 +39,8 @@ Future<int> exec(Future<Process> process,
     Function(String)? onStdoutLine,
     Function(String)? onStderrLine}) async {
   final proc = await process;
-  onStdoutLine ??= StdStreamConsumer(printToStdout: true);
-  onStderrLine ??= StdStreamConsumer(printToStderr: true);
+  onStdoutLine ??= StdStreamConsumer(printToStdout: true).call;
+  onStderrLine ??= StdStreamConsumer(printToStderr: true).call;
 
   return _exec(proc, name, onStdoutLine, onStderrLine);
 }
@@ -101,7 +101,8 @@ Future<int> execProc(Future<Process> process,
       errorMode == StreamRedirectMode.none;
   final stdoutConsumer = StdStreamConsumer(keepLines: !allDisabled);
   final stderrConsumer = StdStreamConsumer(keepLines: !allDisabled);
-  final code = await _exec(await process, name, stdoutConsumer, stderrConsumer);
+  final code = await _exec(
+      await process, name, stdoutConsumer.call, stderrConsumer.call);
   final success = isCodeSuccessful(code);
   if (allDisabled) {
     if (success) {
@@ -178,7 +179,7 @@ Future<ExecReadResult> execRead(Future<Process> process,
     bool Function(int) isCodeSuccessful = _onlyZero}) async {
   final stdout = StdStreamConsumer(keepLines: true, filter: stdoutFilter);
   final stderr = StdStreamConsumer(keepLines: true, filter: stderrFilter);
-  final code = await _exec(await process, name, stdout, stderr);
+  final code = await _exec(await process, name, stdout.call, stderr.call);
   final result = ExecReadResult(code, stdout.lines, stderr.lines);
   if (isCodeSuccessful(code)) {
     return result;
