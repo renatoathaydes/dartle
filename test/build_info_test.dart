@@ -34,15 +34,15 @@ void main() {
           contains(
               'Executing \x1B[1m9 tasks\x1B[22m out of a total of 15 tasks:'
               ' 3 tasks (\x1B[90mdefault\x1B[0m), 6 dependencies'));
-      expect(proc.stdout[1], contains("Running task 'd'"));
-      expect(proc.stdout[2], contains("Running task 'e'"));
-      expect(proc.stdout[3], contains("Running task 'm'"));
-      expect(proc.stdout[4], contains("Running task 'c'"));
-      expect(proc.stdout[5], contains("Running task 'g'"));
-      expect(proc.stdout[6], contains("Running task 'n'"));
-      expect(proc.stdout[7], contains("Running task 'f'"));
-      expect(proc.stdout[8], contains("Running task 'b'"));
-      expect(proc.stdout[9], contains("Running task 'a'"));
+      expect(proc.stdout[1], contains("Running task '\x1B[1md\x1B[22m'"));
+      expect(proc.stdout[2], contains("Running task '\x1B[1me\x1B[22m'"));
+      expect(proc.stdout[3], contains("Running task '\x1B[1mm\x1B[22m'"));
+      expect(proc.stdout[4], contains("Running task '\x1B[1mc\x1B[22m'"));
+      expect(proc.stdout[5], contains("Running task '\x1B[1mg\x1B[22m'"));
+      expect(proc.stdout[6], contains("Running task '\x1B[1mn\x1B[22m'"));
+      expect(proc.stdout[7], contains("Running task '\x1B[1mf\x1B[22m'"));
+      expect(proc.stdout[8], contains("Running task '\x1B[1mb\x1B[22m'"));
+      expect(proc.stdout[9], contains("Running task '\x1B[1ma\x1B[22m'"));
       expect(proc.stdout[10], startsWith('\x1B[32m✔ Build succeeded in '));
       expect(proc.stdout.length, equals(11));
       expect(proc.exitCode, equals(0));
@@ -53,7 +53,7 @@ void main() {
           proc.stdout[0],
           contains('Executing \x1B[1m1 task\x1B[22m out of a total of 15 tasks:'
               ' 1 task selected'));
-      expect(proc.stdout[1], contains("Running task 'l'"));
+      expect(proc.stdout[1], contains("Running task '\x1B[1ml\x1B[22m'"));
       expect(proc.stdout[2], startsWith('\x1B[32m✔ Build succeeded in '));
       expect(proc.exitCode, equals(0));
       expect(proc.stderr, isEmpty);
