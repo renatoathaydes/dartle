@@ -16,7 +16,7 @@ dependencies:
   crypto: ^3.0.0
   path: ^1.8.0
   collection: ^1.15.0
-  actors: ^0.10.0
+  actors: ^0.11.0
   structured_async: ^0.3.0
   clock: ^1.1.0
   test_report_parser: ^1.1.0
@@ -26,7 +26,7 @@ dependencies:
 
 dev_dependencies:
   test: ^1.16.8
-  lints: ^2.0.1
+  lints: ^3.0.0
   isolate_current_directory: ^2.0.0
 
 executables:
