@@ -112,8 +112,11 @@ void _logStackTrace(DartleException exception) {
 /// or initializes the logging system.
 ///
 /// It is only appropriate for embedding Dartle within another system.
-Future<void> runBasic(Set<Task> tasks, Set<Task> defaultTasks, Options options,
-    DartleCache cache) async {
+///
+/// Returns the tasks that may have been executed, grouped together into each
+/// phase that could be executed in parallel (as returned by [getInOrderOfExecution]).
+Future<List<ParallelTasks>> runBasic(Set<Task> tasks, Set<Task> defaultTasks,
+    Options options, DartleCache cache) async {
   logger.fine(() => 'Dartle version: $dartleVersion\nOptions: $options');
 
   if (options.resetCache) {
@@ -155,6 +158,8 @@ Future<void> runBasic(Set<Task> tasks, Set<Task> defaultTasks, Options options,
       }
     }
   }
+
+  return executableTasks;
 }
 
 FutureOr<void> _cleanCache(DartleCache cache, Set<String> taskNames) {

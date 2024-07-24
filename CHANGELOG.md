@@ -4,6 +4,10 @@
 
 ## done, waiting for next release
 
+# 0.28.0
+
+- `runBasic` function now returns the tasks that may have been executed.
+
 # 0.27.0
 
 - log task name in bold.
