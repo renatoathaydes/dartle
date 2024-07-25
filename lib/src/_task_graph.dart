@@ -1,6 +1,6 @@
 import 'dart:io';
 
-import 'package:collection/collection.dart';
+import 'package:collection/collection.dart' show lastBy;
 import 'package:logging/logging.dart';
 
 import '_log.dart';

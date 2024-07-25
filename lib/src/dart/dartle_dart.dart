@@ -9,7 +9,6 @@ import '../_project.dart' as utils;
 import '../io_helpers.dart';
 import '../run_condition.dart';
 import '../task.dart';
-import '../task_run.dart' show ChangeSet;
 
 import '_dart_tests.dart';
 

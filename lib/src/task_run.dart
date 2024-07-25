@@ -1,6 +1,5 @@
 import 'dart:async';
 
-import 'package:collection/collection.dart';
 import 'package:logging/logging.dart';
 import 'package:structured_async/structured_async.dart';
 
@@ -141,7 +140,7 @@ Future<List<TaskResult>> _run(List<ParallelTasks> tasks,
     final all = results
         .map(_toDisplayError)
         .followedBy(phaseErrors)
-        .whereNotNull()
+        .nonNulls
         .toList(growable: false);
 
     throw MultipleExceptions(all);

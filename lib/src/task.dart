@@ -1,6 +1,7 @@
 import 'dart:async';
 
-import 'package:collection/collection.dart';
+import 'package:collection/collection.dart'
+    show IterableExtension, ListEquality, SetEquality;
 
 import 'error.dart';
 import 'file_collection.dart';

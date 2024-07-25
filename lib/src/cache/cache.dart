@@ -2,7 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
-import 'package:collection/collection.dart';
+import 'package:collection/collection.dart' show ListExtensions;
 import 'package:path/path.dart' as path;
 
 import '../_log.dart';

@@ -1,6 +1,5 @@
 import 'dart:async';
 
-import 'package:collection/collection.dart';
 import 'package:logging/logging.dart' as log;
 
 import '_log.dart';
@@ -183,7 +182,7 @@ Future<void> _runAll(
 
   final taskErrors = results
       .map((f) => f.exceptionAndStackTrace)
-      .whereNotNull()
+      .nonNulls
       .toList(growable: false);
 
   if (taskErrors.isNotEmpty) {
