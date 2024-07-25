@@ -6,7 +6,13 @@
 
 # 0.28.0
 
+### Dartle Core
+
 - `runBasic` function now returns the tasks that may have been executed.
+
+### Dartle Dart
+
+- `format` task is now incremental (only changed files are reformatted).
 
 # 0.27.0
 

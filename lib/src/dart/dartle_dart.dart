@@ -4,11 +4,13 @@ import 'package:path/path.dart';
 import 'package:yaml/yaml.dart';
 
 import '../../dartle_cache.dart';
+import '../_log.dart';
 import '../_project.dart' as utils;
 import '../io_helpers.dart';
 import '../run_condition.dart';
 import '../task.dart';
 import '../task_run.dart' show ChangeSet;
+
 import '_dart_tests.dart';
 
 /// Configuration for the [DartleDart] class.
@@ -213,9 +215,22 @@ class DartleDart {
     await runTests(options, config.testOutput, testsToRun);
   }
 
-  Future<void> _formatCode(_) async {
-    final code = await execProc(Process.start('dart', const ['format', '.']),
-        name: 'Dart Formatter');
+  Future<void> _formatCode(List<String> _, [ChangeSet? changeSet]) async {
+    List<String> args;
+    if (changeSet == null) {
+      args = const ['format', '.'];
+    } else {
+      args = [
+        'format',
+        ...changeSet.inputChanges
+            .where((c) => c.kind != ChangeKind.deleted && c.entity is File)
+            .map((c) => c.entity.path)
+      ];
+    }
+    logger.fine(
+        () => 'Invoking dart format task with args: ${args.skip(1).join(' ')}');
+    final code =
+        await execProc(Process.start('dart', args), name: 'Dart Formatter');
     if (code != 0) failBuild(reason: 'Dart Formatter failed');
   }
 
