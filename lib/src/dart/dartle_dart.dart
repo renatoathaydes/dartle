@@ -215,16 +215,14 @@ class DartleDart {
   }
 
   Future<void> _formatCode(List<String> _, [ChangeSet? changeSet]) async {
-    List<String> args;
-    if (changeSet == null) {
-      args = const ['format', '.'];
-    } else {
-      args = [
-        'format',
-        ...changeSet.inputChanges
-            .where((c) => c.kind != ChangeKind.deleted && c.entity is File)
-            .map((c) => c.entity.path)
-      ];
+    var args = const ['format', '.'];
+    if (changeSet != null) {
+      final fileChanges = changeSet.inputChanges
+          .where((c) => c.kind != ChangeKind.deleted && c.entity is File)
+          .map((c) => c.entity.path);
+      if (fileChanges.isNotEmpty) {
+        args = ['format', ...fileChanges];
+      }
     }
     logger.fine(
         () => 'Invoking dart format task with args: ${args.skip(1).join(' ')}');
