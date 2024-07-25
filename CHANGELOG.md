@@ -4,6 +4,12 @@
 
 ## done, waiting for next release
 
+# 0.28.1
+
+### Dartle Core
+
+- fixed regression: `format` task hangs if no argument is provided.
+
 # 0.28.0
 
 ### Dartle Core
