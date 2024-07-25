@@ -52,14 +52,6 @@ class TaskResult {
 typedef IncrementalAction = FutureOr<void> Function(List<String> args,
     [ChangeSet? changeSet]);
 
-/// The change Set for an incremental action.
-class ChangeSet {
-  final List<FileChange> inputChanges;
-  final List<FileChange> outputChanges;
-
-  const ChangeSet(this.inputChanges, this.outputChanges);
-}
-
 /// Calls [runTask] with each given task that must run.
 ///
 /// At the end of each [TaskPhase], the executed

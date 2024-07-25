@@ -5,7 +5,8 @@ import 'package:actors/actors.dart';
 import 'package:structured_async/structured_async.dart';
 
 import '_log.dart';
-import 'task_run.dart' show IncrementalAction, ChangeSet;
+import 'cache/cache.dart' show ChangeSet;
+import 'task_run.dart' show IncrementalAction;
 
 /// An Action that may or may not be an [IncrementalAction].
 ///

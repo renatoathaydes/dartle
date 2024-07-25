@@ -9,6 +9,11 @@
 ### Dartle Core
 
 - `runBasic` function now returns the tasks that may have been executed.
+- Fixed exports: both `ChangeSet` and `FileChange` from `dartle_cache` are re-exported now.
+
+### Dartle Cache
+
+- Moved `ChangeSet` to `dartle_cache` library. It's still exported by the main library as well.
 
 ### Dartle Dart
 

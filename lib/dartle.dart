@@ -13,6 +13,8 @@ export 'src/_log.dart'
     show activateLogging, profile, LogColor, ColoredLogMessage;
 export 'src/_text_helpers.dart' show elapsedTime;
 export 'src/ansi_message.dart';
+// for backwards-compatible, this is exported by the cache lib
+export 'src/cache/cache.dart' show ChangeSet, FileChange;
 export 'src/constants.dart';
 export 'src/core.dart';
 export 'src/dartle_version.g.dart';

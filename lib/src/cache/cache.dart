@@ -30,6 +30,14 @@ class FileChange {
   FileChange(this.entity, this.kind);
 }
 
+/// The change Set for an incremental action.
+class ChangeSet {
+  final List<FileChange> inputChanges;
+  final List<FileChange> outputChanges;
+
+  const ChangeSet(this.inputChanges, this.outputChanges);
+}
+
 /// The cache used by dartle to figure out when files change between checks,
 /// typically between two builds.
 ///
