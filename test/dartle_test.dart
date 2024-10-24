@@ -178,7 +178,7 @@ void main() {
       expect(proc.stdout.length, equals(2));
       expect(
           proc.stdout[0],
-          contains('Could not find an option named "foo"...'
+          contains('Could not find an option named "--foo"...'
               ' run with the -h flag to see usage.'));
       expect(proc.stdout[1], contains('Build failed'));
       expect(proc.exitCode, equals(4));
