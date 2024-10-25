@@ -9,7 +9,7 @@ import 'dartle-src/metadata_generator.dart';
 final dartleDart = DartleDart();
 
 final libDirDartFiles = dir(join(dartleDart.rootDir, 'lib'),
-    fileExtensions: const {'dart'}, exclusions: const {'options.freezed.dart'});
+    fileExtensions: const {'dart'}, exclusions: const {'*.g.dart'});
 
 void main(List<String> args) {
   final checkImportsTask = DartleImportChecker(libDirDartFiles).task;

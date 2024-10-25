@@ -1,6 +1,14 @@
 ## Future release
 
-- forbid tasks from accessing IO resources not declared in inputs/outputs.
+### Dartle Core
+
+- no longer change `Directory.current` in Actor tasks. Set zone local variable `#workingDir` instead,
+  which plays well with the `isolate_current_directory` package.
+
+### Dartle Dart
+
+- added `sources`, `buildSources` and `testSources` properties to `DartConfig`.
+- improved definition of default tasks inputs.
 
 ## done, waiting for next release
 

@@ -29,6 +29,24 @@ class DartConfig {
   /// Project's root directory (location of dartle.dart file, by default).
   final String? rootDir;
 
+  /// Non-test source locations.
+  /// Must be relative to [rootDir].
+  /// By default, only Dart files in the `lib` and `bin` directories
+  /// are included.
+  final FileCollection? sources;
+
+  /// Test source locations.
+  /// Must be relative to [rootDir].
+  /// By default, only Dart files in the `test` and `example` directories
+  /// are included.
+  final FileCollection? testSources;
+
+  /// Build source locations.
+  /// Must be relative to [rootDir].
+  /// By default, only Dart files in the `dartle-src` directory and the
+  /// `dartle.dart` file itself are included.
+  final FileCollection? buildSources;
+
   /// Period of time after which `pub get` should be run.
   final Duration runPubGetAtMostEvery;
 
@@ -48,6 +66,9 @@ class DartConfig {
     this.compileExe = true,
     this.runPubGetAtMostEvery = const Duration(days: 5),
     this.rootDir,
+    this.sources,
+    this.buildSources,
+    this.testSources,
     this.testOutput = DartTestOutput.dartleReporter,
     this.buildRunnerRunCondition,
   });
@@ -99,10 +120,14 @@ class DartleDart {
   DartleDart([this.config = const DartConfig()])
       : rootDir = config.rootDir ?? '.',
         _enableBuildRunner = config.buildRunnerRunCondition != null {
-    final allDartFiles = dir(rootDir,
-        exclusions: const {'build'}, fileExtensions: const {'dart'});
     final productionDartFiles =
-        dirs(['lib', 'bin'], fileExtensions: const {'dart'});
+        config.sources ?? dirs(['lib', 'bin'], fileExtensions: const {'dart'});
+    final testDartFiles = config.testSources ??
+        dirs(['test', 'example'], fileExtensions: const {'dart'});
+    final buildDartFiles = config.buildSources ??
+        (dir('dartle-src', fileExtensions: const {'dart'}) +
+            file('dartle.dart'));
+    final allDartFiles = productionDartFiles + testDartFiles + buildDartFiles;
 
     formatCode = Task(_formatCode,
         name: 'format',
@@ -133,7 +158,8 @@ class DartleDart {
         dependsOn: {'analyzeCode'},
         argsValidator: const AcceptAnyArgs(),
         runCondition: RunOnChanges(
-            inputs: productionDartFiles, outputs: dir('$rootDir/build/bin')));
+            inputs: productionDartFiles,
+            outputs: dir(join(rootDir, 'build', 'bin'))));
 
     runPubGet = Task(utils.runPubGet,
         name: 'runPubGet',
@@ -141,7 +167,10 @@ class DartleDart {
         runCondition: OrCondition([
           RunAtMostEvery(config.runPubGetAtMostEvery),
           RunOnChanges(
-              inputs: files(['$rootDir/pubspec.yaml', '$rootDir/pubspec.lock']))
+              inputs: files([
+            join(rootDir, 'pubspec.yaml'),
+            join(rootDir, 'pubspec.lock')
+          ]))
         ]));
 
     test = Task(_test,
@@ -149,9 +178,7 @@ class DartleDart {
         description: 'Runs Dart tests.',
         dependsOn: {if (config.runAnalyzer) 'analyzeCode'},
         argsValidator: const TestTaskArgsValidator(),
-        runCondition: RunOnChanges(
-            inputs: dirs(['lib', 'bin', 'test', 'example']
-                .map((e) => join(rootDir, e)))));
+        runCondition: RunOnChanges(inputs: testDartFiles));
 
     final buildTasks = {
       if (config.formatCode) formatCode,
