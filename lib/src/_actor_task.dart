@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 import 'dart:isolate';
 
@@ -48,9 +49,8 @@ Function(_ActorMessage) _initializedActorFun<A>(Function(List<String>) fun) {
 
     // make sure the working directory is the same as in the original env...
     // this makes the isolate_current_directory package, in particular, work!
-    Directory.current = workingDir;
-
-    return runAction(fun, message.args, message.changes);
+    return runZoned(() => runAction(fun, message.args, message.changes),
+        zoneValues: {#workingDir: workingDir});
   };
 }
 
