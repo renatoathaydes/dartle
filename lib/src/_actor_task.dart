@@ -4,6 +4,7 @@ import 'dart:isolate';
 
 import 'package:actors/actors.dart';
 import 'package:structured_async/structured_async.dart';
+import 'package:isolate_current_directory/isolate_current_directory.dart';
 
 import '_log.dart';
 import 'cache/cache.dart' show ChangeSet;
@@ -48,9 +49,8 @@ Function(_ActorMessage) _initializedActorFun<A>(Function(List<String>) fun) {
         logName: '$logName-${Isolate.current.debugName ?? '?'}');
 
     // make sure the working directory is the same as in the original env...
-    // this makes the isolate_current_directory package, in particular, work!
-    return runZoned(() => runAction(fun, message.args, message.changes),
-        zoneValues: {#workingDir: workingDir});
+    return withCurrentDirectory(
+        workingDir, () => runAction(fun, message.args, message.changes));
   };
 }
 
