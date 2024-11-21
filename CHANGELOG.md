@@ -2,6 +2,8 @@
 
 ## done, waiting for next release
 
+# 0.29.0
+
 ### Dartle Core
 
 - no longer change `Directory.current` in Actor tasks. Use `isolate_current_directory` package instead.
