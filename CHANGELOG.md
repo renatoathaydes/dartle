@@ -1,16 +1,15 @@
-## Future release
+# Dartle Release Notes
+
+## done, waiting for next release
 
 ### Dartle Core
 
-- no longer change `Directory.current` in Actor tasks. Set zone local variable `#workingDir` instead,
-  which plays well with the `isolate_current_directory` package.
+- no longer change `Directory.current` in Actor tasks. Use `isolate_current_directory` package instead.
 
 ### Dartle Dart
 
 - added `sources`, `buildSources` and `testSources` properties to `DartConfig`.
-- improved definition of default tasks inputs.
-
-## done, waiting for next release
+- improved definition of default tasks inputs. Fixes bug where tasks ran without need.
 
 # 0.28.1
 
