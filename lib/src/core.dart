@@ -259,11 +259,6 @@ Future<List<ParallelTasks>> getInOrderOfExecution(
   return result;
 }
 
-bool _anyDepMustRun(TaskWithDeps task, Map<String, TaskWithStatus> statuses) {
-  return task.dependencies
-      .any((element) => statuses[element.name]?.mustRun ?? false);
-}
-
 Future<TaskWithStatus> _createTaskWithStatus(
   TaskInvocation invocation,
   Map<String, TaskWithStatus> taskStatuses,
@@ -289,9 +284,23 @@ Future<TaskWithStatus> _createTaskWithStatus(
   return TaskWithStatus(task, status, invocation);
 }
 
+bool _anyDepMustRun(TaskWithDeps task, Map<String, TaskWithStatus> statuses) {
+  final mustRunDeps = task.dependencies
+      .where((element) => statuses[element.name]?.mustRun ?? false);
+  if (mustRunDeps.isNotEmpty) {
+    logger.fine(() => "Task '${task.name}' must run because it "
+        "depends on task '${mustRunDeps.first.name}' which must run");
+  }
+  return mustRunDeps.isNotEmpty;
+}
+
 Future<bool> _shouldRun(TaskInvocation invocation) async {
   final stopWatch = Stopwatch()..start();
   final result = await invocation.task.runCondition.shouldRun(invocation);
+  if (result) {
+    logger.fine(() => "Task '${invocation.name}' must run because it is "
+        "out-of-date");
+  }
   logger.log(
       profile,
       "Checked task '${invocation.name}'"
@@ -306,7 +315,11 @@ bool _isAffectedByDeletionTask(
   final deletionTasks = tasksAffectedByDeletion[task.name] ?? const {};
   for (final delTask in deletionTasks) {
     final status = taskStatuses[delTask];
-    if (status?.mustRun == true) return true;
+    if (status?.mustRun == true) {
+      logger.fine(() => "Task '${task.name}' must run because it is "
+          "affected by deletion task '$delTask' which must run");
+      return true;
+    }
   }
   return false;
 }

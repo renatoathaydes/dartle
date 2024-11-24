@@ -2,6 +2,8 @@
 
 ## done, waiting for next release
 
+- log reason why a task will run.
+
 # 0.29.0
 
 ### Dartle Core
