@@ -2,7 +2,14 @@
 
 ## done, waiting for next release
 
+### Dartle Core
+
 - log reason why a task will run.
+
+### Dartle Cache
+
+- improved cache internal structure (cache format version changed to `0.3`).
+  Better debugging by keeping file names closer to original names.
 
 # 0.29.0
 
@@ -218,7 +225,8 @@
 - `deleteOutputs` function now works with all instances of `FileCondition`, not only `RunOnChanges`.
 - new `RunCondition` implementation: `RunToDelete` (used to implement _cleaning_ tasks).
 - fixed `deleteAll` so it removes directories after emptying them.
-- improved `DartleCache` so it will not trust timestamps when diff is less than 1 second. Some file systems have low resolution timestamps.
+- improved `DartleCache` so it will not trust timestamps when diff is less than 1 second. Some file systems have low
+  resolution timestamps.
 - `DartleCache` now hashes files by loading small buffer into memory at a time instead of whole file.
 - `DartleCache` hash now distinguishes between empty file and empty directory.
 
@@ -227,7 +235,7 @@
 > clashing outputs or were missing dependencies given the order in which files are read and
 > written to. The new API is less powerful but should suffice in most cases, and it allows
 > computing the intersection between tasks inputs and outputs reliably... that lets Dartle
-> provide much more powerful diagnostics, getting it closer to providing reproduce-able builds. 
+> provide much more powerful diagnostics, getting it closer to providing reproduce-able builds.
 
 ### Dartle Dart
 
@@ -251,7 +259,7 @@
 - better error message when no default tasks exist and no tasks are selected.
 - new `intersection` method added to `FileCollection`.
 - made most `FileCollection` methods more platform-independent (handle path differences better).
-- auto-detect dependencies between tasks due to inputs/outputs - error if no explicitly dependency exists. 
+- auto-detect dependencies between tasks due to inputs/outputs - error if no explicitly dependency exists.
 
 ## 0.10.0
 

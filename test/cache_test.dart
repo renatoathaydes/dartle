@@ -3,7 +3,6 @@ import 'dart:io';
 import 'package:collection/collection.dart';
 import 'package:dartle/dartle_cache.dart';
 import 'package:dartle/src/_log.dart';
-import 'package:dartle/src/cache/_hash.dart';
 import 'package:logging/logging.dart';
 import 'package:path/path.dart' show join;
 import 'package:test/test.dart';
@@ -64,7 +63,7 @@ void main([List<String> args = const []]) {
       await expectFileTree(
           cache.rootDir,
           {
-            'hashes/${hash('dartle.dart')}': '',
+            'hashes/dartle.dart.sha': '',
             'version': '',
           },
           fs: fs,
@@ -134,8 +133,8 @@ void main([List<String> args = const []]) {
       await expectFileTree(
           cache.rootDir,
           {
-            'hashes/${hash('dartle.dart')}': '',
-            'hashes/D__${testKey}__D/${hash('dartle.dart')}': '',
+            'hashes/dartle.dart.sha': '',
+            'hashes/K_$testKey/dartle.dart.sha': '',
             'version': '0.1'
           },
           fs: fs,
@@ -197,6 +196,16 @@ void main([List<String> args = const []]) {
             await cache.hasChanged(dirCollection);
 
         await cache(dirCollection);
+
+        // check that the expected dir entry was added to the cache
+        await expectFileTree(
+            cache.rootDir,
+            {
+              'hashes/example.dir.json': '[]',
+              'version': cacheFormatVersion,
+            },
+            fs: fs,
+            checkFileContents: true);
 
         await File(join(directory.path, 'new-file.txt')).writeAsString('hey');
         await File(join(directory.path, 'other-file.txt')).writeAsString('ho');

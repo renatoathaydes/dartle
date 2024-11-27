@@ -13,7 +13,7 @@ import '_fs_utils.dart';
 import '_hash.dart';
 
 /// Current version of the Dartle Cache.
-const cacheFormatVersion = '0.2';
+const cacheFormatVersion = '0.3';
 
 /// Kind of [FileChange].
 enum ChangeKind {
@@ -437,17 +437,20 @@ class DartleCache {
 
   /// Get a location for storing an executable file created from the given file.
   File getExecutablesLocation(File file) =>
-      File(path.join(_executablesDir, hash(file.path).toString()));
+      File(path.join(_executablesDir, '${file.path}.exe'));
 
   File _getCacheLocation(FileSystemEntity entity, {required String key}) {
-    final parentDir = entity is Directory ? entity.path : entity.parent.path;
-    final fileName = _locationHash(entity);
+    final parentDir = entity.parent.path;
+    // Directories are cached as JSON files with their direct contents,
+    // while files are cached as a hash of their content.
+    final extension = switch (entity) {
+      Directory() => 'dir.json',
+      _ => 'sha',
+    };
+    final fileName = '${path.basename(entity.path)}.$extension';
     return File(path.join(
         _hashesDir, _encodeKey(key), parentDir.noPathNavigation(), fileName));
   }
-
-  static String _locationHash(FileSystemEntity fe) =>
-      hash(path.basename(fe.path)).toString();
 
   Stream<FileChange> _deletedFiles(
       _DirectoryContents newContents, _DirectoryContents oldContents) async* {
@@ -461,7 +464,7 @@ class DartleCache {
 
   String _encodeKey(String key) {
     if (key.isEmpty) return key;
-    return 'D__${key.escapePathSeparator()}__D';
+    return 'K_${key.escapePathSeparator()}';
   }
 }
 
