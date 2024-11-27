@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:io';
+import 'package:path/path.dart' as paths;
 
 import '../_log.dart';
 import '../cache/cache.dart';
@@ -47,6 +48,11 @@ Future<Process> runDartExe(File dartExec,
 
 Future<void> _dart2exe(File dartFile, File destination) async {
   logger.fine('Compiling to executable: ${dartFile.path}');
+  final outputDir = paths.dirname(destination.path);
+  if (outputDir != '.') {
+    logger.finer(() => "Creating executable directory: '$outputDir'");
+    await Directory(outputDir).create(recursive: true);
+  }
   final code = await exec(
       Process.start(
           'dart', ['compile', 'exe', dartFile.path, '-o', destination.path]),
