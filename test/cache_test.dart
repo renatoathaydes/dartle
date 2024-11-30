@@ -1,6 +1,8 @@
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:collection/collection.dart';
+import 'package:crypto/crypto.dart';
 import 'package:dartle/dartle_cache.dart';
 import 'package:dartle/src/_log.dart';
 import 'package:logging/logging.dart';
@@ -8,6 +10,8 @@ import 'package:path/path.dart' show join;
 import 'package:test/test.dart';
 
 import 'test_utils.dart';
+
+const dartleFileContents = 'main(){print("hello world");}';
 
 void main([List<String> args = const []]) {
   if (args.contains('log')) {
@@ -25,9 +29,7 @@ void main([List<String> args = const []]) {
         cache = DartleCache('test-cache');
         cache.init();
       });
-      await fs
-          .file('dartle.dart')
-          .writeAsString('main(){print("hello world");}');
+      await fs.file('dartle.dart').writeAsString(dartleFileContents);
     });
 
     test('reports empty FileCollection as not having changed', () async {
@@ -77,6 +79,39 @@ void main([List<String> args = const []]) {
             'hasChangedAfterActualChange': true,
             'hasChangedAfterRedundantChange': false,
           }));
+    });
+
+    test('caches absolute path file correctly', () async {
+      await fs.file('foo.txt').writeAsString('FOO');
+      await fs.directory('d1').create();
+      await fs.file(join('d1', 'bar.txt')).writeAsString('BAR');
+
+      await withFileSystem(fs, () {
+        cache(dir(fs.directory('d1').absolute.path, allowAbsolutePaths: true));
+        cache(file(fs.file('foo.txt').absolute.path));
+        cache(file(fs.file(join('d1', 'bar.txt')).absolute.path));
+      });
+      final fooHash = sha1.convert(utf8.encode('FOO')).bytes;
+      final barHash = sha1.convert(utf8.encode('BAR')).bytes;
+      await expectFileTree(
+          fs.root,
+          {
+            'test-cache/': '',
+            'test-cache/hashes/': '',
+            'test-cache/tasks/': '',
+            'test-cache/executables/': '',
+            'test-cache/hashes/foo.txt.sha': fooHash,
+            'test-cache/hashes/d1/': '',
+            'test-cache/hashes/d1/bar.txt.sha': barHash,
+            'test-cache/hashes/d1.dir.json': '["bar.txt"]',
+            'test-cache/version': cacheFormatVersion,
+            'dartle.dart': dartleFileContents,
+            'foo.txt': 'FOO',
+            'd1/': '',
+            'd1/bar.txt': 'BAR',
+          },
+          fs: fs,
+          checkFileContents: true);
     });
 
     test('caches files and detects changes under different keys', () async {
@@ -769,7 +804,7 @@ void main([List<String> args = const []]) {
             'changesAfterNewNestedDir':
                 'modified: src/dir/, added: src/dir/nested/',
             'changesAfterDeletedAllFilesInDir':
-                'deleted: src/dir/file1.txt, deleted: src/dir/file2.txt, modified: src/dir/',
+                'modified: src/dir/, deleted: src/dir/file1.txt, deleted: src/dir/file2.txt',
           }));
     });
   });

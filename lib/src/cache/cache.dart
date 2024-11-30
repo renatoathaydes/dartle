@@ -2,7 +2,9 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
-import 'package:collection/collection.dart' show ListExtensions;
+import 'package:collection/collection.dart'
+    show ListExtensions, IterableExtension, ListEquality;
+import 'package:logging/logging.dart';
 import 'package:path/path.dart' as path;
 
 import '../_log.dart';
@@ -268,10 +270,9 @@ class DartleCache {
   Future<void> _cacheDir(Directory dir, Iterable<FileSystemEntity> children,
       {required String key}) async {
     final hf = _getCacheLocation(dir, key: key);
-
+    final contents = _DirectoryContents.relative(children, dir);
     logger.finest(() => 'Caching directory ${dir.path} at ${hf.path} with '
-        'children $children');
-    final contents = _DirectoryContents(children);
+        'children ${contents.children}');
     await hf.parent.create(recursive: true);
     await hf.writeAsBytes(contents.encode());
   }
@@ -330,14 +331,11 @@ class DartleCache {
           if (change != null) yield FileChange(file, change);
         }, (dir, children) async* {
           final dirChange = await _hasDirChanged(dir, children, key: key);
-          if (dirChange != null && dirChange.kind == ChangeKind.modified) {
-            // file additions/modifications are reported elsehwere,
-            // but only here can we find deleted files.
-            yield* _deletedFiles(
-                dirChange.newContents!, dirChange.oldContents!);
-          }
           if (dirChange != null) {
-            yield FileChange(dir, dirChange.kind);
+            // only yield deleted file changes, other kinds will be emitted
+            // when the files are visited.
+            yield* _dirChanges(dir, dirChange,
+                fileChangeKind: ChangeKind.deleted);
           }
         });
         yield* changes;
@@ -359,7 +357,7 @@ class DartleCache {
       final dirEntity = Directory(dir);
       final change = await _hasDirChanged(dirEntity, const [], key: key);
       if (change != null) {
-        yield FileChange(dirEntity, change.kind);
+        yield* _dirChanges(dirEntity, change);
       }
     }
   }
@@ -414,20 +412,26 @@ class DartleCache {
     final hf = _getCacheLocation(dir, key: key);
     _DirectoryChange? change;
     if (await hf.exists()) {
-      final previousHash = await hf.readAsBytes();
-      final currentContents = _DirectoryContents(children);
-      final currentHash = currentContents.encode();
-      if (previousHash.equals(currentHash)) {
-        logger.finest(() => 'Directory hash is still the same: ${dir.path}');
+      final previousContents =
+          _DirectoryContents.decode(await hf.readAsBytes(), dir);
+      final currentContents = _DirectoryContents.relative(children, dir);
+      if (previousContents == currentContents) {
+        logger.finest(() => "Directory is still the same: '${dir.path}'");
       } else {
-        logger.fine(() => 'Directory hash has changed: ${dir.path}');
-        change = _DirectoryChange(ChangeKind.modified, currentContents,
-            _DirectoryContents.decode(previousHash));
+        if (logger.isLoggable(Level.FINEST)) {
+          logger.finest("Directory has changed: '${dir.path}' "
+              'from ${previousContents.children} '
+              'to ${currentContents.children}');
+        } else {
+          logger.fine(() => "Directory has changed: '${dir.path}'");
+        }
+        change = _DirectoryChange(ChangeKind.modified,
+            newContents: currentContents, oldContents: previousContents);
       }
     } else if (await dir.exists()) {
       logger.fine(() => 'Directory hash does not exist for '
           "existing directory: '${dir.path}'");
-      change = _DirectoryChange(ChangeKind.added, null, null);
+      change = const _DirectoryChange(ChangeKind.added);
     } else {
       logger.finest(() => "Directory '${dir.path}' does not exist "
           'and was not known before');
@@ -440,7 +444,10 @@ class DartleCache {
       File(path.join(_executablesDir, '${file.path}.exe'));
 
   File _getCacheLocation(FileSystemEntity entity, {required String key}) {
-    final parentDir = entity.parent.path;
+    var parentDir = entity.parent.path;
+    if (path.isAbsolute(parentDir)) {
+      parentDir = path.relative(path.canonicalize(parentDir));
+    }
     // Directories are cached as JSON files with their direct contents,
     // while files are cached as a hash of their content.
     final extension = switch (entity) {
@@ -452,19 +459,19 @@ class DartleCache {
         _hashesDir, _encodeKey(key), parentDir.noPathNavigation(), fileName));
   }
 
-  Stream<FileChange> _deletedFiles(
-      _DirectoryContents newContents, _DirectoryContents oldContents) async* {
-    final newEntities = newContents.children.map(entityPath).toSet();
-    final deleted =
-        oldContents.children.where((e) => !newEntities.contains(entityPath(e)));
-    for (final entity in deleted) {
-      yield FileChange(entity, ChangeKind.deleted);
-    }
-  }
-
   String _encodeKey(String key) {
     if (key.isEmpty) return key;
     return 'K_${key.escapePathSeparator()}';
+  }
+
+  Stream<FileChange> _dirChanges(Directory dir, _DirectoryChange dirChange,
+      {ChangeKind? fileChangeKind}) async* {
+    yield FileChange(dir, dirChange.kind);
+    for (final change in dirChange.fileChanges) {
+      if (fileChangeKind == null || fileChangeKind == change.kind) {
+        yield change;
+      }
+    }
   }
 }
 
@@ -473,7 +480,23 @@ class _DirectoryChange {
   final _DirectoryContents? newContents;
   final _DirectoryContents? oldContents;
 
-  _DirectoryChange(this.kind, this.newContents, this.oldContents);
+  const _DirectoryChange(this.kind, {this.newContents, this.oldContents});
+
+  Iterable<FileChange> get fileChanges sync* {
+    final dirNewContents = newContents?.childrenPaths().toSet() ?? {};
+    final dirOldContents = oldContents?.childrenPaths().toSet() ?? {};
+    if (dirNewContents.isEmpty && dirOldContents.isEmpty) return;
+    for (final child in dirNewContents) {
+      if (!dirOldContents.contains(child)) {
+        yield FileChange(fromEntityPath(child), ChangeKind.added);
+      }
+    }
+    for (final child in dirOldContents) {
+      if (!dirNewContents.contains(child)) {
+        yield FileChange(fromEntityPath(child), ChangeKind.deleted);
+      }
+    }
+  }
 }
 
 /// Directory is stored in the cache as a list of its contents.
@@ -481,26 +504,51 @@ class _DirectoryChange {
 /// This is necessary because it must be able to detect file deletions,
 /// so it must "remember" the previous files that were present directly under it.
 class _DirectoryContents {
-  final List<FileSystemEntity> children;
+  final Directory directory;
+  final List<String> children;
 
-  _DirectoryContents(Iterable<FileSystemEntity> entities)
-      : children = _sorted(entities);
+  const _DirectoryContents(this.directory, this.children);
 
-  static List<FileSystemEntity> _sorted(Iterable<FileSystemEntity> entities) {
-    final list = entities.toList(growable: false);
-    list.sort((a, b) => a.path.compareTo(b.path));
-    return list;
+  factory _DirectoryContents.relative(
+      Iterable<FileSystemEntity> entities, Directory dir) {
+    return _DirectoryContents(dir, _relativizeAndSort(entities, dir));
   }
 
-  static _DirectoryContents decode(List<int> bytes) {
+  factory _DirectoryContents.decode(List<int> bytes, Directory dir) {
     final list = jsonDecode(utf8.decode(bytes)) as List;
-    return _DirectoryContents(list.map((p) => fromEntityPath(p as String)));
+    return _DirectoryContents(
+        dir, list.cast<String>().sorted((a, b) => a.compareTo(b)));
   }
 
   List<int> encode() {
-    final json = jsonEncode(children.map(entityPath).toList());
+    final json = jsonEncode(children);
     return utf8.encode(json);
   }
+
+  Iterable<String> childrenPaths() {
+    final dirPath = directory.path;
+    return children.map((e) => path.join(dirPath, e));
+  }
+
+  static List<String> _relativizeAndSort(
+      Iterable<FileSystemEntity> entities, Directory dir) {
+    final dirPath = dir.path;
+    final list = entities
+        .map((e) => entityPath(e, path.relative(e.path, from: dirPath)))
+        .toList(growable: false);
+    list.sort();
+    return list;
+  }
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is _DirectoryContents &&
+          runtimeType == other.runtimeType &&
+          const ListEquality().equals(children, other.children);
+
+  @override
+  int get hashCode => children.hashCode;
 }
 
 final _pathSepPattern = RegExp(r'[\\/]');

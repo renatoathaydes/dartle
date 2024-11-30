@@ -45,7 +45,7 @@ TaskInvocation taskInvocation(String name, [List<String> args = const []]) {
 /// Change Windows path to Unix path if needed.
 String fixPath(String p) => io.Platform.isWindows ? p.replaceAll('\\', '/') : p;
 
-Future<void> expectFileTree(String rootDir, Map<String, String?> fileTree,
+Future<void> expectFileTree(String rootDir, Map<String, Object?> fileTree,
     {DartleTestFileSystem fs = const DartleTestFileSystem('.'),
     bool checkFileContents = true}) async {
   for (final entry in fileTree.entries) {
@@ -58,8 +58,17 @@ Future<void> expectFileTree(String rootDir, Map<String, String?> fileTree,
         reason: '$file does not exist. '
             'Actual tree: ${await _collectFileTree(fs, rootDir)}');
     if (checkFileContents && file is io.File) {
-      expect(await file.readAsString(), equals(entry.value),
-          reason: 'file ${file.path} has incorrect contents');
+      final expectedContents = entry.value;
+      if (expectedContents is String) {
+        expect(await file.readAsString(), equals(expectedContents),
+            reason: 'file ${file.path} has incorrect contents');
+      } else if (expectedContents is List<int>) {
+        expect(await file.readAsBytes(), equals(expectedContents),
+            reason: 'file ${file.path} has incorrect contents');
+      } else {
+        throw Exception('Cannot assert file contents using type: '
+            '${expectedContents.runtimeType}');
+      }
     }
   }
 
