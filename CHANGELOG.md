@@ -2,6 +2,12 @@
 
 ## done, waiting for next release
 
+# 0.31.0
+
+### Dartle Cache
+
+- proper support for caching absolute paths. Makes the cache movable. 
+
 # 0.30.0
 
 ### Dartle Core

@@ -15,7 +15,7 @@ import '_fs_utils.dart';
 import '_hash.dart';
 
 /// Current version of the Dartle Cache.
-const cacheFormatVersion = '0.3';
+const cacheFormatVersion = '0.4';
 
 /// Kind of [FileChange].
 enum ChangeKind {
