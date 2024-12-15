@@ -61,12 +61,12 @@ class ExampleIncrementalAction {
       toWrite = [
         'inputChanges',
         ...inputChanges
-            .map((c) => '${c.kind.name}: ${c.entity.path}')
+            .map((c) => '${c.kind.name}: ${c.path}')
             .toList()
             .sorted(),
         'outputChanges',
         ...outputChanges
-            .map((c) => '${c.kind.name}: ${c.entity.path}')
+            .map((c) => '${c.kind.name}: ${c.path}')
             .toList()
             .sorted(),
       ];

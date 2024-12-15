@@ -811,6 +811,6 @@ void main([List<String> args = const []]) {
 }
 
 String fileChangeString(FileChange change) {
-  final c = change.entity is File ? '' : '/';
-  return '${change.kind.name}: ${fixPath(change.entity.path)}$c';
+  final c = change.entityKind == FileSystemEntityKind.dir ? '/' : '';
+  return '${change.kind.name}: ${fixPath(change.path)}$c';
 }

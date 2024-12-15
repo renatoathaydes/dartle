@@ -51,7 +51,7 @@ Future<void> main(List<String> args) async {
           await for (final change
               in cache.findChanges(dir(directory), key: key)) {
             log.severe(ColoredLogMessage(
-                '${change.entity} has been ${change.kind.name}',
+                '${change.path} has been ${change.kind.name}',
                 colorFor(change.kind)));
           }
         }

@@ -24,12 +24,53 @@ enum ChangeKind {
   modified,
 }
 
+/// The kind of a [FileSystemEntity].
+///
+/// Only the cases permitted by [FileChange] are available, so not all cases
+/// of [FileSystemEntityType] are supported.
+enum FileSystemEntityKind {
+  file,
+  dir,
+  link,
+  ;
+
+  FileSystemEntityType toType() => switch (this) {
+        FileSystemEntityKind.file => FileSystemEntityType.file,
+        FileSystemEntityKind.dir => FileSystemEntityType.directory,
+        FileSystemEntityKind.link => FileSystemEntityType.link,
+      };
+}
+
 /// FileChange represents a file system entity change.
 class FileChange {
-  final FileSystemEntity entity;
+  final String path;
   final ChangeKind kind;
+  final FileSystemEntityKind entityKind;
 
-  FileChange(this.entity, this.kind);
+  /// Const constructor of [FileChange].
+  const FileChange.of(this.path, this.kind, this.entityKind);
+
+  // main constructor for backwards compatibility.
+  // do not keep FileSystemEntity internally to avoid errors when sending
+  // instances of this class to another Isolate.
+  FileChange(FileSystemEntity entity, this.kind)
+      : path = entity.path,
+        entityKind = switch (entity) {
+          File() => FileSystemEntityKind.file,
+          Directory() => FileSystemEntityKind.dir,
+          Link() => FileSystemEntityKind.link,
+          _ => throw UnsupportedError('')
+        };
+
+  /// Get the [FileSystemEntity] of this [FileChange].
+  /// Prefer to use [FileChange.path] and [FileChange.entityKind] if all you
+  /// need is to get those, because this getter creates a new instance of
+  /// [FileSystemEntity] on every call.
+  FileSystemEntity get entity => switch (entityKind) {
+        FileSystemEntityKind.file => File(path),
+        FileSystemEntityKind.dir => Directory(path),
+        FileSystemEntityKind.link => Link(path),
+      };
 }
 
 /// The change Set for an incremental action.

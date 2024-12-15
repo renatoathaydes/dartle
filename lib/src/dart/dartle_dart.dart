@@ -219,7 +219,7 @@ class DartleDart {
         args.any((a) => a.contains(Platform.pathSeparator));
 
     final testChanges = changes?.inputChanges
-            .where((change) => change.entity.path.endsWith('_test.dart'))
+            .where((change) => change.path.endsWith('_test.dart'))
             .toList() ??
         const [];
 
@@ -231,8 +231,9 @@ class DartleDart {
       // only tests have changed, run the changed tests only!
       testsToRun = testChanges
           .where((change) =>
-              change.kind != ChangeKind.deleted && change.entity is File)
-          .map((change) => change.entity.path)
+              change.kind != ChangeKind.deleted &&
+              change.entityKind == FileSystemEntityKind.file)
+          .map((change) => change.path)
           .toList();
     } else {
       testsToRun = const [];
@@ -245,8 +246,10 @@ class DartleDart {
     var args = const ['format', '.'];
     if (changeSet != null) {
       final fileChanges = changeSet.inputChanges
-          .where((c) => c.kind != ChangeKind.deleted && c.entity is File)
-          .map((c) => c.entity.path);
+          .where((c) =>
+              c.kind != ChangeKind.deleted &&
+              c.entityKind != FileSystemEntityKind.dir)
+          .map((c) => c.path);
       if (fileChanges.isNotEmpty) {
         args = ['format', ...fileChanges];
       }
