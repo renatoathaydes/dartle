@@ -2,6 +2,13 @@
 
 ## done, waiting for next release
 
+# 0.32.0
+
+### Dartle Cache
+
+- made `FileChange` sendable through Isolates (some instances of `FileSystemEntity` may not be, so internally `FileChange` no longer holds one).
+- added `FileChange.path` and `FileChange.entityKind` properties.
+
 # 0.31.0
 
 ### Dartle Cache
