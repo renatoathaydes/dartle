@@ -2,6 +2,10 @@
 
 ## done, waiting for next release
 
+### Dartle Cache
+
+- when directory is deleted, report all files within it that were deleted, not just the directory itself.
+
 # 0.32.0
 
 ### Dartle Cache

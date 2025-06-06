@@ -5,6 +5,7 @@ import 'package:collection/collection.dart';
 import 'package:crypto/crypto.dart';
 import 'package:dartle/dartle_cache.dart';
 import 'package:dartle/src/_log.dart';
+import 'package:dartle/src/io_helpers.dart';
 import 'package:logging/logging.dart';
 import 'package:path/path.dart' show join;
 import 'package:test/test.dart';
@@ -781,8 +782,7 @@ void main([List<String> args = const []]) {
         await cache(inputCollection);
 
         // remove all files in a sub-dir
-        await file1InSomeDir.delete();
-        await file2InSomeDir.delete();
+        await deleteAll(dir(someDir.path));
 
         interactions['changesAfterDeletedAllFilesInDir'] = await cache
             .findChanges(inputCollection)
@@ -804,7 +804,8 @@ void main([List<String> args = const []]) {
             'changesAfterNewNestedDir':
                 'modified: src/dir/, added: src/dir/nested/',
             'changesAfterDeletedAllFilesInDir':
-                'modified: src/dir/, deleted: src/dir/file1.txt, deleted: src/dir/file2.txt',
+                'modified: src/, deleted: src/dir/, deleted: src/dir/file1.txt, '
+                    'deleted: src/dir/file2.txt, deleted: src/dir/nested/',
           }));
     });
   });

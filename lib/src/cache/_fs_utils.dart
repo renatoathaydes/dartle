@@ -26,6 +26,7 @@ String entityPath(FileSystemEntity entity, String path) {
 /// calling [entityPath].
 FileSystemEntity fromEntityPath(String path, {String? from}) {
   if (path.endsWith(Platform.pathSeparator)) {
+    path = path.substring(0, path.length - 1);
     return from == null ? Directory(path) : Directory(p.join(from, path));
   }
   return from == null ? File(path) : File(p.join(from, path));

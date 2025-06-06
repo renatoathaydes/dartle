@@ -550,7 +550,9 @@ Future<DeletionTasksByTask> verifyTaskInputsAndOutputsConsistency(
   inputsByTask.forEach((task, ins) {
     outputsByTask.forEach((otherTask, otherOuts) {
       if (task.name == otherTask.name ||
-          task.dependencySet.contains(otherTask.name)) return;
+          task.dependencySet.contains(otherTask.name)) {
+        return;
+      }
       final intersectInsOuts = ins.intersection(otherOuts);
       if (intersectInsOuts.isNotEmpty) {
         dependencyErrors

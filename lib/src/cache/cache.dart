@@ -376,7 +376,7 @@ class DartleCache {
             // only yield deleted file changes, other kinds will be emitted
             // when the files are visited.
             yield* _dirChanges(dir, dirChange,
-                fileChangeKind: ChangeKind.deleted);
+                fileChangeKind: ChangeKind.deleted, key: key);
           }
         });
         yield* changes;
@@ -506,11 +506,23 @@ class DartleCache {
   }
 
   Stream<FileChange> _dirChanges(Directory dir, _DirectoryChange dirChange,
-      {ChangeKind? fileChangeKind}) async* {
+      {ChangeKind? fileChangeKind, String key = ''}) async* {
     yield FileChange(dir, dirChange.kind);
     for (final change in dirChange.fileChanges) {
       if (fileChangeKind == null || fileChangeKind == change.kind) {
         yield change;
+        // when a directory is deleted, we need to yield all its previous children too
+        if (change.kind == ChangeKind.deleted &&
+            change.entityKind == FileSystemEntityKind.dir) {
+          final dirChanges = await _hasDirChanged(
+              change.entity as Directory, const [],
+              key: key);
+          if (dirChanges != null) {
+            yield* _dirChanges(change.entity as Directory, dirChanges,
+                    fileChangeKind: ChangeKind.deleted, key: key)
+                .where((c) => c.kind == ChangeKind.deleted);
+          }
+        }
       }
     }
   }
