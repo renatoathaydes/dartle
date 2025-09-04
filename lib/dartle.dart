@@ -11,6 +11,7 @@ library dartle;
 
 export 'src/_log.dart'
     show activateLogging, profile, LogColor, ColoredLogMessage;
+export 'src/_tasks_info.dart' show onEverythingUpToDate;
 export 'src/_text_helpers.dart' show elapsedTime;
 export 'src/ansi_message.dart';
 // for backwards-compatible, this is exported by the cache lib

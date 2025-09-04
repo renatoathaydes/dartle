@@ -8,6 +8,19 @@ int computeDependenciesCount(
     required int defaults,
     required int executables,
     required int upToDate}) {
+/// Hook that will be called when a build is finished because everything is
+/// up-to-date.
+///
+/// Change this value if you prefer to not use the default function which logs
+/// the INFO message 'Everything is up-to-date!' in GREEN.
+void Function() onEverythingUpToDate = _onEverythingUpToDate;
+
+void _onEverythingUpToDate() {
+  logger.info(
+    const ColoredLogMessage('Everything is up-to-date!', LogColor.green),
+  );
+}
+
   final total = executables + upToDate;
   final askedFor = (invoked == 0) ? defaults : invoked;
   return total - askedFor;
