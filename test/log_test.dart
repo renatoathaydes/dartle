@@ -23,44 +23,60 @@ void main() {
       });
 
       expect(
-          logged,
-          emitsInOrder([
-            endsWith('WARN - warning'),
-            endsWith('ERROR - severe'),
-          ]));
+        logged,
+        emitsInOrder([endsWith('WARN - warning'), endsWith('ERROR - severe')]),
+      );
     });
 
     test('can log a message with color', () {
-      activateLogging(log.Level.WARNING,
-          colorfulLog: true, logName: 'test-log');
+      activateLogging(
+        log.Level.WARNING,
+        colorfulLog: true,
+        logName: 'test-log',
+      );
       final logged = capturingLogs(
-          () => logger.log(log.Level.WARNING, 'hello with color'));
+        () => logger.log(log.Level.WARNING, 'hello with color'),
+      );
       expect(
-          logged,
-          emits(allOf(
+        logged,
+        emits(
+          allOf(
             startsWith(ansi.yellow.escape),
             endsWith('WARN - hello with color${ansi.resetAll.escape}'),
-          )));
+          ),
+        ),
+      );
     });
 
     test('can log a message without color', () {
-      activateLogging(log.Level.WARNING,
-          colorfulLog: false, logName: 'test-log');
+      activateLogging(
+        log.Level.WARNING,
+        colorfulLog: false,
+        logName: 'test-log',
+      );
       final logged = capturingLogs(
-          () => logger.log(log.Level.WARNING, 'hello with color'));
+        () => logger.log(log.Level.WARNING, 'hello with color'),
+      );
       expect(
-          logged,
-          emits(allOf(
+        logged,
+        emits(
+          allOf(
             isNot(startsWith(ansi.yellow.escape)),
             endsWith('WARN - hello with color'),
-          )));
+          ),
+        ),
+      );
     });
 
     test('can log plain text message even when color is enabled', () {
-      activateLogging(log.Level.WARNING,
-          colorfulLog: true, logName: 'test-log');
+      activateLogging(
+        log.Level.WARNING,
+        colorfulLog: true,
+        logName: 'test-log',
+      );
       final logged = capturingLogs(
-          () => logger.log(log.Level.WARNING, PlainMessage('plain text')));
+        () => logger.log(log.Level.WARNING, PlainMessage('plain text')),
+      );
       expect(logged, emits(equals('plain text')));
     });
   }, timeout: const Timeout(Duration(seconds: 1)));
@@ -72,18 +88,22 @@ void main() {
 
     test('can log a message with color', () {
       activateLogging(log.Level.INFO, colorfulLog: true, logName: 'test-log');
-      final logged = capturingLogs(() =>
-          logger.info(const ColoredLogMessage('blue message', LogColor.blue)));
+      final logged = capturingLogs(
+        () =>
+            logger.info(const ColoredLogMessage('blue message', LogColor.blue)),
+      );
       expect(
-          logged,
-          emits(equals(
-              '${ansi.blue.escape}blue message${ansi.resetAll.escape}')));
+        logged,
+        emits(equals('${ansi.blue.escape}blue message${ansi.resetAll.escape}')),
+      );
     });
 
     test('can log a message without color', () {
       activateLogging(log.Level.INFO, colorfulLog: false, logName: 'test-log');
-      final logged = capturingLogs(() =>
-          logger.info(const ColoredLogMessage('blue message', LogColor.blue)));
+      final logged = capturingLogs(
+        () =>
+            logger.info(const ColoredLogMessage('blue message', LogColor.blue)),
+      );
       expect(logged, emits(equals('blue message')));
     });
   }, timeout: const Timeout(Duration(seconds: 1)));
@@ -95,51 +115,76 @@ void main() {
 
     test('can log a message without color', () {
       activateLogging(log.Level.INFO, colorfulLog: false, logName: 'test-log');
-      final logged = capturingLogs(() => logger.info(const AnsiMessage([
+      final logged = capturingLogs(
+        () => logger.info(
+          const AnsiMessage([
             AnsiMessagePart.code(ansi.green),
             AnsiMessagePart.text('Green Text'),
             AnsiMessagePart.code(ansi.blue),
             AnsiMessagePart.text('Blue!'),
-          ])));
+          ]),
+        ),
+      );
       expect(logged, emits(equals('Green TextBlue!')));
     });
 
     test('can log a message with color', () {
       activateLogging(log.Level.INFO, colorfulLog: true, logName: 'test-log');
-      final logged = capturingLogs(() => logger.info(const AnsiMessage([
+      final logged = capturingLogs(
+        () => logger.info(
+          const AnsiMessage([
             AnsiMessagePart.code(ansi.green),
             AnsiMessagePart.text('Green Text'),
             AnsiMessagePart.code(ansi.blue),
             AnsiMessagePart.text('Blue!'),
-          ])));
+          ]),
+        ),
+      );
       expect(
-          logged,
-          emits(equals('${ansi.green.escape}'
-              'Green Text${ansi.blue.escape}'
-              'Blue!${ansi.resetAll.escape}')));
+        logged,
+        emits(
+          equals(
+            '${ansi.green.escape}'
+            'Green Text${ansi.blue.escape}'
+            'Blue!${ansi.resetAll.escape}',
+          ),
+        ),
+      );
     });
 
     test('can log a message with color (explicit reset)', () {
       activateLogging(log.Level.INFO, colorfulLog: true, logName: 'test-log');
-      final logged = capturingLogs(() => logger.info(const AnsiMessage([
+      final logged = capturingLogs(
+        () => logger.info(
+          const AnsiMessage([
             AnsiMessagePart.code(ansi.green),
             AnsiMessagePart.text('Green Text'),
             AnsiMessagePart.code(ansi.resetAll),
-          ])));
+          ]),
+        ),
+      );
       expect(
-          logged,
-          emits(equals('${ansi.green.escape}'
-              'Green Text${ansi.resetAll.escape}')));
+        logged,
+        emits(
+          equals(
+            '${ansi.green.escape}'
+            'Green Text${ansi.resetAll.escape}',
+          ),
+        ),
+      );
     });
   }, timeout: const Timeout(Duration(seconds: 1)));
 }
 
 Stream<String> capturingLogs(void Function() action) {
   final captured = StreamController<String>();
-  runZoned(action,
-      zoneValues: {#_log_test: true},
-      zoneSpecification: ZoneSpecification(
-          print: (Zone self, ZoneDelegate parent, Zone zone, String line) =>
-              captured.add(line)));
+  runZoned(
+    action,
+    zoneValues: {#_log_test: true},
+    zoneSpecification: ZoneSpecification(
+      print: (Zone self, ZoneDelegate parent, Zone zone, String line) =>
+          captured.add(line),
+    ),
+  );
   return captured.stream;
 }

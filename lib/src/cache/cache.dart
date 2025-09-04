@@ -18,11 +18,7 @@ import '_hash.dart';
 const cacheFormatVersion = '0.4';
 
 /// Kind of [FileChange].
-enum ChangeKind {
-  added,
-  deleted,
-  modified,
-}
+enum ChangeKind { added, deleted, modified }
 
 /// The kind of a [FileSystemEntity].
 ///
@@ -31,14 +27,13 @@ enum ChangeKind {
 enum FileSystemEntityKind {
   file,
   dir,
-  link,
-  ;
+  link;
 
   FileSystemEntityType toType() => switch (this) {
-        FileSystemEntityKind.file => FileSystemEntityType.file,
-        FileSystemEntityKind.dir => FileSystemEntityType.directory,
-        FileSystemEntityKind.link => FileSystemEntityType.link,
-      };
+    FileSystemEntityKind.file => FileSystemEntityType.file,
+    FileSystemEntityKind.dir => FileSystemEntityType.directory,
+    FileSystemEntityKind.link => FileSystemEntityType.link,
+  };
 }
 
 /// FileChange represents a file system entity change.
@@ -54,23 +49,23 @@ class FileChange {
   // do not keep FileSystemEntity internally to avoid errors when sending
   // instances of this class to another Isolate.
   FileChange(FileSystemEntity entity, this.kind)
-      : path = entity.path,
-        entityKind = switch (entity) {
-          File() => FileSystemEntityKind.file,
-          Directory() => FileSystemEntityKind.dir,
-          Link() => FileSystemEntityKind.link,
-          _ => throw UnsupportedError('')
-        };
+    : path = entity.path,
+      entityKind = switch (entity) {
+        File() => FileSystemEntityKind.file,
+        Directory() => FileSystemEntityKind.dir,
+        Link() => FileSystemEntityKind.link,
+        _ => throw UnsupportedError(''),
+      };
 
   /// Get the [FileSystemEntity] of this [FileChange].
   /// Prefer to use [FileChange.path] and [FileChange.entityKind] if all you
   /// need is to get those, because this getter creates a new instance of
   /// [FileSystemEntity] on every call.
   FileSystemEntity get entity => switch (entityKind) {
-        FileSystemEntityKind.file => File(path),
-        FileSystemEntityKind.dir => Directory(path),
-        FileSystemEntityKind.link => Link(path),
-      };
+    FileSystemEntityKind.file => File(path),
+    FileSystemEntityKind.dir => Directory(path),
+    FileSystemEntityKind.link => Link(path),
+  };
 }
 
 /// The change Set for an incremental action.
@@ -103,9 +98,9 @@ class DartleCache {
 
   /// Create an instance of [DartleCache] at the given root directory.
   DartleCache(this.rootDir)
-      : _hashesDir = path.join(rootDir, 'hashes'),
-        _tasksDir = path.join(rootDir, 'tasks'),
-        _executablesDir = path.join(rootDir, 'executables') {
+    : _hashesDir = path.join(rootDir, 'hashes'),
+      _tasksDir = path.join(rootDir, 'tasks'),
+      _executablesDir = path.join(rootDir, 'executables') {
     init();
   }
 
@@ -123,13 +118,17 @@ class DartleCache {
       requiresUpdate = !_isCurrentVersion(versionFile);
       if (requiresUpdate) {
         logger.info(
-            'Dartle cache version change detected. Performing full cleanup.');
+          'Dartle cache version change detected. Performing full cleanup.',
+        );
         ignoreExceptions(
-            () => Directory(_hashesDir).deleteSync(recursive: true));
+          () => Directory(_hashesDir).deleteSync(recursive: true),
+        );
         ignoreExceptions(
-            () => Directory(_tasksDir).deleteSync(recursive: true));
+          () => Directory(_tasksDir).deleteSync(recursive: true),
+        );
         ignoreExceptions(
-            () => Directory(_executablesDir).deleteSync(recursive: true));
+          () => Directory(_executablesDir).deleteSync(recursive: true),
+        );
       }
     } else {
       root.createSync(recursive: true);
@@ -141,8 +140,10 @@ class DartleCache {
     Directory(_hashesDir).createSync();
     Directory(_tasksDir).createSync();
     Directory(_executablesDir).createSync();
-    logger.fine(() =>
-        'Cache initialized at ${path.join(Directory.current.path, rootDir)}');
+    logger.fine(
+      () =>
+          'Cache initialized at ${path.join(Directory.current.path, rootDir)}',
+    );
   }
 
   File _taskFile(String taskName) {
@@ -166,9 +167,11 @@ class DartleCache {
     if (key.isEmpty) {
       logger.fine('Cleaning Dartle cache');
       await ignoreExceptions(
-          () => Directory(_tasksDir).delete(recursive: true));
+        () => Directory(_tasksDir).delete(recursive: true),
+      );
       await ignoreExceptions(
-          () => Directory(_hashesDir).delete(recursive: true));
+        () => Directory(_hashesDir).delete(recursive: true),
+      );
       logger.finest('Dartle cache has been cleaned');
     } else {
       logger.fine(() => 'Cleaning Dartle cache (key=$key)');
@@ -191,17 +194,20 @@ class DartleCache {
     Set<String> visitedEntities = {};
     await for (final entry in collection.resolve()) {
       if (visitedEntities.add(entry.path)) {
-        await entry.use((file) => _cacheFile(file, key: key),
-            (dir, children) => _cacheDir(dir, children, key: key));
+        await entry.use(
+          (file) => _cacheFile(file, key: key),
+          (dir, children) => _cacheDir(dir, children, key: key),
+        );
       }
     }
     // visit entities that do not exist but may have existed before
     for (final file in collection.files.where(visitedEntities.add)) {
       await _removeEntity(File(file), key: key);
     }
-    for (final dir in collection.directories
-        .map((e) => e.path)
-        .where(visitedEntities.add)) {
+    for (final dir
+        in collection.directories
+            .map((e) => e.path)
+            .where(visitedEntities.add)) {
       await _removeEntity(Directory(dir), key: key);
     }
   }
@@ -211,8 +217,10 @@ class DartleCache {
       _getCacheLocation(entity, key: key).existsSync();
 
   /// Cache the given task invocation.
-  Future<void> cacheTaskInvocation(String taskName,
-      [List<String> args = const []]) async {
+  Future<void> cacheTaskInvocation(
+    String taskName, [
+    List<String> args = const [],
+  ]) async {
     final file = _taskFile(taskName);
     logger.fine(() => 'Caching invocation of task "$taskName" at ${file.path}');
     await file.writeAsString(args.toString());
@@ -240,18 +248,26 @@ class DartleCache {
   ///
   /// Only successful task invocations are normally cached, hence this method
   /// will normally return `true` when the previous invocation of [Task] failed.
-  Future<bool> hasTaskInvocationChanged(String taskName,
-      [List<String> args = const []]) async {
+  Future<bool> hasTaskInvocationChanged(
+    String taskName, [
+    List<String> args = const [],
+  ]) async {
     final taskFile = _taskFile(taskName);
     if (await taskFile.exists()) {
       final taskArgs = await taskFile.readAsString();
       final isChanged = args.toString() != taskArgs;
       if (isChanged) {
-        logger.fine(() => 'Task "$taskName" invocation changed '
-            'because args were $taskArgs, but is now $args.');
+        logger.fine(
+          () =>
+              'Task "$taskName" invocation changed '
+              'because args were $taskArgs, but is now $args.',
+        );
       } else {
-        logger.finest(() => 'Task "$taskName" invocation has not '
-            'changed, args are $taskArgs');
+        logger.finest(
+          () =>
+              'Task "$taskName" invocation has not '
+              'changed, args are $taskArgs',
+        );
       }
       return isChanged;
     } else {
@@ -270,14 +286,18 @@ class DartleCache {
   /// Remove any cache entry that is not relevant given the remaining
   /// taskNames and keys.
   Future<void> removeNotMatching(
-      Set<String> taskNames, Set<String> keys) async {
+    Set<String> taskNames,
+    Set<String> keys,
+  ) async {
     final encodedKeys = keys.map(_encodeKey).toSet();
     var removedCount = 0;
     final oldTasks = Directory(_tasksDir).list();
     await for (final oldTask in oldTasks) {
       if (!taskNames.contains(path.basename(oldTask.path))) {
-        logger.fine(() =>
-            "Removing task '${oldTask.path}' directory as task is not part of the build");
+        logger.fine(
+          () =>
+              "Removing task '${oldTask.path}' directory as task is not part of the build",
+        );
         await oldTask.delete(recursive: true);
         removedCount++;
       }
@@ -285,14 +305,17 @@ class DartleCache {
     final oldEncodedKeys = Directory(_hashesDir).list();
     await for (final oldEncodedKey in oldEncodedKeys) {
       if (!encodedKeys.contains(path.basename(oldEncodedKey.path))) {
-        logger.fine(() =>
-            "Removing key '${oldEncodedKey.path}' as key is not part of the build");
+        logger.fine(
+          () =>
+              "Removing key '${oldEncodedKey.path}' as key is not part of the build",
+        );
         await oldEncodedKey.delete(recursive: true);
         removedCount++;
       }
     }
-    logger.fine(() =>
-        'Removed $removedCount cache entries that are any longer relevant');
+    logger.fine(
+      () => 'Removed $removedCount cache entries that are any longer relevant',
+    );
   }
 
   Future<void> _cacheFile(File file, {required String key}) async {
@@ -302,28 +325,41 @@ class DartleCache {
       await hf.parent.create(recursive: true);
       await hf.writeAsBytes((await hashFile(file)).bytes);
     } else {
-      logger.finest(() =>
-          'Removing file ${file.path} from ${hf.path} as it does not exist');
+      logger.finest(
+        () => 'Removing file ${file.path} from ${hf.path} as it does not exist',
+      );
       await _removeEntity(file, key: key, cacheLocation: hf);
     }
   }
 
-  Future<void> _cacheDir(Directory dir, Iterable<FileSystemEntity> children,
-      {required String key}) async {
+  Future<void> _cacheDir(
+    Directory dir,
+    Iterable<FileSystemEntity> children, {
+    required String key,
+  }) async {
     final hf = _getCacheLocation(dir, key: key);
     final contents = _DirectoryContents.relative(children, dir);
-    logger.finest(() => 'Caching directory ${dir.path} at ${hf.path} with '
-        'children ${contents.children}');
+    logger.finest(
+      () =>
+          'Caching directory ${dir.path} at ${hf.path} with '
+          'children ${contents.children}',
+    );
     await hf.parent.create(recursive: true);
     await hf.writeAsBytes(contents.encode());
   }
 
-  Future<void> _removeEntity(FileSystemEntity entity,
-      {required String key, File? cacheLocation}) async {
+  Future<void> _removeEntity(
+    FileSystemEntity entity, {
+    required String key,
+    File? cacheLocation,
+  }) async {
     final cl = cacheLocation ?? _getCacheLocation(entity, key: key);
     if (await cl.exists()) {
-      logger.finest(() => 'Removing entry for ${entity.path}'
-          ' with key $key from cache');
+      logger.finest(
+        () =>
+            'Removing entry for ${entity.path}'
+            ' with key $key from cache',
+      );
       await ignoreExceptions(cl.delete);
     }
   }
@@ -335,8 +371,10 @@ class DartleCache {
   /// since last time the check was made with the exact same key.
   ///
   /// Returns false if the [FileCollection] is empty.
-  Future<bool> hasChanged(FileCollection fileCollection,
-      {String key = ''}) async {
+  Future<bool> hasChanged(
+    FileCollection fileCollection, {
+    String key = '',
+  }) async {
     return !await findChanges(fileCollection, key: key).isEmpty;
   }
 
@@ -347,17 +385,22 @@ class DartleCache {
   /// since last time the check was made with the exact same key.
   ///
   /// Returns an empty [Stream] if the [FileCollection] is empty.
-  Stream<FileChange> findChanges(FileCollection fileCollection,
-      {String key = ''}) async* {
+  Stream<FileChange> findChanges(
+    FileCollection fileCollection, {
+    String key = '',
+  }) async* {
     logger.finest(
-        () => 'Checking if $fileCollection with key="$key" has changed');
+      () => 'Checking if $fileCollection with key="$key" has changed',
+    );
     if (fileCollection.isEmpty) return;
 
     // if the cache is empty, avoid checking anything and report everything as added
     if (await isEmptyDir(_hashesDir)) {
-      logger.fine('No hashes in the cache '
-          '(${path.join(Directory.current.path, _hashesDir)}), '
-          'reporting all as changed');
+      logger.fine(
+        'No hashes in the cache '
+        '(${path.join(Directory.current.path, _hashesDir)}), '
+        'reporting all as changed',
+      );
       yield* _reportAllAdded(fileCollection);
       return;
     }
@@ -367,18 +410,25 @@ class DartleCache {
     // visit all entities that currently exist
     await for (final entity in fileCollection.resolve()) {
       if (visitedEntities.add(entity.path)) {
-        final changes = await entity.use((file) async* {
-          final change = await _hasFileChanged(file, key: key);
-          if (change != null) yield FileChange(file, change);
-        }, (dir, children) async* {
-          final dirChange = await _hasDirChanged(dir, children, key: key);
-          if (dirChange != null) {
-            // only yield deleted file changes, other kinds will be emitted
-            // when the files are visited.
-            yield* _dirChanges(dir, dirChange,
-                fileChangeKind: ChangeKind.deleted, key: key);
-          }
-        });
+        final changes = await entity.use(
+          (file) async* {
+            final change = await _hasFileChanged(file, key: key);
+            if (change != null) yield FileChange(file, change);
+          },
+          (dir, children) async* {
+            final dirChange = await _hasDirChanged(dir, children, key: key);
+            if (dirChange != null) {
+              // only yield deleted file changes, other kinds will be emitted
+              // when the files are visited.
+              yield* _dirChanges(
+                dir,
+                dirChange,
+                fileChangeKind: ChangeKind.deleted,
+                key: key,
+              );
+            }
+          },
+        );
         yield* changes;
       }
     }
@@ -391,9 +441,10 @@ class DartleCache {
         yield FileChange(fileEntity, change);
       }
     }
-    for (final dir in fileCollection.directories
-        .map((e) => e.path)
-        .where(visitedEntities.add)) {
+    for (final dir
+        in fileCollection.directories
+            .map((e) => e.path)
+            .where(visitedEntities.add)) {
       // this dir doesn't exist, otherwise it would've been visited earlier
       final dirEntity = Directory(dir);
       final change = await _hasDirChanged(dirEntity, const [], key: key);
@@ -413,8 +464,11 @@ class DartleCache {
     final hf = _getCacheLocation(file, key: key);
     var hashExists = await hf.exists();
     if (!await file.exists()) {
-      logger.fine(() => "File '${file.path}' does not exist "
-          "${hashExists ? 'but was cached' : 'and was not known before'}");
+      logger.fine(
+        () =>
+            "File '${file.path}' does not exist "
+            "${hashExists ? 'but was cached' : 'and was not known before'}",
+      );
       return hashExists ? ChangeKind.deleted : null;
     }
     ChangeKind? change;
@@ -425,16 +479,22 @@ class DartleCache {
           .add(const Duration(seconds: 1))
           .isAfter((await hf.lastModified()))) {
         logger.fine(
-            () => "Detected possibly stale cache for file '${file.path}', "
-                'checking file hash');
+          () =>
+              "Detected possibly stale cache for file '${file.path}', "
+              'checking file hash',
+        );
         final previousHash = await hf.readAsBytes();
         final hash = (await hashFile(file)).bytes;
         if (previousHash.equals(hash)) {
           logger.finest(
-              () => "File '${file.path}' hash is still the same: '$hash'");
+            () => "File '${file.path}' hash is still the same: '$hash'",
+          );
         } else {
-          logger.fine(() => "File '${file.path}' hash changed - "
-              "old hash='$previousHash', new hash='$hash'");
+          logger.fine(
+            () =>
+                "File '${file.path}' hash changed - "
+                "old hash='$previousHash', new hash='$hash'",
+          );
           change = ChangeKind.modified;
         }
       } else {
@@ -448,34 +508,49 @@ class DartleCache {
   }
 
   Future<_DirectoryChange?> _hasDirChanged(
-      Directory dir, Iterable<FileSystemEntity> children,
-      {required String key}) async {
+    Directory dir,
+    Iterable<FileSystemEntity> children, {
+    required String key,
+  }) async {
     final hf = _getCacheLocation(dir, key: key);
     _DirectoryChange? change;
     if (await hf.exists()) {
-      final previousContents =
-          _DirectoryContents.decode(await hf.readAsBytes(), dir);
+      final previousContents = _DirectoryContents.decode(
+        await hf.readAsBytes(),
+        dir,
+      );
       final currentContents = _DirectoryContents.relative(children, dir);
       if (previousContents == currentContents) {
         logger.finest(() => "Directory is still the same: '${dir.path}'");
       } else {
         if (logger.isLoggable(Level.FINEST)) {
-          logger.finest("Directory has changed: '${dir.path}' "
-              'from ${previousContents.children} '
-              'to ${currentContents.children}');
+          logger.finest(
+            "Directory has changed: '${dir.path}' "
+            'from ${previousContents.children} '
+            'to ${currentContents.children}',
+          );
         } else {
           logger.fine(() => "Directory has changed: '${dir.path}'");
         }
-        change = _DirectoryChange(ChangeKind.modified,
-            newContents: currentContents, oldContents: previousContents);
+        change = _DirectoryChange(
+          ChangeKind.modified,
+          newContents: currentContents,
+          oldContents: previousContents,
+        );
       }
     } else if (await dir.exists()) {
-      logger.fine(() => 'Directory hash does not exist for '
-          "existing directory: '${dir.path}'");
+      logger.fine(
+        () =>
+            'Directory hash does not exist for '
+            "existing directory: '${dir.path}'",
+      );
       change = const _DirectoryChange(ChangeKind.added);
     } else {
-      logger.finest(() => "Directory '${dir.path}' does not exist "
-          'and was not known before');
+      logger.finest(
+        () =>
+            "Directory '${dir.path}' does not exist "
+            'and was not known before',
+      );
     }
     return change;
   }
@@ -496,8 +571,14 @@ class DartleCache {
       _ => 'sha',
     };
     final fileName = '${path.basename(entity.path)}.$extension';
-    return File(path.join(
-        _hashesDir, _encodeKey(key), parentDir.noPathNavigation(), fileName));
+    return File(
+      path.join(
+        _hashesDir,
+        _encodeKey(key),
+        parentDir.noPathNavigation(),
+        fileName,
+      ),
+    );
   }
 
   String _encodeKey(String key) {
@@ -505,8 +586,12 @@ class DartleCache {
     return 'K_${key.escapePathSeparator()}';
   }
 
-  Stream<FileChange> _dirChanges(Directory dir, _DirectoryChange dirChange,
-      {ChangeKind? fileChangeKind, String key = ''}) async* {
+  Stream<FileChange> _dirChanges(
+    Directory dir,
+    _DirectoryChange dirChange, {
+    ChangeKind? fileChangeKind,
+    String key = '',
+  }) async* {
     yield FileChange(dir, dirChange.kind);
     for (final change in dirChange.fileChanges) {
       if (fileChangeKind == null || fileChangeKind == change.kind) {
@@ -515,12 +600,17 @@ class DartleCache {
         if (change.kind == ChangeKind.deleted &&
             change.entityKind == FileSystemEntityKind.dir) {
           final dirChanges = await _hasDirChanged(
-              change.entity as Directory, const [],
-              key: key);
+            change.entity as Directory,
+            const [],
+            key: key,
+          );
           if (dirChanges != null) {
-            yield* _dirChanges(change.entity as Directory, dirChanges,
-                    fileChangeKind: ChangeKind.deleted, key: key)
-                .where((c) => c.kind == ChangeKind.deleted);
+            yield* _dirChanges(
+              change.entity as Directory,
+              dirChanges,
+              fileChangeKind: ChangeKind.deleted,
+              key: key,
+            ).where((c) => c.kind == ChangeKind.deleted);
           }
         }
       }
@@ -563,14 +653,18 @@ class _DirectoryContents {
   const _DirectoryContents(this.directory, this.children);
 
   factory _DirectoryContents.relative(
-      Iterable<FileSystemEntity> entities, Directory dir) {
+    Iterable<FileSystemEntity> entities,
+    Directory dir,
+  ) {
     return _DirectoryContents(dir, _relativizeAndSort(entities, dir));
   }
 
   factory _DirectoryContents.decode(List<int> bytes, Directory dir) {
     final list = jsonDecode(utf8.decode(bytes)) as List;
     return _DirectoryContents(
-        dir, list.cast<String>().sorted((a, b) => a.compareTo(b)));
+      dir,
+      list.cast<String>().sorted((a, b) => a.compareTo(b)),
+    );
   }
 
   List<int> encode() {
@@ -584,7 +678,9 @@ class _DirectoryContents {
   }
 
   static List<String> _relativizeAndSort(
-      Iterable<FileSystemEntity> entities, Directory dir) {
+    Iterable<FileSystemEntity> entities,
+    Directory dir,
+  ) {
     final dirPath = dir.path;
     final list = entities
         .map((e) => entityPath(e, path.relative(e.path, from: dirPath)))

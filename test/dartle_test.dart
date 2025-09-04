@@ -29,11 +29,14 @@ void main() {
     var exampleDartleBuild = File('');
 
     setUpAll(() async {
-      await ignoreExceptions(() async =>
-          await Directory(join('example', '.dartle_tool'))
-              .delete(recursive: true));
-      exampleDartleBuild =
-          await createDartExe(File(join('example', 'dartle.dart')));
+      await ignoreExceptions(
+        () async => await Directory(
+          join('example', '.dartle_tool'),
+        ).delete(recursive: true),
+      );
+      exampleDartleBuild = await createDartExe(
+        File(join('example', 'dartle.dart')),
+      );
     });
 
     setUp(() async {
@@ -44,21 +47,26 @@ void main() {
       await deleteAll(files([outputFile.path, exampleDartleBuild.path]));
     });
 
-    Future<ExecReadResult> runExampleDartBuild(List<String> args,
-        {bool Function(int) isCodeSuccessful = onlyZero}) async {
+    Future<ExecReadResult> runExampleDartBuild(
+      List<String> args, {
+      bool Function(int) isCodeSuccessful = onlyZero,
+    }) async {
       return execRead(
-          runDartExe(exampleDartleBuild,
-              args: args, workingDirectory: 'example'),
-          name: 'example dart build',
-          isCodeSuccessful: isCodeSuccessful);
+        runDartExe(exampleDartleBuild, args: args, workingDirectory: 'example'),
+        name: 'example dart build',
+        isCodeSuccessful: isCodeSuccessful,
+      );
     }
 
     test('logs expected output', () async {
       var proc = await runExampleDartBuild(['--no-color', 'hello']);
       expect(
-          proc.stdout[0],
-          contains('Executing 1 task out of a total of 4 tasks:'
-              ' 1 task selected'));
+        proc.stdout[0],
+        contains(
+          'Executing 1 task out of a total of 4 tasks:'
+          ' 1 task selected',
+        ),
+      );
       expect(proc.stdout[1], contains("Running task 'hello'"));
       expect(proc.stdout[2], equals('Hello World!'));
       expect(proc.stdout[3], contains('Build succeeded'));
@@ -69,9 +77,12 @@ void main() {
       // run with one argument now
       proc = await runExampleDartBuild(['--no-color', 'hello', ':Elvis']);
       expect(
-          proc.stdout[0],
-          contains('Executing 1 task out of a total of 4 tasks:'
-              ' 1 task selected'));
+        proc.stdout[0],
+        contains(
+          'Executing 1 task out of a total of 4 tasks:'
+          ' 1 task selected',
+        ),
+      );
       expect(proc.stdout[1], contains("Running task 'hello'"));
       expect(proc.stdout[2], equals('Hello Elvis!'));
       expect(proc.stdout[3], contains('Build succeeded'));
@@ -81,9 +92,12 @@ void main() {
 
       proc = await runExampleDartBuild(['--no-color', 'bye']);
       expect(
-          proc.stdout[0],
-          contains('Executing 2 tasks out of a total of 4 tasks:'
-              ' 1 task selected, 1 dependency'));
+        proc.stdout[0],
+        contains(
+          'Executing 2 tasks out of a total of 4 tasks:'
+          ' 1 task selected, 1 dependency',
+        ),
+      );
       expect(proc.stdout[1], contains("Running task 'hello'"));
       expect(proc.stdout[2], equals('Hello World!'));
       expect(proc.stdout[3], contains("Running task 'bye'"));
@@ -97,9 +111,12 @@ void main() {
     test('runs only tasks that are required, unless forced', () async {
       var proc = await runExampleDartBuild(['--no-color', 'encode']);
       expect(
-          proc.stdout[0],
-          contains('Executing 1 task out of a total of 4 tasks:'
-              ' 1 task selected'));
+        proc.stdout[0],
+        contains(
+          'Executing 1 task out of a total of 4 tasks:'
+          ' 1 task selected',
+        ),
+      );
       expect(proc.stdout[1], contains("Running task 'encodeBase64'"));
       expect(proc.stdout[2], contains('Build succeeded'));
       expect(proc.stdout.length, equals(3));
@@ -121,9 +138,12 @@ void main() {
       // when we force the task to run, it must run again
       proc = await runExampleDartBuild(['--no-color', 'encode', '-f']);
       expect(
-          proc.stdout[0],
-          contains('Executing 1 task out of a total of 4 tasks:'
-              ' 1 task selected'));
+        proc.stdout[0],
+        contains(
+          'Executing 1 task out of a total of 4 tasks:'
+          ' 1 task selected',
+        ),
+      );
       expect(proc.stdout[1], contains("Running task 'encodeBase64'"));
       expect(proc.stdout[2], contains('Build succeeded'));
       expect(proc.stdout.length, equals(3));
@@ -140,59 +160,72 @@ void main() {
       final mockCache = CacheMock()..throwOnAnyCheck = true;
 
       final task = Task(
-          (List<String> args, [ChangeSet? changes]) async =>
-              await outFile.writeAsString(await inFile.readAsString()),
-          name: 'write',
-          runCondition: RunOnChanges(
-              inputs: dir(outDir.path, allowAbsolutePaths: true),
-              outputs: file(outFile.path),
-              cache: mockCache));
+        (List<String> args, [ChangeSet? changes]) async =>
+            await outFile.writeAsString(await inFile.readAsString()),
+        name: 'write',
+        runCondition: RunOnChanges(
+          inputs: dir(outDir.path, allowAbsolutePaths: true),
+          outputs: file(outFile.path),
+          cache: mockCache,
+        ),
+      );
 
       // the test fails if the Cache is touched
       go() async => await runBasic(
-          {task},
-          const {},
-          Options(
-            disableCache: true,
-            tasksInvocation: ['write'],
-          ),
-          mockCache);
+        {task},
+        const {},
+        Options(disableCache: true, tasksInvocation: ['write']),
+        mockCache,
+      );
 
       await go();
       await go();
     });
 
     test('errors if task does not exist', () async {
-      var proc =
-          await runExampleDartBuild(['foo'], isCodeSuccessful: (i) => i == 1);
+      var proc = await runExampleDartBuild([
+        'foo',
+      ], isCodeSuccessful: (i) => i == 1);
       expect(proc.stdout.length, equals(2));
-      expect(proc.stdout[0],
-          contains("ERROR - Invocation problem: Task 'foo' does not exist"));
+      expect(
+        proc.stdout[0],
+        contains("ERROR - Invocation problem: Task 'foo' does not exist"),
+      );
       expect(proc.stdout[1], contains('Build failed'));
       expect(proc.exitCode, equals(1));
     });
 
     test('errors if option does not exist', () async {
-      var proc =
-          await runExampleDartBuild(['--foo'], isCodeSuccessful: (i) => i == 4);
+      var proc = await runExampleDartBuild([
+        '--foo',
+      ], isCodeSuccessful: (i) => i == 4);
       expect(proc.stdout.length, equals(2));
       expect(
-          proc.stdout[0],
-          contains('Could not find an option named "--foo"...'
-              ' run with the -h flag to see usage.'));
+        proc.stdout[0],
+        contains(
+          'Could not find an option named "--foo"...'
+          ' run with the -h flag to see usage.',
+        ),
+      );
       expect(proc.stdout[1], contains('Build failed'));
       expect(proc.exitCode, equals(4));
     });
 
     test('errors if arguments for task are not valid', () async {
-      var proc = await runExampleDartBuild(['hello', ':Joe', ':Mary'],
-          isCodeSuccessful: (i) => i == 1);
+      var proc = await runExampleDartBuild([
+        'hello',
+        ':Joe',
+        ':Mary',
+      ], isCodeSuccessful: (i) => i == 1);
       expect(proc.stdout.length, equals(2));
       expect(
-          proc.stdout[0],
-          contains('ERROR - Invocation problem: '
-              "Invalid arguments for task 'hello': [Joe, Mary] - "
-              'between 0 and 1 arguments expected'));
+        proc.stdout[0],
+        contains(
+          'ERROR - Invocation problem: '
+          "Invalid arguments for task 'hello': [Joe, Mary] - "
+          'between 0 and 1 arguments expected',
+        ),
+      );
       expect(proc.stdout[1], contains('Build failed'));
       expect(proc.exitCode, equals(1));
     });

@@ -28,8 +28,9 @@ Future sayHo(_) => _withEnv('ho', () => logger.info('Ho'));
 Future sayArgs([List<String>? args]) =>
     _withEnv('args', () => logger.info(args));
 
-Future delayedMessage(_) => Future.delayed(const Duration(seconds: 1))
-    .then((_) => logger.warning('Managed to log delayed message'));
+Future delayedMessage(_) => Future.delayed(
+  const Duration(seconds: 1),
+).then((_) => logger.warning('Managed to log delayed message'));
 
 Future throwError(_) async {
   await _readNonExistingFile();

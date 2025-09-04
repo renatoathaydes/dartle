@@ -31,8 +31,10 @@ void main([List<String> args = const []]) {
     expect(splitWords('hi-world'), equals(['hi-world']));
     expect(splitWords('hiWorld'), equals(['hi', 'world']));
     expect(splitWords('HiWorld'), equals(['hi', 'world']));
-    expect(splitWords('theCatAteTheBook'),
-        equals(['the', 'cat', 'ate', 'the', 'book']));
+    expect(
+      splitWords('theCatAteTheBook'),
+      equals(['the', 'cat', 'ate', 'the', 'book']),
+    );
     expect(splitWords('FooBarZ'), equals(['foo', 'bar', 'z']));
     expect(splitWords('aBCdE'), equals(['a', 'b', 'cd', 'e']));
   });
@@ -46,71 +48,163 @@ void main([List<String> args = const []]) {
     expect(findMatchingByWords('c', ['a', 'b', 'c']), equals('c'));
     expect(findMatchingByWords('d', ['a', 'b', 'c']), isNull);
     expect(findMatchingByWords('hi', ['hiWorld', 'hiYou']), isNull);
-    expect(findMatchingByWords('hiWorld', ['hiWorld', 'hiYou']),
-        equals('hiWorld'));
+    expect(
+      findMatchingByWords('hiWorld', ['hiWorld', 'hiYou']),
+      equals('hiWorld'),
+    );
     expect(findMatchingByWords('hiW', ['hiWorld', 'hiYou']), equals('hiWorld'));
     expect(findMatchingByWords('hiY', ['hiWorld', 'hiYou']), equals('hiYou'));
 
     expect(
-        findMatchingByWords(
-            '', const ['fooBar', 'fooBarBaz', 'test', 'check', 'fooBarFoo']),
-        isNull);
+      findMatchingByWords('', const [
+        'fooBar',
+        'fooBarBaz',
+        'test',
+        'check',
+        'fooBarFoo',
+      ]),
+      isNull,
+    );
     expect(
-        findMatchingByWords('fooBar',
-            const ['fooBar', 'fooBarBaz', 'test', 'check', 'fooBarFoo']),
-        equals('fooBar'));
+      findMatchingByWords('fooBar', const [
+        'fooBar',
+        'fooBarBaz',
+        'test',
+        'check',
+        'fooBarFoo',
+      ]),
+      equals('fooBar'),
+    );
     expect(
-        findMatchingByWords('fooBarZ',
-            const ['fooBar', 'fooBarBaz', 'test', 'check', 'fooBarFoo']),
-        isNull);
+      findMatchingByWords('fooBarZ', const [
+        'fooBar',
+        'fooBarBaz',
+        'test',
+        'check',
+        'fooBarFoo',
+      ]),
+      isNull,
+    );
     expect(
-        findMatchingByWords(
-            'fBB', const ['fooBar', 'fooBarBaz', 'test', 'check', 'fooBarFoo']),
-        'fooBarBaz');
+      findMatchingByWords('fBB', const [
+        'fooBar',
+        'fooBarBaz',
+        'test',
+        'check',
+        'fooBarFoo',
+      ]),
+      'fooBarBaz',
+    );
     expect(
-        findMatchingByWords('foBaB',
-            const ['fooBar', 'fooBarBaz', 'test', 'check', 'fooBarFoo']),
-        'fooBarBaz');
+      findMatchingByWords('foBaB', const [
+        'fooBar',
+        'fooBarBaz',
+        'test',
+        'check',
+        'fooBarFoo',
+      ]),
+      'fooBarBaz',
+    );
     expect(
-        findMatchingByWords('fooBarB',
-            const ['fooBar', 'fooBarBaz', 'test', 'check', 'fooBarFoo']),
-        'fooBarBaz');
+      findMatchingByWords('fooBarB', const [
+        'fooBar',
+        'fooBarBaz',
+        'test',
+        'check',
+        'fooBarFoo',
+      ]),
+      'fooBarBaz',
+    );
     expect(
-        findMatchingByWords('fooBarF',
-            const ['fooBar', 'fooBarBaz', 'test', 'check', 'fooBarFoo']),
-        equals('fooBarFoo'));
+      findMatchingByWords('fooBarF', const [
+        'fooBar',
+        'fooBarBaz',
+        'test',
+        'check',
+        'fooBarFoo',
+      ]),
+      equals('fooBarFoo'),
+    );
     expect(
-        findMatchingByWords('fooBFo',
-            const ['fooBar', 'fooBarBaz', 'test', 'check', 'fooBarFoo']),
-        equals('fooBarFoo'));
+      findMatchingByWords('fooBFo', const [
+        'fooBar',
+        'fooBarBaz',
+        'test',
+        'check',
+        'fooBarFoo',
+      ]),
+      equals('fooBarFoo'),
+    );
     expect(
-        findMatchingByWords('fooBarFoo',
-            const ['fooBar', 'fooBarBaz', 'test', 'check', 'fooBarFoo']),
-        equals('fooBarFoo'));
+      findMatchingByWords('fooBarFoo', const [
+        'fooBar',
+        'fooBarBaz',
+        'test',
+        'check',
+        'fooBarFoo',
+      ]),
+      equals('fooBarFoo'),
+    );
     expect(
-        findMatchingByWords(
-            't', const ['fooBar', 'fooBarBaz', 'test', 'check', 'fooBarFoo']),
-        equals('test'));
+      findMatchingByWords('t', const [
+        'fooBar',
+        'fooBarBaz',
+        'test',
+        'check',
+        'fooBarFoo',
+      ]),
+      equals('test'),
+    );
     expect(
-        findMatchingByWords('test',
-            const ['fooBar', 'fooBarBaz', 'test', 'check', 'fooBarFoo']),
-        equals('test'));
+      findMatchingByWords('test', const [
+        'fooBar',
+        'fooBarBaz',
+        'test',
+        'check',
+        'fooBarFoo',
+      ]),
+      equals('test'),
+    );
     expect(
-        findMatchingByWords(
-            'c', const ['fooBar', 'fooBarBaz', 'test', 'check', 'fooBarFoo']),
-        equals('check'));
+      findMatchingByWords('c', const [
+        'fooBar',
+        'fooBarBaz',
+        'test',
+        'check',
+        'fooBarFoo',
+      ]),
+      equals('check'),
+    );
     expect(
-        findMatchingByWords(
-            'che', const ['fooBar', 'fooBarBaz', 'test', 'check', 'fooBarFoo']),
-        equals('check'));
+      findMatchingByWords('che', const [
+        'fooBar',
+        'fooBarBaz',
+        'test',
+        'check',
+        'fooBarFoo',
+      ]),
+      equals('check'),
+    );
     expect(
-        findMatchingByWords('check',
-            const ['fooBar', 'fooBarBaz', 'test', 'check', 'fooBarFoo']),
-        equals('check'));
+      findMatchingByWords('check', const [
+        'fooBar',
+        'fooBarBaz',
+        'test',
+        'check',
+        'fooBarFoo',
+      ]),
+      equals('check'),
+    );
     expect(
-        findMatchingByWords(
-            'f', const ['fooBar', 'fooBarBaz', 'test', 'check', 'fooBarFoo']),
-        isNull);
+      findMatchingByWords('f', const [
+        'fooBar',
+        'fooBarBaz',
+        'test',
+        'check',
+        'fooBarFoo',
+      ]),
+      isNull,
+    );
   });
 
   group('deleteAll', () {
@@ -134,13 +228,20 @@ void main([List<String> args = const []]) {
     test('full directory', () async {
       // make sure the file tree was created correctly
       expect(
-          await Directory(fs.root)
-              .list(recursive: true)
-              .map((e) => e.path)
-              .toSet(),
-          equals({foo!, bar!, txtFile!, mdFile!, barTxtFile!, barMdFile!}
-              .map((e) => e.path)
-              .toSet()));
+        await Directory(
+          fs.root,
+        ).list(recursive: true).map((e) => e.path).toSet(),
+        equals(
+          {
+            foo!,
+            bar!,
+            txtFile!,
+            mdFile!,
+            barTxtFile!,
+            barMdFile!,
+          }.map((e) => e.path).toSet(),
+        ),
+      );
 
       // actual test
       await withFileSystem(fs, () async {
@@ -154,11 +255,11 @@ void main([List<String> args = const []]) {
         await deleteAll(dir(p.join('foo', 'bar')));
       });
       expect(
-          await Directory(fs.root)
-              .list(recursive: true)
-              .map((e) => e.path)
-              .toSet(),
-          equals({foo!, txtFile!, mdFile!}.map((e) => e.path).toSet()));
+        await Directory(
+          fs.root,
+        ).list(recursive: true).map((e) => e.path).toSet(),
+        equals({foo!, txtFile!, mdFile!}.map((e) => e.path).toSet()),
+      );
     });
 
     test('directory with pattern', () async {
@@ -166,12 +267,11 @@ void main([List<String> args = const []]) {
         await deleteAll(dir('foo', fileExtensions: {'.md', '.jpg'}));
       });
       expect(
-          await Directory(fs.root)
-              .list(recursive: true)
-              .map((e) => e.path)
-              .toSet(),
-          equals(
-              {foo!, bar!, txtFile!, barTxtFile!}.map((e) => e.path).toSet()));
+        await Directory(
+          fs.root,
+        ).list(recursive: true).map((e) => e.path).toSet(),
+        equals({foo!, bar!, txtFile!, barTxtFile!}.map((e) => e.path).toSet()),
+      );
     });
 
     test('directory with pattern matching everything', () async {
@@ -186,12 +286,11 @@ void main([List<String> args = const []]) {
         await deleteAll(dir('foo', exclusions: const {'file.txt'}));
       });
       expect(
-          await Directory(fs.root)
-              .list(recursive: true)
-              .map((e) => e.path)
-              .toSet(),
-          equals(
-              {foo!, bar!, txtFile!, barTxtFile!}.map((e) => e.path).toSet()));
+        await Directory(
+          fs.root,
+        ).list(recursive: true).map((e) => e.path).toSet(),
+        equals({foo!, bar!, txtFile!, barTxtFile!}.map((e) => e.path).toSet()),
+      );
     });
 
     test('directory with directory exclusion', () async {
@@ -199,13 +298,13 @@ void main([List<String> args = const []]) {
         await deleteAll(dir('foo', exclusions: const {'bar'}));
       });
       expect(
-          await Directory(fs.root)
-              .list(recursive: true)
-              .map((e) => e.path)
-              .toSet(),
-          equals({foo!, bar!, barTxtFile!, barMdFile!}
-              .map((e) => e.path)
-              .toSet()));
+        await Directory(
+          fs.root,
+        ).list(recursive: true).map((e) => e.path).toSet(),
+        equals(
+          {foo!, bar!, barTxtFile!, barMdFile!}.map((e) => e.path).toSet(),
+        ),
+      );
     });
   });
 
@@ -220,11 +319,15 @@ void main([List<String> args = const []]) {
 
     test('captures error output successfully', () async {
       final tempFile =
-          await File(p.join(Directory.systemTemp.path, 'temp.dart'))
-              .writeAsString("import 'dart:io';"
-                  "main() => stderr.writeln('hello');");
+          await File(
+            p.join(Directory.systemTemp.path, 'temp.dart'),
+          ).writeAsString(
+            "import 'dart:io';"
+            "main() => stderr.writeln('hello');",
+          );
       final result = await execRead(
-          Process.start('dart', ['run', '--no-serve-devtools', tempFile.path]));
+        Process.start('dart', ['run', '--no-serve-devtools', tempFile.path]),
+      );
       expect(result.exitCode, equals(0));
       expect(result.stdout, isEmpty);
       expect(result.stderr, hasLength(1));
@@ -233,8 +336,9 @@ void main([List<String> args = const []]) {
 
     test('can filter output successfully', () async {
       final tempFile =
-          await File(p.join(Directory.systemTemp.path, 'temp.dart'))
-              .writeAsString("""import 'dart:io';
+          await File(
+            p.join(Directory.systemTemp.path, 'temp.dart'),
+          ).writeAsString("""import 'dart:io';
                   main() {
                     stdout.writeln('hello');
                     stdout.writeln('foo');
@@ -244,9 +348,10 @@ void main([List<String> args = const []]) {
                     stderr.writeln('bye');
                   }""");
       final result = await execRead(
-          Process.start('dart', ['run', '--no-serve-devtools', tempFile.path]),
-          stdoutFilter: (msg) => msg != 'bye',
-          stderrFilter: (msg) => msg != 'bar');
+        Process.start('dart', ['run', '--no-serve-devtools', tempFile.path]),
+        stdoutFilter: (msg) => msg != 'bye',
+        stderrFilter: (msg) => msg != 'bar',
+      );
       expect(result.exitCode, equals(0));
       expect(result.stdout, equals(const ['hello', 'foo']));
       expect(result.stderr, equals(const ['hey', 'bye']));
@@ -254,17 +359,24 @@ void main([List<String> args = const []]) {
 
     test('handles error correctly', () async {
       final tempFile =
-          await File(p.join(Directory.systemTemp.path, 'temp.dart'))
-              .writeAsString("import 'dart:io';"
-                  "main() { print('exiting'); exitCode = 2; }");
+          await File(
+            p.join(Directory.systemTemp.path, 'temp.dart'),
+          ).writeAsString(
+            "import 'dart:io';"
+            "main() { print('exiting'); exitCode = 2; }",
+          );
 
       expect(
-          () => execRead(Process.start(
-              'dart', ['run', '--no-serve-devtools', tempFile.path])),
-          throwsA(isA<ProcessExitCodeException>()
+        () => execRead(
+          Process.start('dart', ['run', '--no-serve-devtools', tempFile.path]),
+        ),
+        throwsA(
+          isA<ProcessExitCodeException>()
               .having((e) => e.exitCode, 'exitCode', equals(2))
               .having((e) => e.stdout, 'stdout', equals(const ['exiting']))
-              .having((e) => e.stderr, 'stderr', isEmpty)));
+              .having((e) => e.stderr, 'stderr', isEmpty),
+        ),
+      );
     });
   });
 
@@ -309,15 +421,27 @@ void main([List<String> args = const []]) {
       expect(await downloadJson(uri), equals(const {'json': true}));
     }, timeout: const Timeout(Duration(seconds: 4)));
 
-    test('can overwrite header and report error', () async {
-      final uri = Uri.parse('http://localhost:${httpServer!.port}/json');
-      // by sending an unexpected header, we should get a 400 bad request
-      expect(
-          downloadJson(uri,
-              headers: (h) => h.add(HttpHeaders.acceptHeader, 'text/plain')),
-          throwsA(isA<HttpCodeException>()
-              .having((e) => e.statusCode, 'statusCode', equals(400))));
-    }, timeout: const Timeout(Duration(seconds: 4)));
+    test(
+      'can overwrite header and report error',
+      () async {
+        final uri = Uri.parse('http://localhost:${httpServer!.port}/json');
+        // by sending an unexpected header, we should get a 400 bad request
+        expect(
+          downloadJson(
+            uri,
+            headers: (h) => h.add(HttpHeaders.acceptHeader, 'text/plain'),
+          ),
+          throwsA(
+            isA<HttpCodeException>().having(
+              (e) => e.statusCode,
+              'statusCode',
+              equals(400),
+            ),
+          ),
+        );
+      },
+      timeout: const Timeout(Duration(seconds: 4)),
+    );
   });
 
   group('tar', () {
@@ -330,14 +454,18 @@ void main([List<String> args = const []]) {
         Entry.fileWithText(p.join('tar-d1', 'tar-d2', 'f3.txt'), 'f3'),
       ]);
 
-      final tarFile = await tar(dir(fs.root, allowAbsolutePaths: true),
-          destination: tempFile(extension: '.tar.gz').path,
-          destinationPath: (path) => p.relative(path, from: fs.root));
+      final tarFile = await tar(
+        dir(fs.root, allowAbsolutePaths: true),
+        destination: tempFile(extension: '.tar.gz').path,
+        destinationPath: (path) => p.relative(path, from: fs.root),
+      );
 
       expect(await tarFile.exists(), isTrue);
 
-      final decodedDir =
-          await untar(tarFile.path, destinationDir: tempDir().path);
+      final decodedDir = await untar(
+        tarFile.path,
+        destinationDir: tempDir().path,
+      );
 
       await expectFileTree(decodedDir.path, {
         'tar-d1/': '',
@@ -356,15 +484,20 @@ void main([List<String> args = const []]) {
         Entry.fileWithText(p.join('d1', 'f3.txt'), 'Some f3'),
       ]);
 
-      final tarFile = await tar(dir(fs.root, allowAbsolutePaths: true),
-          destination: tempFile(extension: '.tar').path,
-          encoder: const NoEncoding(),
-          destinationPath: (path) => p.relative(path, from: fs.root));
+      final tarFile = await tar(
+        dir(fs.root, allowAbsolutePaths: true),
+        destination: tempFile(extension: '.tar').path,
+        encoder: const NoEncoding(),
+        destinationPath: (path) => p.relative(path, from: fs.root),
+      );
 
       expect(await tarFile.exists(), isTrue);
 
-      final decodedDir = await untar(tarFile.path,
-          decoder: const NoEncoding(), destinationDir: tempDir().path);
+      final decodedDir = await untar(
+        tarFile.path,
+        decoder: const NoEncoding(),
+        destinationDir: tempDir().path,
+      );
 
       await expectFileTree(decodedDir.path, {
         'd1/': '',

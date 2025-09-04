@@ -8,28 +8,36 @@ import 'dartle-src/metadata_generator.dart';
 
 final dartleDart = DartleDart();
 
-final libDirDartFiles = dir(join(dartleDart.rootDir, 'lib'),
-    fileExtensions: const {'dart'}, exclusions: const {'*.g.dart'});
+final libDirDartFiles = dir(
+  join(dartleDart.rootDir, 'lib'),
+  fileExtensions: const {'dart'},
+  exclusions: const {'*.g.dart'},
+);
 
 void main(List<String> args) {
   final checkImportsTask = DartleImportChecker(libDirDartFiles).task;
-  final generateVersionTask =
-      DartleVersionFileGenerator(dartleDart.rootDir).task;
+  final generateVersionTask = DartleVersionFileGenerator(
+    dartleDart.rootDir,
+  ).task;
   final cleanupTask = createCleanWorkingDirsTask();
 
   checkImportsTask.dependsOn(const {'cleanWorkingDirs'});
   distributionTask.dependsOn({dartleDart.compileExe.name});
-  dartleDart.analyzeCode
-      .dependsOn(const {'generateDartSources', 'checkImports'});
+  dartleDart.analyzeCode.dependsOn(const {
+    'generateDartSources',
+    'checkImports',
+  });
   dartleDart.formatCode.dependsOn(const {'generateDartSources'});
 
-  run(args, tasks: {
-    checkImportsTask,
-    generateVersionTask,
-    distributionTask,
-    cleanupTask,
-    ...dartleDart.tasks,
-  }, defaultTasks: {
-    dartleDart.build
-  });
+  run(
+    args,
+    tasks: {
+      checkImportsTask,
+      generateVersionTask,
+      distributionTask,
+      cleanupTask,
+      ...dartleDart.tasks,
+    },
+    defaultTasks: {dartleDart.build},
+  );
 }

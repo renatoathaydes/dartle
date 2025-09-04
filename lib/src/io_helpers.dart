@@ -34,10 +34,12 @@ String? homeDir() => Platform.isWindows
 /// Instances of [StdStreamConsumer] can be used as [onStdoutLine] and
 /// [onStderrLine] functions in order to easily configure what to do with the
 /// process' output.
-Future<int> exec(Future<Process> process,
-    {String name = '',
-    Function(String)? onStdoutLine,
-    Function(String)? onStderrLine}) async {
+Future<int> exec(
+  Future<Process> process, {
+  String name = '',
+  Function(String)? onStdoutLine,
+  Function(String)? onStderrLine,
+}) async {
   final proc = await process;
   onStdoutLine ??= StdStreamConsumer(printToStdout: true).call;
   onStderrLine ??= StdStreamConsumer(printToStderr: true).call;
@@ -45,9 +47,14 @@ Future<int> exec(Future<Process> process,
   return _exec(proc, name, onStdoutLine, onStderrLine);
 }
 
-Future<int> _exec(Process proc, String name, Function(String) onStdoutLine,
-    Function(String) onStderrLine) async {
-  final procDescription = "process${name.isEmpty ? '' : " '$name'"} "
+Future<int> _exec(
+  Process proc,
+  String name,
+  Function(String) onStdoutLine,
+  Function(String) onStderrLine,
+) async {
+  final procDescription =
+      "process${name.isEmpty ? '' : " '$name'"} "
       '(PID=${proc.pid})';
   logger.fine('Started $procDescription');
 
@@ -92,24 +99,35 @@ enum StreamRedirectMode { stdout, stderr, stdoutAndStderr, none }
 ///
 /// By default, both streams are redirected in case of failure, but none in case
 /// of success.
-Future<int> execProc(Future<Process> process,
-    {String name = '',
-    bool Function(int) isCodeSuccessful = _onlyZero,
-    StreamRedirectMode successMode = StreamRedirectMode.none,
-    StreamRedirectMode errorMode = StreamRedirectMode.stdoutAndStderr}) async {
-  final allDisabled = successMode == StreamRedirectMode.none &&
+Future<int> execProc(
+  Future<Process> process, {
+  String name = '',
+  bool Function(int) isCodeSuccessful = _onlyZero,
+  StreamRedirectMode successMode = StreamRedirectMode.none,
+  StreamRedirectMode errorMode = StreamRedirectMode.stdoutAndStderr,
+}) async {
+  final allDisabled =
+      successMode == StreamRedirectMode.none &&
       errorMode == StreamRedirectMode.none;
   final stdoutConsumer = StdStreamConsumer(keepLines: !allDisabled);
   final stderrConsumer = StdStreamConsumer(keepLines: !allDisabled);
   final code = await _exec(
-      await process, name, stdoutConsumer.call, stderrConsumer.call);
+    await process,
+    name,
+    stdoutConsumer.call,
+    stderrConsumer.call,
+  );
   final success = isCodeSuccessful(code);
   if (allDisabled) {
     if (success) {
       return code;
     } else {
       throw ProcessExitCodeException(
-          code, name, stdoutConsumer.lines, stderrConsumer.lines);
+        code,
+        name,
+        stdoutConsumer.lines,
+        stderrConsumer.lines,
+      );
     }
   }
   Future<void> redirect(StreamRedirectMode mode) async {
@@ -141,7 +159,11 @@ Future<int> execProc(Future<Process> process,
     return code;
   }
   throw ProcessExitCodeException(
-      code, name, stdoutConsumer.lines, stderrConsumer.lines);
+    code,
+    name,
+    stdoutConsumer.lines,
+    stderrConsumer.lines,
+  );
 }
 
 /// Result of calling [execRead].
@@ -172,11 +194,13 @@ bool _onlyZero(int i) => i == 0;
 /// is not considered successful by [isCodeSuccessful],
 /// or [ProcessException] in case the process could not be executed at all.
 ///
-Future<ExecReadResult> execRead(Future<Process> process,
-    {String name = '',
-    bool Function(String) stdoutFilter = filterNothing,
-    bool Function(String) stderrFilter = filterNothing,
-    bool Function(int) isCodeSuccessful = _onlyZero}) async {
+Future<ExecReadResult> execRead(
+  Future<Process> process, {
+  String name = '',
+  bool Function(String) stdoutFilter = filterNothing,
+  bool Function(String) stderrFilter = filterNothing,
+  bool Function(int) isCodeSuccessful = _onlyZero,
+}) async {
   final stdout = StdStreamConsumer(keepLines: true, filter: stdoutFilter);
   final stderr = StdStreamConsumer(keepLines: true, filter: stderrFilter);
   final code = await _exec(await process, name, stdout.call, stderr.call);
@@ -202,12 +226,14 @@ Future<ExecReadResult> execRead(Future<Process> process,
 /// that connection before returning, so it is not suitable for making
 /// several requests to the same server efficiently.
 ///
-Stream<List<int>> download(Uri uri,
-    {void Function(HttpHeaders)? headers,
-    void Function(List<Cookie>)? cookies,
-    bool Function(int) isSuccessfulStatusCode = _isSuccessfulStatusCode,
-    SecurityContext? context,
-    Duration connectionTimeout = const Duration(seconds: 10)}) async* {
+Stream<List<int>> download(
+  Uri uri, {
+  void Function(HttpHeaders)? headers,
+  void Function(List<Cookie>)? cookies,
+  bool Function(int) isSuccessfulStatusCode = _isSuccessfulStatusCode,
+  SecurityContext? context,
+  Duration connectionTimeout = const Duration(seconds: 10),
+}) async* {
   final client = HttpClient(context: context)
     ..connectionTimeout = connectionTimeout;
   final req = await client.getUrl(uri);
@@ -251,21 +277,23 @@ void _jsonHeader(HttpHeaders headers) {
 /// that connection before returning, so it is not suitable for making
 /// several requests to the same server efficiently.
 ///
-Future<String> downloadText(Uri uri,
-    {void Function(HttpHeaders) headers = _plainTextHeader,
-    void Function(List<Cookie>)? cookies,
-    bool Function(int) isSuccessfulStatusCode = _isSuccessfulStatusCode,
-    SecurityContext? context,
-    Duration connectionTimeout = const Duration(seconds: 10),
-    Encoding encoding = utf8}) async {
-  return download(uri,
-          headers: headers,
-          cookies: cookies,
-          context: context,
-          connectionTimeout: connectionTimeout,
-          isSuccessfulStatusCode: isSuccessfulStatusCode)
-      .transform(encoding.decoder)
-      .join();
+Future<String> downloadText(
+  Uri uri, {
+  void Function(HttpHeaders) headers = _plainTextHeader,
+  void Function(List<Cookie>)? cookies,
+  bool Function(int) isSuccessfulStatusCode = _isSuccessfulStatusCode,
+  SecurityContext? context,
+  Duration connectionTimeout = const Duration(seconds: 10),
+  Encoding encoding = utf8,
+}) async {
+  return download(
+    uri,
+    headers: headers,
+    cookies: cookies,
+    context: context,
+    connectionTimeout: connectionTimeout,
+    isSuccessfulStatusCode: isSuccessfulStatusCode,
+  ).transform(encoding.decoder).join();
 }
 
 /// Download JSON data from the given [Uri].
@@ -285,22 +313,23 @@ Future<String> downloadText(Uri uri,
 /// that connection before returning, so it is not suitable for making
 /// several requests to the same server efficiently.
 ///
-Future<Object?> downloadJson(Uri uri,
-    {void Function(HttpHeaders) headers = _jsonHeader,
-    void Function(List<Cookie>)? cookies,
-    bool Function(int) isSuccessfulStatusCode = _isSuccessfulStatusCode,
-    SecurityContext? context,
-    Duration connectionTimeout = const Duration(seconds: 10),
-    Encoding encoding = utf8}) {
-  return download(uri,
-          headers: headers,
-          cookies: cookies,
-          context: context,
-          isSuccessfulStatusCode: isSuccessfulStatusCode,
-          connectionTimeout: connectionTimeout)
-      .transform(encoding.decoder)
-      .transform(json.decoder)
-      .first;
+Future<Object?> downloadJson(
+  Uri uri, {
+  void Function(HttpHeaders) headers = _jsonHeader,
+  void Function(List<Cookie>)? cookies,
+  bool Function(int) isSuccessfulStatusCode = _isSuccessfulStatusCode,
+  SecurityContext? context,
+  Duration connectionTimeout = const Duration(seconds: 10),
+  Encoding encoding = utf8,
+}) {
+  return download(
+    uri,
+    headers: headers,
+    cookies: cookies,
+    context: context,
+    isSuccessfulStatusCode: isSuccessfulStatusCode,
+    connectionTimeout: connectionTimeout,
+  ).transform(encoding.decoder).transform(json.decoder).first;
 }
 
 /// Delete all files and possibly directories included in the given
@@ -316,8 +345,9 @@ Future<void> deleteAll(FileCollection fileCollection) async {
   // directories last.
   for (final entry in toDelete.reversed) {
     logger.fine('Deleting ${entry.path}');
-    final ok =
-        await ignoreExceptions(() => entry.entity.delete(recursive: false));
+    final ok = await ignoreExceptions(
+      () => entry.entity.delete(recursive: false),
+    );
     if (!ok) {
       logger.fine(() => 'Did not delete: ${entry.path}');
     }
@@ -332,8 +362,8 @@ final _random = Random();
 File tempFile({String extension = ''}) {
   final dir = Directory.systemTemp.path;
   return File(
-      p.join(dir, 'dtemp-${_random.nextInt(pow(2, 31).toInt())}$extension'))
-    ..createSync();
+    p.join(dir, 'dtemp-${_random.nextInt(pow(2, 31).toInt())}$extension'),
+  )..createSync();
 }
 
 /// Get a [Directory] with a random name inside the `Directory.systemTemp` directory.
@@ -342,18 +372,21 @@ File tempFile({String extension = ''}) {
 Directory tempDir({String suffix = ''}) {
   final dir = Directory.systemTemp.path;
   return Directory(
-      p.join(dir, 'dtemp-${_random.nextInt(pow(2, 31).toInt())}$suffix'))
-    ..createSync();
+    p.join(dir, 'dtemp-${_random.nextInt(pow(2, 31).toInt())}$suffix'),
+  )..createSync();
 }
 
 Stream<TarEntry> _tarEntries(
-    Stream<File> files, String Function(String)? destinationPath) async* {
+  Stream<File> files,
+  String Function(String)? destinationPath,
+) async* {
   await for (final file in files) {
     final path = destinationPath?.call(file.path) ?? file.path;
     final stat = file.statSync();
     yield TarEntry(
-        TarHeader(name: path, mode: stat.mode, modified: stat.modified),
-        file.openRead());
+      TarHeader(name: path, mode: stat.mode, modified: stat.modified),
+      file.openRead(),
+    );
   }
 }
 
@@ -375,10 +408,12 @@ Stream<TarEntry> _tarEntries(
 ///
 /// The tar file is returned.
 ///
-Future<File> tar(FileCollection fileCollection,
-    {required String destination,
-    String Function(String)? destinationPath,
-    Converter<List<int>, List<int>>? encoder}) async {
+Future<File> tar(
+  FileCollection fileCollection, {
+  required String destination,
+  String Function(String)? destinationPath,
+  Converter<List<int>, List<int>>? encoder,
+}) async {
   logger.finer(() => 'Tar $fileCollection to $destination');
   final entries = _tarEntries(fileCollection.resolveFiles(), destinationPath);
   final dest = File(destination);
@@ -408,9 +443,11 @@ Future<File> tar(FileCollection fileCollection,
 /// is set for all created files.
 ///
 /// The destination directory is created if necessary and returned.
-Future<Directory> untar(String tarFile,
-    {required String destinationDir,
-    Converter<List<int>, List<int>>? decoder}) async {
+Future<Directory> untar(
+  String tarFile, {
+  required String destinationDir,
+  Converter<List<int>, List<int>>? decoder,
+}) async {
   logger.finer(() => 'Untar $tarFile');
   var tarStream = File(tarFile).openRead();
   if (decoder == null) {
@@ -443,7 +480,8 @@ Future<Directory> untar(String tarFile,
       await output._setPermissions(mode);
     } else {
       logger.fine(
-          () => 'Ignoring tar entry with unrecognized typeFlag: ${entry.type}');
+        () => 'Ignoring tar entry with unrecognized typeFlag: ${entry.type}',
+      );
     }
   }
   return Directory(destinationDir);
@@ -485,7 +523,8 @@ extension FileHelpers on File {
     }
     if (makeExecutable && (Platform.isLinux || Platform.isMacOS)) {
       final exitCode = await execProc(
-          Process.start('chmod', ['+x', path], runInShell: true));
+        Process.start('chmod', ['+x', path], runInShell: true),
+      );
       if (exitCode != 0) {
         throw DartleException(message: 'Unable to make file $path executable');
       }
@@ -496,11 +535,15 @@ extension FileHelpers on File {
   Future<void> _setPermissions(String unixPermissions) async {
     if (!(Platform.isLinux || Platform.isMacOS)) return;
     try {
-      await execProc(Process.start('chmod', [unixPermissions, path]),
-          name: 'chmod');
+      await execProc(
+        Process.start('chmod', [unixPermissions, path]),
+        name: 'chmod',
+      );
     } on ProcessExitCodeException catch (e) {
-      logger.fine('Unable to set file permissions ($path), '
-          'chmod exitCode=${e.exitCode}');
+      logger.fine(
+        'Unable to set file permissions ($path), '
+        'chmod exitCode=${e.exitCode}',
+      );
     }
   }
 }

@@ -85,12 +85,12 @@ class RunOnChanges with RunCondition, FilesCondition {
   ///
   /// At least one of [inputs] and [outputs] must be non-empty. For cases where
   /// a task has no inputs or outputs, use [AlwaysRun] instead.
-  RunOnChanges(
-      {this.inputs = FileCollection.empty,
-      this.outputs = FileCollection.empty,
-      this.verifyOutputsExist = true,
-      DartleCache? cache})
-      : cache = cache ?? DartleCache.instance;
+  RunOnChanges({
+    this.inputs = FileCollection.empty,
+    this.outputs = FileCollection.empty,
+    this.verifyOutputsExist = true,
+    DartleCache? cache,
+  }) : cache = cache ?? DartleCache.instance;
 
   @override
   FutureOr<bool> shouldRun(TaskInvocation invocation) async {
@@ -100,8 +100,10 @@ class RunOnChanges with RunCondition, FilesCondition {
       logger.fine('Changes detected on task inputs: $inputs');
       return true;
     }
-    final outputsChanged =
-        await cache.hasChanged(outputs, key: invocation.name);
+    final outputsChanged = await cache.hasChanged(
+      outputs,
+      key: invocation.name,
+    );
     if (outputsChanged) {
       logger.fine('Changes detected on task outputs: $outputs');
       return true;
@@ -155,8 +157,10 @@ class RunOnChanges with RunCondition, FilesCondition {
     }
     if (missingOutputs.isNotEmpty) {
       throw DartleException(
-          message: 'task did not produce the following expected outputs:\n'
-              '${missingOutputs.map((f) => '  * $f').join('\n')}');
+        message:
+            'task did not produce the following expected outputs:\n'
+            '${missingOutputs.map((f) => '  * $f').join('\n')}',
+      );
     }
   }
 
@@ -177,7 +181,7 @@ class RunAtMostEvery with RunCondition {
   final DartleCache cache;
 
   RunAtMostEvery(this.period, [DartleCache? cache])
-      : cache = cache ?? DartleCache.instance;
+    : cache = cache ?? DartleCache.instance;
 
   @override
   FutureOr<void> postRun(TaskResult result) async {
@@ -217,10 +221,7 @@ class RunToDelete with RunCondition, FilesCondition {
   /// after the task has run.
   final bool verifyDeletions;
 
-  RunToDelete(
-    this.deletions, {
-    this.verifyDeletions = true,
-  });
+  RunToDelete(this.deletions, {this.verifyDeletions = true});
 
   @override
   FileCollection get inputs => FileCollection.empty;
@@ -236,7 +237,7 @@ class RunToDelete with RunCondition, FilesCondition {
     return false;
   }
 
-//
+  //
   @override
   FutureOr<void> postRun(TaskResult result) async {
     if (verifyDeletions) {
@@ -244,9 +245,10 @@ class RunToDelete with RunCondition, FilesCondition {
       if (failedToDelete.isNotEmpty) {
         final taskName = result.invocation.name;
         throw DartleException(
-            message:
-                "task '$taskName' did not delete the following expected entities:\n"
-                '${failedToDelete.map((f) => '  * $f').join('\n')}');
+          message:
+              "task '$taskName' did not delete the following expected entities:\n"
+              '${failedToDelete.map((f) => '  * $f').join('\n')}',
+        );
       }
     }
   }
@@ -294,7 +296,8 @@ class OrCondition with RunConditionCombiner {
   OrCondition(this.conditions) {
     if (conditions.length < 2) {
       throw DartleException(
-          message: 'OrCondition requires at least two conditions');
+        message: 'OrCondition requires at least two conditions',
+      );
     }
   }
 
@@ -318,7 +321,8 @@ class AndCondition with RunConditionCombiner {
   AndCondition(this.conditions) {
     if (conditions.length < 2) {
       throw DartleException(
-          message: 'AndCondition requires at least two conditions');
+        message: 'AndCondition requires at least two conditions',
+      );
     }
   }
 

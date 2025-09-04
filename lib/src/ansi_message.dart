@@ -38,9 +38,10 @@ sealed class AnsiMessagePart {
 
   const factory AnsiMessagePart.text(String text) = TextAnsiMessagePart;
 
-  T when<T>(
-      {required T Function(ansi.AnsiCode) code,
-      required T Function(String) text});
+  T when<T>({
+    required T Function(ansi.AnsiCode) code,
+    required T Function(String) text,
+  });
 }
 
 class CodeAnsiMessagePart implements AnsiMessagePart {
@@ -49,9 +50,10 @@ class CodeAnsiMessagePart implements AnsiMessagePart {
   const CodeAnsiMessagePart(this.code);
 
   @override
-  T when<T>(
-      {required T Function(ansi.AnsiCode p1) code,
-      required T Function(String p1) text}) {
+  T when<T>({
+    required T Function(ansi.AnsiCode p1) code,
+    required T Function(String p1) text,
+  }) {
     return code(this.code);
   }
 
@@ -67,9 +69,10 @@ class TextAnsiMessagePart implements AnsiMessagePart {
   const TextAnsiMessagePart(this.text);
 
   @override
-  T when<T>(
-      {required T Function(ansi.AnsiCode p1) code,
-      required T Function(String p1) text}) {
+  T when<T>({
+    required T Function(ansi.AnsiCode p1) code,
+    required T Function(String p1) text,
+  }) {
     return text(this.text);
   }
 

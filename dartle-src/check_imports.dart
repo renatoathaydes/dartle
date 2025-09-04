@@ -6,11 +6,13 @@ class DartleImportChecker {
   late final Task task;
 
   DartleImportChecker(FileCollection libDirDartFiles) {
-    task = Task((_) => _checkImports(libDirDartFiles),
-        name: 'checkImports',
-        dependsOn: {'generateDartSources'},
-        description: 'Checks dart file imports are allowed',
-        runCondition: RunOnChanges(inputs: libDirDartFiles));
+    task = Task(
+      (_) => _checkImports(libDirDartFiles),
+      name: 'checkImports',
+      dependsOn: {'generateDartSources'},
+      description: 'Checks dart file imports are allowed',
+      runCondition: RunOnChanges(inputs: libDirDartFiles),
+    );
   }
 
   Future<void> _checkImports(FileCollection libDirDartFiles) async {
@@ -32,11 +34,14 @@ class DartleImportChecker {
         lineNumber++;
       }
       if (illegalImports.isNotEmpty) {
-        final illegalImportsString =
-            illegalImports.map((imp) => '  * $imp').join('\n');
+        final illegalImportsString = illegalImports
+            .map((imp) => '  * $imp')
+            .join('\n');
         failBuild(
-            reason: 'File ${file.path} contains '
-                'self imports to the dartle package:\n$illegalImportsString');
+          reason:
+              'File ${file.path} contains '
+              'self imports to the dartle package:\n$illegalImportsString',
+        );
       }
     }
   }

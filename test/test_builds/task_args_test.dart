@@ -10,15 +10,17 @@ const _buildDirectory = 'test/test_builds/task_args';
 
 Future<void> _deleteDartleToolDir() async {
   await deleteAll(
-      dir(path.join(_buildDirectory, '.dartle_tool'), includeHidden: true));
+    dir(path.join(_buildDirectory, '.dartle_tool'), includeHidden: true),
+  );
 }
 
 void main() {
   File buildExe = File('');
 
   setUpAll(() async {
-    buildExe =
-        await createDartExe(File(path.join(_buildDirectory, 'dartle.dart')));
+    buildExe = await createDartExe(
+      File(path.join(_buildDirectory, 'dartle.dart')),
+    );
   });
 
   tearDownAll(() async {
@@ -29,13 +31,19 @@ void main() {
     await _deleteDartleToolDir();
   });
 
-  Future<ExecReadResult> runExampleDartBuild(List<String> args,
-      {bool Function(int) isCodeSuccessful = noCheck}) async {
+  Future<ExecReadResult> runExampleDartBuild(
+    List<String> args, {
+    bool Function(int) isCodeSuccessful = noCheck,
+  }) async {
     return execRead(
-        runDartExe(buildExe,
-            args: ['--no-color', ...args], workingDirectory: _buildDirectory),
-        name: 'io_checks test dart build',
-        isCodeSuccessful: isCodeSuccessful);
+      runDartExe(
+        buildExe,
+        args: ['--no-color', ...args],
+        workingDirectory: _buildDirectory,
+      ),
+      name: 'io_checks test dart build',
+      isCodeSuccessful: isCodeSuccessful,
+    );
   }
 
   group('noArgs', () {
@@ -54,10 +62,13 @@ void main() {
       expect(result.exitCode, equals(1));
       expect(result.stdout, hasLength(2));
       expect(
-          result.stdout[0],
-          endsWith('ERROR - Invocation problem: '
-              "Invalid arguments for task 'noArgs': [a] - "
-              "no arguments are expected"));
+        result.stdout[0],
+        endsWith(
+          'ERROR - Invocation problem: '
+          "Invalid arguments for task 'noArgs': [a] - "
+          "no arguments are expected",
+        ),
+      );
       expect(result.stdout[1], contains('Build failed'));
       expect(result.stderr, isEmpty);
     });
@@ -65,8 +76,11 @@ void main() {
 
   group('requiresArgs', () {
     test('task runs successfully with one arg', () async {
-      final result =
-          await runExampleDartBuild(const ['requiresArgs', ':hello', ':foo']);
+      final result = await runExampleDartBuild(const [
+        'requiresArgs',
+        ':hello',
+        ':foo',
+      ]);
       expect(result.exitCode, equals(0));
       expect(result.stdout, hasLength(4));
       expect(result.stdout[1], endsWith("INFO - Running task 'requiresArgs'"));
@@ -82,9 +96,11 @@ void main() {
       expect(result.stdout[0], contains('INFO - Executing 1 task'));
       expect(result.stdout[1], endsWith("INFO - Running task 'requiresArgs'"));
       expect(
-          result.stdout[2],
-          endsWith(
-              "ERROR - Task 'requiresArgs' failed: Exception: Args is empty"));
+        result.stdout[2],
+        endsWith(
+          "ERROR - Task 'requiresArgs' failed: Exception: Args is empty",
+        ),
+      );
       expect(result.stdout[3], contains('Build failed'));
       expect(result.stderr, isEmpty);
     });
@@ -92,8 +108,11 @@ void main() {
 
   group('validatedArgs', () {
     test('validator accepts valid arguments', () async {
-      final result =
-          await runExampleDartBuild(const ['numberArgs', ':1', ':2']);
+      final result = await runExampleDartBuild(const [
+        'numberArgs',
+        ':1',
+        ':2',
+      ]);
       expect(result.exitCode, equals(0));
       expect(result.stdout, hasLength(4));
       expect(result.stdout[1], endsWith("INFO - Running task 'numberArgs'"));
@@ -104,20 +123,30 @@ void main() {
   });
 
   test('multiple task validation failures are reported properly', () async {
-    final result = await runExampleDartBuild(
-        const ['noArgs', ':bar', 'numberArgs', ':foo']);
+    final result = await runExampleDartBuild(const [
+      'noArgs',
+      ':bar',
+      'numberArgs',
+      ':foo',
+    ]);
     expect(result.exitCode, equals(1));
     expect(result.stdout, hasLength(4));
-    expect(result.stdout[0],
-        endsWith("ERROR - Several invocation problems found:"));
     expect(
-        result.stdout[1],
-        equals(
-            "  * Invalid arguments for task 'noArgs': [bar] - no arguments are expected"));
+      result.stdout[0],
+      endsWith("ERROR - Several invocation problems found:"),
+    );
     expect(
-        result.stdout[2],
-        equals(
-            "  * Invalid arguments for task 'numberArgs': [foo] - only number arguments allowed"));
+      result.stdout[1],
+      equals(
+        "  * Invalid arguments for task 'noArgs': [bar] - no arguments are expected",
+      ),
+    );
+    expect(
+      result.stdout[2],
+      equals(
+        "  * Invalid arguments for task 'numberArgs': [foo] - only number arguments allowed",
+      ),
+    );
     expect(result.stdout[3], contains('Build failed'));
     expect(result.stderr, isEmpty);
   });

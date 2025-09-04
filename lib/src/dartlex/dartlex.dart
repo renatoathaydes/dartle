@@ -27,8 +27,11 @@ Future<void> dartlexMain(List<String> args) async {
 ///
 /// This method will normally not return as Dartle will exit with the
 /// appropriate code. To avoid that, set [doNotExit] to [true].
-Future<void> runDartlex(List<String> args, Options options,
-    {bool doNotExit = false}) async {
+Future<void> runDartlex(
+  List<String> args,
+  Options options, {
+  bool doNotExit = false,
+}) async {
   await checkProjectInit(doNotExit, options.runPubGet);
 
   final compileTask = await _createDartCompileTask();
@@ -36,8 +39,10 @@ Future<void> runDartlex(List<String> args, Options options,
   final compileDartlexInvocation = TaskInvocation(compileTask);
 
   if (await recompileCondition.shouldRun(compileDartlexInvocation)) {
-    logger.info('Detected changes in dartle.dart or pubspec, '
-        'compiling Dartle executable.');
+    logger.info(
+      'Detected changes in dartle.dart or pubspec, '
+      'compiling Dartle executable.',
+    );
 
     // as the build sources have changed, we must invalidate the cache
     await recompileCondition.cache.clean();
@@ -100,14 +105,19 @@ Future<TaskWithDeps> _createDartCompileTask() async {
 
   final runCompileCondition = RunOnChanges(
     inputs: entities(buildSetupFiles, [
-      DirectoryEntry(path: 'dartle-src', fileExtensions: const {'.dart'})
+      DirectoryEntry(path: 'dartle-src', fileExtensions: const {'.dart'}),
     ]),
     outputs: file(_cachedDartlex.path),
   );
 
-  return TaskWithDeps(Task((_) => createDartExe(buildFile, _cachedDartlex),
+  return TaskWithDeps(
+    Task(
+      (_) => createDartExe(buildFile, _cachedDartlex),
       name: '_compileDartleFile',
       runCondition: runCompileCondition,
-      description: 'Internal task that compiles the Dartle project\'s '
-          'build file into an executable for better performance'));
+      description:
+          'Internal task that compiles the Dartle project\'s '
+          'build file into an executable for better performance',
+    ),
+  );
 }

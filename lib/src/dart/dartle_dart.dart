@@ -118,67 +118,84 @@ class DartleDart {
   final String rootDir;
 
   DartleDart([this.config = const DartConfig()])
-      : rootDir = config.rootDir ?? '.',
-        _enableBuildRunner = config.buildRunnerRunCondition != null {
+    : rootDir = config.rootDir ?? '.',
+      _enableBuildRunner = config.buildRunnerRunCondition != null {
     final productionDartFiles =
         config.sources ?? dirs(['lib', 'bin'], fileExtensions: const {'dart'});
-    final testDartFiles = config.testSources ??
+    final testDartFiles =
+        config.testSources ??
         dirs(['test', 'example'], fileExtensions: const {'dart'});
-    final buildDartFiles = config.buildSources ??
+    final buildDartFiles =
+        config.buildSources ??
         (dir('dartle-src', fileExtensions: const {'dart'}) +
             file('dartle.dart'));
     final allDartFiles = productionDartFiles + testDartFiles + buildDartFiles;
 
-    formatCode = Task(_formatCode,
-        name: 'format',
-        dependsOn: {if (_enableBuildRunner) 'runBuildRunner'},
-        description: 'Formats all Dart source code.',
-        runCondition: RunOnChanges(inputs: allDartFiles));
+    formatCode = Task(
+      _formatCode,
+      name: 'format',
+      dependsOn: {if (_enableBuildRunner) 'runBuildRunner'},
+      description: 'Formats all Dart source code.',
+      runCondition: RunOnChanges(inputs: allDartFiles),
+    );
 
-    runBuildRunner = Task(_runBuildRunner,
-        name: 'runBuildRunner',
-        description: 'Runs the Dart build_runner tool.',
-        dependsOn: {'runPubGet'},
-        runCondition: config.buildRunnerRunCondition ?? const AlwaysRun());
+    runBuildRunner = Task(
+      _runBuildRunner,
+      name: 'runBuildRunner',
+      description: 'Runs the Dart build_runner tool.',
+      dependsOn: {'runPubGet'},
+      runCondition: config.buildRunnerRunCondition ?? const AlwaysRun(),
+    );
 
-    analyzeCode = Task(_analyzeCode,
-        name: 'analyzeCode',
-        dependsOn: {
-          'runPubGet',
-          if (config.formatCode) 'format',
-          if (_enableBuildRunner) 'runBuildRunner',
-        },
-        description: 'Analyzes Dart source code',
-        runCondition: RunOnChanges(inputs: allDartFiles));
+    analyzeCode = Task(
+      _analyzeCode,
+      name: 'analyzeCode',
+      dependsOn: {
+        'runPubGet',
+        if (config.formatCode) 'format',
+        if (_enableBuildRunner) 'runBuildRunner',
+      },
+      description: 'Analyzes Dart source code',
+      runCondition: RunOnChanges(inputs: allDartFiles),
+    );
 
-    compileExe = Task(_compileExe,
-        name: 'compileExe',
-        description: 'Compiles Dart executables declared in pubspec. '
-            'Argument may specify the name(s) of the executable(s) to compile.',
-        dependsOn: {'analyzeCode'},
-        argsValidator: const AcceptAnyArgs(),
-        runCondition: RunOnChanges(
-            inputs: productionDartFiles,
-            outputs: dir(join(rootDir, 'build', 'bin'))));
+    compileExe = Task(
+      _compileExe,
+      name: 'compileExe',
+      description:
+          'Compiles Dart executables declared in pubspec. '
+          'Argument may specify the name(s) of the executable(s) to compile.',
+      dependsOn: {'analyzeCode'},
+      argsValidator: const AcceptAnyArgs(),
+      runCondition: RunOnChanges(
+        inputs: productionDartFiles,
+        outputs: dir(join(rootDir, 'build', 'bin')),
+      ),
+    );
 
-    runPubGet = Task(utils.runPubGet,
-        name: 'runPubGet',
-        description: 'Runs "pub get" in order to update dependencies.',
-        runCondition: OrCondition([
-          RunAtMostEvery(config.runPubGetAtMostEvery),
-          RunOnChanges(
-              inputs: files([
+    runPubGet = Task(
+      utils.runPubGet,
+      name: 'runPubGet',
+      description: 'Runs "pub get" in order to update dependencies.',
+      runCondition: OrCondition([
+        RunAtMostEvery(config.runPubGetAtMostEvery),
+        RunOnChanges(
+          inputs: files([
             join(rootDir, 'pubspec.yaml'),
-            join(rootDir, 'pubspec.lock')
-          ]))
-        ]));
+            join(rootDir, 'pubspec.lock'),
+          ]),
+        ),
+      ]),
+    );
 
-    test = Task(_test,
-        name: 'test',
-        description: 'Runs Dart tests.',
-        dependsOn: {if (config.runAnalyzer) 'analyzeCode'},
-        argsValidator: const TestTaskArgsValidator(),
-        runCondition: RunOnChanges(inputs: testDartFiles));
+    test = Task(
+      _test,
+      name: 'test',
+      description: 'Runs Dart tests.',
+      dependsOn: {if (config.runAnalyzer) 'analyzeCode'},
+      argsValidator: const TestTaskArgsValidator(),
+      runCondition: RunOnChanges(inputs: testDartFiles),
+    );
 
     final buildTasks = {
       if (config.formatCode) formatCode,
@@ -190,20 +207,25 @@ class DartleDart {
     };
 
     clean = createCleanTask(
-        tasks: buildTasks,
-        name: 'clean',
-        description: 'Deletes the outputs of all other tasks in this build.');
+      tasks: buildTasks,
+      name: 'clean',
+      description: 'Deletes the outputs of all other tasks in this build.',
+    );
 
-    build = Task((_) => null, // no action, just grouping other tasks
-        name: 'build',
-        description: 'Runs all enabled tasks.');
+    build = Task(
+      (_) => null, // no action, just grouping other tasks
+      name: 'build',
+      description: 'Runs all enabled tasks.',
+    );
 
-    build.dependsOn(buildTasks
-        // exclude tasks already added into buildTasks but that
-        // should not run by default
-        .where((t) => t != compileExe)
-        .map((t) => t.name)
-        .toSet());
+    build.dependsOn(
+      buildTasks
+          // exclude tasks already added into buildTasks but that
+          // should not run by default
+          .where((t) => t != compileExe)
+          .map((t) => t.name)
+          .toSet(),
+    );
 
     buildTasks.add(clean);
     buildTasks.add(build);
@@ -213,12 +235,14 @@ class DartleDart {
 
   Future<void> _test(List<String> args, [ChangeSet? changes]) async {
     final options = args.where((a) => a != '--all');
-    final forceAllTests = args.contains('--all') ||
+    final forceAllTests =
+        args.contains('--all') ||
         // if it looks like a file or dir was included in args, avoid trying
         // to specify which tests to run.
         args.any((a) => a.contains(Platform.pathSeparator));
 
-    final testChanges = changes?.inputChanges
+    final testChanges =
+        changes?.inputChanges
             .where((change) => change.path.endsWith('_test.dart'))
             .toList() ??
         const [];
@@ -230,9 +254,11 @@ class DartleDart {
         testChanges.length == changes!.inputChanges.length) {
       // only tests have changed, run the changed tests only!
       testsToRun = testChanges
-          .where((change) =>
-              change.kind != ChangeKind.deleted &&
-              change.entityKind == FileSystemEntityKind.file)
+          .where(
+            (change) =>
+                change.kind != ChangeKind.deleted &&
+                change.entityKind == FileSystemEntityKind.file,
+          )
           .map((change) => change.path)
           .toList();
     } else {
@@ -246,18 +272,23 @@ class DartleDart {
     var args = const ['format', '.'];
     if (changeSet != null) {
       final fileChanges = changeSet.inputChanges
-          .where((c) =>
-              c.kind != ChangeKind.deleted &&
-              c.entityKind != FileSystemEntityKind.dir)
+          .where(
+            (c) =>
+                c.kind != ChangeKind.deleted &&
+                c.entityKind != FileSystemEntityKind.dir,
+          )
           .map((c) => c.path);
       if (fileChanges.isNotEmpty) {
         args = ['format', ...fileChanges];
       }
     }
     logger.fine(
-        () => 'Invoking dart format task with args: ${args.skip(1).join(' ')}');
-    final code =
-        await execProc(Process.start('dart', args), name: 'Dart Formatter');
+      () => 'Invoking dart format task with args: ${args.skip(1).join(' ')}',
+    );
+    final code = await execProc(
+      Process.start('dart', args),
+      name: 'Dart Formatter',
+    );
     if (code != 0) failBuild(reason: 'Dart Formatter failed');
   }
 
@@ -271,14 +302,18 @@ class DartleDart {
   }
 
   Future<void> _analyzeCode(_) async {
-    final code = await execProc(Process.start('dart', const ['analyze', '.']),
-        name: 'Dart Analyzer', successMode: StreamRedirectMode.stdoutAndStderr);
+    final code = await execProc(
+      Process.start('dart', const ['analyze', '.']),
+      name: 'Dart Analyzer',
+      successMode: StreamRedirectMode.stdoutAndStderr,
+    );
     if (code != 0) failBuild(reason: 'Dart Analyzer failed');
   }
 
   Future<void> _compileExe(List<String> args) async {
-    bool Function(String) filter =
-        args.isEmpty ? ((String s) => true) : args.contains;
+    bool Function(String) filter = args.isEmpty
+        ? ((String s) => true)
+        : args.contains;
     final yaml = loadYaml(await File('pubspec.yaml').readAsString());
     final executables = yaml['executables'] as Map;
     final srcDir = join(rootDir, 'bin');
@@ -289,13 +324,18 @@ class DartleDart {
       file as String?;
       if (!filter(name)) return MapEntry('', Future.value(0));
       final src = join(
-          srcDir, file == null || file.isEmpty ? '$name.dart' : '$file.dart');
-      final executable =
-          join(targetDir, '$name${Platform.isWindows ? '.exe' : ''}');
+        srcDir,
+        file == null || file.isEmpty ? '$name.dart' : '$file.dart',
+      );
+      final executable = join(
+        targetDir,
+        '$name${Platform.isWindows ? '.exe' : ''}',
+      );
       final future = execProc(
-          Process.start('dart', ['compile', 'exe', src, '-o', executable]),
-          name: 'Dart compile exe',
-          successMode: StreamRedirectMode.stdoutAndStderr);
+        Process.start('dart', ['compile', 'exe', src, '-o', executable]),
+        name: 'Dart compile exe',
+        successMode: StreamRedirectMode.stdoutAndStderr,
+      );
       return MapEntry(name, future);
     });
     final compilable = futures.entries.where((e) => e.key.isNotEmpty).toList();

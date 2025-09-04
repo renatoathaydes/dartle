@@ -16,7 +16,8 @@ import 'task.dart';
 import 'task_invocation.dart';
 import 'task_run.dart';
 
-const dartleFileMissingMessage = 'Missing dartle.dart file. '
+const dartleFileMissingMessage =
+    'Missing dartle.dart file. '
     'Please create one to be able to use Dartle.';
 
 /// Initializes the dartle library and runs the tasks selected by the user
@@ -24,10 +25,12 @@ const dartleFileMissingMessage = 'Missing dartle.dart file. '
 ///
 /// This method will normally not return as Dartle will exit with the
 /// appropriate code. To avoid that, set [doNotExit] to [true].
-Future<void> run(List<String> args,
-    {required Set<Task> tasks,
-    Set<Task> defaultTasks = const {},
-    bool doNotExit = false}) async {
+Future<void> run(
+  List<String> args, {
+  required Set<Task> tasks,
+  Set<Task> defaultTasks = const {},
+  bool doNotExit = false,
+}) async {
   await checkProjectInit(doNotExit);
 
   await runSafely(args, doNotExit, (stopWatch, options) async {
@@ -43,8 +46,12 @@ Future<void> run(List<String> args,
     await runBasic(tasks, defaultTasks, options, DartleCache.instance);
     stopWatch.stop();
     if (!options.showInfoOnly && options.logBuildTime) {
-      logger.info(ColoredLogMessage(
-          '✔ Build succeeded in ${elapsedTime(stopWatch)}', LogColor.green));
+      logger.info(
+        ColoredLogMessage(
+          '✔ Build succeeded in ${elapsedTime(stopWatch)}',
+          LogColor.green,
+        ),
+      );
     }
   });
 }
@@ -55,8 +62,11 @@ Future<void> run(List<String> args,
 /// If [doNotExit] is `true`, then this method will not call [exit] on build
 /// completion, re-throwing Exceptions. Otherwise, the process will exit with
 /// 0 on success, or the appropriate error code on error.
-Future<void> runSafely(List<String> args, bool doNotExit,
-    FutureOr<void> Function(Stopwatch, Options) action) async {
+Future<void> runSafely(
+  List<String> args,
+  bool doNotExit,
+  FutureOr<void> Function(Stopwatch, Options) action,
+) async {
   final stopWatch = Stopwatch()..start();
   var options = const Options();
 
@@ -72,8 +82,12 @@ Future<void> runSafely(List<String> args, bool doNotExit,
       _logStackTrace(e);
     }
     if (options.logBuildTime) {
-      logger.severe(ColoredLogMessage(
-          '✗ Build failed in ${elapsedTime(stopWatch)}', LogColor.red));
+      logger.severe(
+        ColoredLogMessage(
+          '✗ Build failed in ${elapsedTime(stopWatch)}',
+          LogColor.red,
+        ),
+      );
     }
     if (doNotExit) {
       rethrow;
@@ -85,8 +99,12 @@ Future<void> runSafely(List<String> args, bool doNotExit,
     activateLogging(log.Level.SEVERE);
     logger.severe('Unexpected error', e, st);
     if (options.logBuildTime) {
-      logger.severe(ColoredLogMessage(
-          '✗ Build failed in ${elapsedTime(stopWatch)}', LogColor.red));
+      logger.severe(
+        ColoredLogMessage(
+          '✗ Build failed in ${elapsedTime(stopWatch)}',
+          LogColor.red,
+        ),
+      );
     }
     if (doNotExit) {
       rethrow;
@@ -114,8 +132,12 @@ void _logStackTrace(DartleException exception) {
 ///
 /// Returns the tasks that may have been executed, grouped together into each
 /// phase that could be executed in parallel (as returned by [getInOrderOfExecution]).
-Future<List<ParallelTasks>> runBasic(Set<Task> tasks, Set<Task> defaultTasks,
-    Options options, DartleCache cache) async {
+Future<List<ParallelTasks>> runBasic(
+  Set<Task> tasks,
+  Set<Task> defaultTasks,
+  Options options,
+  DartleCache cache,
+) async {
   logger.fine(() => 'Dartle version: $dartleVersion\nOptions: $options');
 
   if (options.resetCache) {
@@ -131,29 +153,44 @@ Future<List<ParallelTasks>> runBasic(Set<Task> tasks, Set<Task> defaultTasks,
     tasksInvocation = defaultTasks.map((t) => t.name).toList();
   }
   final taskMap = createTaskMap(tasks);
-  final tasksAffectedByDeletion =
-      await verifyTaskInputsAndOutputsConsistency(taskMap);
+  final tasksAffectedByDeletion = await verifyTaskInputsAndOutputsConsistency(
+    taskMap,
+  );
   await verifyTaskPhasesConsistency(taskMap);
   final executableTasks = await _getExecutableTasks(
-      taskMap, tasksInvocation, options, tasksAffectedByDeletion);
+    taskMap,
+    tasksInvocation,
+    options,
+    tasksAffectedByDeletion,
+  );
   if (options.showInfoOnly) {
-    print(colorize(
+    print(
+      colorize(
         '======== Showing build information only, no tasks will '
         'be executed ========\n',
-        LogColor.blue));
+        LogColor.blue,
+      ),
+    );
     showTasksInfo(executableTasks, taskMap, defaultTasks, options);
   } else {
     if (logger.isLoggable(log.Level.INFO)) {
-      logTasksInfo(tasks, executableTasks, options.tasksInvocation,
-          directTasksCount, defaultTasks);
+      logTasksInfo(
+        tasks,
+        executableTasks,
+        options.tasksInvocation,
+        directTasksCount,
+        defaultTasks,
+      );
     }
 
     try {
       await _runAll(executableTasks, options);
     } finally {
       if (!options.disableCache) {
-        await _cleanCache(cache,
-            taskMap.keys.followedBy(const ['_compileDartleFile']).toSet());
+        await _cleanCache(
+          cache,
+          taskMap.keys.followedBy(const ['_compileDartleFile']).toSet(),
+        );
       }
     }
   }
@@ -168,17 +205,23 @@ FutureOr<void> _cleanCache(DartleCache cache, Set<String> taskNames) {
       return cache.removeNotMatching(taskNames, taskNames);
     } finally {
       logger.log(
-          profile, 'Garbage-collected cache in ${elapsedTime(stopWatch)}');
+        profile,
+        'Garbage-collected cache in ${elapsedTime(stopWatch)}',
+      );
     }
   });
 }
 
 Future<void> _runAll(
-    List<ParallelTasks> executableTasks, Options options) async {
-  final results = await runTasks(executableTasks,
-      parallelize: options.parallelizeTasks,
-      disableCache: options.disableCache,
-      force: options.forceTasks);
+  List<ParallelTasks> executableTasks,
+  Options options,
+) async {
+  final results = await runTasks(
+    executableTasks,
+    parallelize: options.parallelizeTasks,
+    disableCache: options.disableCache,
+    force: options.forceTasks,
+  );
 
   final taskErrors = results
       .map((f) => f.exceptionAndStackTrace)
@@ -191,10 +234,11 @@ Future<void> _runAll(
 }
 
 Future<List<ParallelTasks>> _getExecutableTasks(
-    Map<String, TaskWithDeps> taskMap,
-    List<String> tasksInvocation,
-    Options options,
-    DeletionTasksByTask tasksAffectedByDeletion) async {
+  Map<String, TaskWithDeps> taskMap,
+  List<String> tasksInvocation,
+  Options options,
+  DeletionTasksByTask tasksAffectedByDeletion,
+) async {
   if (tasksInvocation.isEmpty) {
     if (!options.showInfoOnly) {
       logger.warning('No tasks were requested and no default tasks exist.');
@@ -207,7 +251,11 @@ Future<List<ParallelTasks>> _getExecutableTasks(
   final force = options.forceTasks || options.disableCache;
 
   return await getInOrderOfExecution(
-      invocations, force, options.showTasks, tasksAffectedByDeletion);
+    invocations,
+    force,
+    options.showTasks,
+    tasksAffectedByDeletion,
+  );
 }
 
 /// Get the tasks in the order that they should be executed, taking into account
@@ -219,10 +267,11 @@ Future<List<ParallelTasks>> _getExecutableTasks(
 /// Notice that when a task is out-of-date, all of its dependents also become
 /// out-of-date.
 Future<List<ParallelTasks>> getInOrderOfExecution(
-    List<TaskInvocation> invocations,
-    [bool forceTasks = false,
-    bool showTasks = false,
-    DeletionTasksByTask tasksAffectedByDeletion = const {}]) async {
+  List<TaskInvocation> invocations, [
+  bool forceTasks = false,
+  bool showTasks = false,
+  DeletionTasksByTask tasksAffectedByDeletion = const {},
+]) async {
   // first of all, re-order tasks so that dependencies are in order
   invocations.sort((a, b) => a.task.compareTo(b.task));
 
@@ -242,7 +291,11 @@ Future<List<ParallelTasks>> getInOrderOfExecution(
 
   Future<void> addInvocation(TaskInvocation invocation) async {
     final taskWithStatus = await _createTaskWithStatus(
-        invocation, taskStatuses, forceTasks, tasksAffectedByDeletion);
+      invocation,
+      taskStatuses,
+      forceTasks,
+      tasksAffectedByDeletion,
+    );
     taskStatuses[invocation.name] = taskWithStatus;
     addTaskToParallelTasks(taskWithStatus);
   }
@@ -272,7 +325,10 @@ Future<TaskWithStatus> _createTaskWithStatus(
   } else if (task.runCondition == const AlwaysRun()) {
     status = TaskStatus.alwaysRuns;
   } else if (_isAffectedByDeletionTask(
-      task, taskStatuses, tasksAffectedByDeletion)) {
+    task,
+    taskStatuses,
+    tasksAffectedByDeletion,
+  )) {
     status = TaskStatus.affectedByDeletionTask;
   } else if (_anyDepMustRun(task, taskStatuses)) {
     status = TaskStatus.dependencyIsOutOfDate;
@@ -285,11 +341,15 @@ Future<TaskWithStatus> _createTaskWithStatus(
 }
 
 bool _anyDepMustRun(TaskWithDeps task, Map<String, TaskWithStatus> statuses) {
-  final mustRunDeps = task.dependencies
-      .where((element) => statuses[element.name]?.mustRun ?? false);
+  final mustRunDeps = task.dependencies.where(
+    (element) => statuses[element.name]?.mustRun ?? false,
+  );
   if (mustRunDeps.isNotEmpty) {
-    logger.fine(() => "Task '${task.name}' must run because it "
-        "depends on task '${mustRunDeps.first.name}' which must run");
+    logger.fine(
+      () =>
+          "Task '${task.name}' must run because it "
+          "depends on task '${mustRunDeps.first.name}' which must run",
+    );
   }
   return mustRunDeps.isNotEmpty;
 }
@@ -298,26 +358,34 @@ Future<bool> _shouldRun(TaskInvocation invocation) async {
   final stopWatch = Stopwatch()..start();
   final result = await invocation.task.runCondition.shouldRun(invocation);
   if (result) {
-    logger.fine(() => "Task '${invocation.name}' must run because it is "
-        "out-of-date");
+    logger.fine(
+      () =>
+          "Task '${invocation.name}' must run because it is "
+          "out-of-date",
+    );
   }
   logger.log(
-      profile,
-      "Checked task '${invocation.name}'"
-      ' runCondition in ${elapsedTime(stopWatch)}');
+    profile,
+    "Checked task '${invocation.name}'"
+    ' runCondition in ${elapsedTime(stopWatch)}',
+  );
   return result;
 }
 
 bool _isAffectedByDeletionTask(
-    TaskWithDeps task,
-    Map<String, TaskWithStatus> taskStatuses,
-    DeletionTasksByTask tasksAffectedByDeletion) {
+  TaskWithDeps task,
+  Map<String, TaskWithStatus> taskStatuses,
+  DeletionTasksByTask tasksAffectedByDeletion,
+) {
   final deletionTasks = tasksAffectedByDeletion[task.name] ?? const {};
   for (final delTask in deletionTasks) {
     final status = taskStatuses[delTask];
     if (status?.mustRun == true) {
-      logger.fine(() => "Task '${task.name}' must run because it is "
-          "affected by deletion task '$delTask' which must run");
+      logger.fine(
+        () =>
+            "Task '${task.name}' must run because it is "
+            "affected by deletion task '$delTask' which must run",
+      );
       return true;
     }
   }

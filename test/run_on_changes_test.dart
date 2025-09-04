@@ -13,7 +13,7 @@ void main() {
     setUp(() {
       cache = CacheMock()
         ..invocationChanges = {
-          _invocation.name: [false, false]
+          _invocation.name: [false, false],
         };
     });
 
@@ -23,8 +23,11 @@ void main() {
       cache.hasChangedInvocations[ins] = false;
       cache.hasChangedInvocations[outs] = false;
 
-      final runOnChanges =
-          RunOnChanges(inputs: ins, outputs: outs, cache: cache);
+      final runOnChanges = RunOnChanges(
+        inputs: ins,
+        outputs: outs,
+        cache: cache,
+      );
       expect(await runOnChanges.shouldRun(_invocation), isFalse);
     });
 
@@ -34,8 +37,11 @@ void main() {
       cache.hasChangedInvocations[ins] = true;
       cache.hasChangedInvocations[outs] = false;
 
-      final runOnChanges =
-          RunOnChanges(inputs: ins, outputs: outs, cache: cache);
+      final runOnChanges = RunOnChanges(
+        inputs: ins,
+        outputs: outs,
+        cache: cache,
+      );
 
       expect(await runOnChanges.shouldRun(_invocation), isTrue);
     });
@@ -46,8 +52,11 @@ void main() {
       cache.hasChangedInvocations[ins] = false;
       cache.hasChangedInvocations[outs] = true;
 
-      final runOnChanges =
-          RunOnChanges(inputs: ins, outputs: outs, cache: cache);
+      final runOnChanges = RunOnChanges(
+        inputs: ins,
+        outputs: outs,
+        cache: cache,
+      );
 
       expect(await runOnChanges.shouldRun(_invocation), isTrue);
     });
@@ -58,16 +67,20 @@ void main() {
       cache.hasChangedInvocations[ins] = true;
       cache.hasChangedInvocations[outs] = true;
 
-      final runOnChanges =
-          RunOnChanges(inputs: ins, outputs: outs, cache: cache);
+      final runOnChanges = RunOnChanges(
+        inputs: ins,
+        outputs: outs,
+        cache: cache,
+      );
 
       expect(await runOnChanges.shouldRun(_invocation), isTrue);
     });
 
     test('does not run if no inputs or outputs change', () async {
       // should not run as the outputs already exist and are not modified
-      final fs =
-          await createFileSystem(['a', 'b', 'c'].map((f) => Entry.file(f)));
+      final fs = await createFileSystem(
+        ['a', 'b', 'c'].map((f) => Entry.file(f)),
+      );
 
       var wouldRun = await withFileSystem(fs, () async {
         final ins = file('z');
@@ -75,8 +88,11 @@ void main() {
         cache.hasChangedInvocations[ins] = false;
         cache.hasChangedInvocations[outs] = false;
 
-        final runOnChanges =
-            RunOnChanges(inputs: ins, outputs: outs, cache: cache);
+        final runOnChanges = RunOnChanges(
+          inputs: ins,
+          outputs: outs,
+          cache: cache,
+        );
 
         return await runOnChanges.shouldRun(_invocation);
       });
@@ -84,22 +100,26 @@ void main() {
     });
 
     test(
-        'does not run if inputs and outputs did not change but output does not exist',
-        () async {
-      final fs = await createFileSystem([]);
+      'does not run if inputs and outputs did not change but output does not exist',
+      () async {
+        final fs = await createFileSystem([]);
 
-      var wouldRun = await withFileSystem(fs, () async {
-        final ins = file('in');
-        final outs = files(['out']);
-        cache.hasChangedInvocations[ins] = false;
-        cache.hasChangedInvocations[outs] = false;
+        var wouldRun = await withFileSystem(fs, () async {
+          final ins = file('in');
+          final outs = files(['out']);
+          cache.hasChangedInvocations[ins] = false;
+          cache.hasChangedInvocations[outs] = false;
 
-        final runOnChanges =
-            RunOnChanges(inputs: ins, outputs: outs, cache: cache);
+          final runOnChanges = RunOnChanges(
+            inputs: ins,
+            outputs: outs,
+            cache: cache,
+          );
 
-        return await runOnChanges.shouldRun(_invocation);
-      });
-      expect(wouldRun, isFalse);
-    });
+          return await runOnChanges.shouldRun(_invocation);
+        });
+        expect(wouldRun, isFalse);
+      },
+    );
   });
 }

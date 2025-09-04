@@ -8,32 +8,40 @@ import 'package:path/path.dart' as p;
 /// to manage task's inputs/outputs.
 final outDir = 'out';
 
-FileCollection base64Inputs =
-    dir('.', fileExtensions: const {'txt'}, recurse: false);
+FileCollection base64Inputs = dir(
+  '.',
+  fileExtensions: const {'txt'},
+  recurse: false,
+);
 
-FileCollection base64Outputs =
-    dir(outDir, fileExtensions: const {'txt'}, recurse: false);
+FileCollection base64Outputs = dir(
+  outDir,
+  fileExtensions: const {'txt'},
+  recurse: false,
+);
 
 /// Task declarations.
 
-final _hello =
-    Task(hello, argsValidator: const ArgsCount.range(min: 0, max: 1));
+final _hello = Task(
+  hello,
+  argsValidator: const ArgsCount.range(min: 0, max: 1),
+);
 final _bye = Task(bye, dependsOn: const {'hello'});
-final _encodeBase64 = Task(encodeBase64,
-    description: 'Encodes input.txt in base64, writing to output.txt',
-    runCondition: RunOnChanges(
-      inputs: base64Inputs,
-      outputs: base64Outputs,
-    ));
+final _encodeBase64 = Task(
+  encodeBase64,
+  description: 'Encodes input.txt in base64, writing to output.txt',
+  runCondition: RunOnChanges(inputs: base64Inputs, outputs: base64Outputs),
+);
 
 final mainTasks = [_hello, _bye, _encodeBase64];
 
 // most builds can benefit from a standard 'clean' task that simply
 // deletes the outputs of all tasks when invoked.
 final _clean = createCleanTask(
-    name: 'clean',
-    tasks: mainTasks,
-    description: 'Deletes all outputs of this build.');
+  name: 'clean',
+  tasks: mainTasks,
+  description: 'Deletes all outputs of this build.',
+);
 
 /// main - always delegate to Dartle's `run` function to execute a build
 void main(List<String> args) async =>

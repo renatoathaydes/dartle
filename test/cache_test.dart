@@ -45,41 +45,43 @@ void main([List<String> args = const []]) {
 
         await cache(dartleFileCollection);
 
-        interactions['hasChangedAfterCaching'] =
-            await cache.hasChanged(dartleFileCollection);
+        interactions['hasChangedAfterCaching'] = await cache.hasChanged(
+          dartleFileCollection,
+        );
 
         final someContent = 'different contents';
 
         await dartleFile.writeAsString(someContent);
-        interactions['hasChangedAfterActualChange'] =
-            await cache.hasChanged(dartleFileCollection);
+        interactions['hasChangedAfterActualChange'] = await cache.hasChanged(
+          dartleFileCollection,
+        );
 
         await cache(dartleFileCollection);
 
         await dartleFile.writeAsString(someContent);
 
-        interactions['hasChangedAfterRedundantChange'] =
-            await cache.hasChanged(dartleFileCollection);
+        interactions['hasChangedAfterRedundantChange'] = await cache.hasChanged(
+          dartleFileCollection,
+        );
       });
 
       // check that the expected cache files have been created
       await expectFileTree(
-          cache.rootDir,
-          {
-            'hashes/dartle.dart.sha': '',
-            'version': '',
-          },
-          fs: fs,
-          checkFileContents: false);
+        cache.rootDir,
+        {'hashes/dartle.dart.sha': '', 'version': ''},
+        fs: fs,
+        checkFileContents: false,
+      );
 
       // verify interactions
       expect(
-          interactions,
-          equals({
-            'hasChangedAfterCaching': false,
-            'hasChangedAfterActualChange': true,
-            'hasChangedAfterRedundantChange': false,
-          }));
+        interactions,
+        equals({
+          'hasChangedAfterCaching': false,
+          'hasChangedAfterActualChange': true,
+          'hasChangedAfterRedundantChange': false,
+        }),
+      );
     });
 
     test('caches absolute path file correctly', () async {
@@ -95,24 +97,25 @@ void main([List<String> args = const []]) {
       final fooHash = sha1.convert(utf8.encode('FOO')).bytes;
       final barHash = sha1.convert(utf8.encode('BAR')).bytes;
       await expectFileTree(
-          fs.root,
-          {
-            'test-cache/': '',
-            'test-cache/hashes/': '',
-            'test-cache/tasks/': '',
-            'test-cache/executables/': '',
-            'test-cache/hashes/foo.txt.sha': fooHash,
-            'test-cache/hashes/d1/': '',
-            'test-cache/hashes/d1/bar.txt.sha': barHash,
-            'test-cache/hashes/d1.dir.json': '["bar.txt"]',
-            'test-cache/version': cacheFormatVersion,
-            'dartle.dart': dartleFileContents,
-            'foo.txt': 'FOO',
-            'd1/': '',
-            'd1/bar.txt': 'BAR',
-          },
-          fs: fs,
-          checkFileContents: true);
+        fs.root,
+        {
+          'test-cache/': '',
+          'test-cache/hashes/': '',
+          'test-cache/tasks/': '',
+          'test-cache/executables/': '',
+          'test-cache/hashes/foo.txt.sha': fooHash,
+          'test-cache/hashes/d1/': '',
+          'test-cache/hashes/d1/bar.txt.sha': barHash,
+          'test-cache/hashes/d1.dir.json': '["bar.txt"]',
+          'test-cache/version': cacheFormatVersion,
+          'dartle.dart': dartleFileContents,
+          'foo.txt': 'FOO',
+          'd1/': '',
+          'd1/bar.txt': 'BAR',
+        },
+        fs: fs,
+        checkFileContents: true,
+      );
     });
 
     test('caches files and detects changes under different keys', () async {
@@ -124,33 +127,35 @@ void main([List<String> args = const []]) {
 
         await cache(dartleFileCollection, key: testKey);
 
-        interactions['hasChangedAfterCaching (no key)'] =
-            await cache.hasChanged(dartleFileCollection);
-        interactions['hasChangedAfterCaching (key)'] =
-            await cache.hasChanged(dartleFileCollection, key: testKey);
-        interactions['hasChangedAfterCaching (wrong key)'] =
-            await cache.hasChanged(dartleFileCollection, key: 'wrong');
+        interactions['hasChangedAfterCaching (no key)'] = await cache
+            .hasChanged(dartleFileCollection);
+        interactions['hasChangedAfterCaching (key)'] = await cache.hasChanged(
+          dartleFileCollection,
+          key: testKey,
+        );
+        interactions['hasChangedAfterCaching (wrong key)'] = await cache
+            .hasChanged(dartleFileCollection, key: 'wrong');
 
         final someContent = 'different contents';
 
         await dartleFile.writeAsString(someContent);
-        interactions['hasChangedAfterActualChange (no key)'] =
-            await cache.hasChanged(dartleFileCollection);
-        interactions['hasChangedAfterActualChange (key)'] =
-            await cache.hasChanged(dartleFileCollection, key: testKey);
-        interactions['hasChangedAfterActualChange (wrong key)'] =
-            await cache.hasChanged(dartleFileCollection, key: 'wrong');
+        interactions['hasChangedAfterActualChange (no key)'] = await cache
+            .hasChanged(dartleFileCollection);
+        interactions['hasChangedAfterActualChange (key)'] = await cache
+            .hasChanged(dartleFileCollection, key: testKey);
+        interactions['hasChangedAfterActualChange (wrong key)'] = await cache
+            .hasChanged(dartleFileCollection, key: 'wrong');
 
         await cache(dartleFileCollection, key: testKey);
 
         await dartleFile.writeAsString(someContent);
 
-        interactions['hasChangedAfterRedundantChange (no key)'] =
-            await cache.hasChanged(dartleFileCollection);
-        interactions['hasChangedAfterRedundantChange (key)'] =
-            await cache.hasChanged(dartleFileCollection, key: testKey);
-        interactions['hasChangedAfterRedundantChange (wrong key)'] =
-            await cache.hasChanged(dartleFileCollection, key: 'wrong');
+        interactions['hasChangedAfterRedundantChange (no key)'] = await cache
+            .hasChanged(dartleFileCollection);
+        interactions['hasChangedAfterRedundantChange (key)'] = await cache
+            .hasChanged(dartleFileCollection, key: testKey);
+        interactions['hasChangedAfterRedundantChange (wrong key)'] = await cache
+            .hasChanged(dartleFileCollection, key: 'wrong');
 
         // this time, we cache with no key
         await cache(dartleFileCollection);
@@ -159,65 +164,71 @@ void main([List<String> args = const []]) {
 
         interactions['hasChangedAfterRedundantChangeNoKey (no key)'] =
             await cache.hasChanged(dartleFileCollection);
-        interactions['hasChangedAfterRedundantChangeNoKey (key)'] =
-            await cache.hasChanged(dartleFileCollection, key: testKey);
+        interactions['hasChangedAfterRedundantChangeNoKey (key)'] = await cache
+            .hasChanged(dartleFileCollection, key: testKey);
         interactions['hasChangedAfterRedundantChangeNoKey (wrong key)'] =
             await cache.hasChanged(dartleFileCollection, key: 'wrong');
       });
 
       // check that the expected cache files have been created
       await expectFileTree(
-          cache.rootDir,
-          {
-            'hashes/dartle.dart.sha': '',
-            'hashes/K_$testKey/dartle.dart.sha': '',
-            'version': '0.1'
-          },
-          fs: fs,
-          checkFileContents: false);
+        cache.rootDir,
+        {
+          'hashes/dartle.dart.sha': '',
+          'hashes/K_$testKey/dartle.dart.sha': '',
+          'version': '0.1',
+        },
+        fs: fs,
+        checkFileContents: false,
+      );
 
       // verify interactions
       expect(
-          interactions,
-          equals({
-            'hasChangedAfterCaching (no key)': true,
-            'hasChangedAfterCaching (key)': false,
-            'hasChangedAfterCaching (wrong key)': true,
-            'hasChangedAfterActualChange (no key)': true,
-            'hasChangedAfterActualChange (key)': true,
-            'hasChangedAfterActualChange (wrong key)': true,
-            'hasChangedAfterRedundantChange (no key)': true,
-            'hasChangedAfterRedundantChange (key)': false,
-            'hasChangedAfterRedundantChange (wrong key)': true,
-            'hasChangedAfterRedundantChangeNoKey (no key)': false,
-            'hasChangedAfterRedundantChangeNoKey (key)': false,
-            'hasChangedAfterRedundantChangeNoKey (wrong key)': true,
-          }));
+        interactions,
+        equals({
+          'hasChangedAfterCaching (no key)': true,
+          'hasChangedAfterCaching (key)': false,
+          'hasChangedAfterCaching (wrong key)': true,
+          'hasChangedAfterActualChange (no key)': true,
+          'hasChangedAfterActualChange (key)': true,
+          'hasChangedAfterActualChange (wrong key)': true,
+          'hasChangedAfterRedundantChange (no key)': true,
+          'hasChangedAfterRedundantChange (key)': false,
+          'hasChangedAfterRedundantChange (wrong key)': true,
+          'hasChangedAfterRedundantChangeNoKey (no key)': false,
+          'hasChangedAfterRedundantChangeNoKey (key)': false,
+          'hasChangedAfterRedundantChangeNoKey (wrong key)': true,
+        }),
+      );
     });
 
-    test('reports non-existing files never seen before as not having changed',
-        () async {
-      final isChanged = await withFileSystem(fs, () async {
-        final nonExistingFile = File('whatever');
-        final fileCollection = files([nonExistingFile.path]);
-        return await cache.hasChanged(fileCollection);
-      });
-      expect(isChanged, isFalse);
-    });
+    test(
+      'reports non-existing files never seen before as not having changed',
+      () async {
+        final isChanged = await withFileSystem(fs, () async {
+          final nonExistingFile = File('whatever');
+          final fileCollection = files([nonExistingFile.path]);
+          return await cache.hasChanged(fileCollection);
+        });
+        expect(isChanged, isFalse);
+      },
+    );
 
-    test('reports non-existing files that existed before as having changed',
-        () async {
-      final isChanged = await withFileSystem(fs, () async {
-        final file = File('whatever');
-        await file.writeAsString('hello');
-        final fileCollection = files([file.path]);
-        await cache(fileCollection);
-        await file.delete();
+    test(
+      'reports non-existing files that existed before as having changed',
+      () async {
+        final isChanged = await withFileSystem(fs, () async {
+          final file = File('whatever');
+          await file.writeAsString('hello');
+          final fileCollection = files([file.path]);
+          await cache(fileCollection);
+          await file.delete();
 
-        return await cache.hasChanged(fileCollection);
-      });
-      expect(isChanged, isTrue);
-    });
+          return await cache.hasChanged(fileCollection);
+        });
+        expect(isChanged, isTrue);
+      },
+    );
 
     test('caches directory and detects changes', () async {
       final interactions = <String, Object>{};
@@ -228,78 +239,83 @@ void main([List<String> args = const []]) {
 
         await cache(dirCollection);
 
-        interactions['hasChangedAfterCaching'] =
-            await cache.hasChanged(dirCollection);
+        interactions['hasChangedAfterCaching'] = await cache.hasChanged(
+          dirCollection,
+        );
 
         await cache(dirCollection);
 
         // check that the expected dir entry was added to the cache
         await expectFileTree(
-            cache.rootDir,
-            {
-              'hashes/example.dir.json': '[]',
-              'version': cacheFormatVersion,
-            },
-            fs: fs,
-            checkFileContents: true);
+          cache.rootDir,
+          {'hashes/example.dir.json': '[]', 'version': cacheFormatVersion},
+          fs: fs,
+          checkFileContents: true,
+        );
 
         await File(join(directory.path, 'new-file.txt')).writeAsString('hey');
         await File(join(directory.path, 'other-file.txt')).writeAsString('ho');
 
-        interactions['hasChangedAfterAddingFiles'] =
-            await cache.hasChanged(dirCollection);
+        interactions['hasChangedAfterAddingFiles'] = await cache.hasChanged(
+          dirCollection,
+        );
 
         await cache(dirCollection);
 
         await File(join(directory.path, 'other-file.txt')).delete();
 
-        interactions['hasChangedAfterDeletingFile'] =
-            await cache.hasChanged(dirCollection);
+        interactions['hasChangedAfterDeletingFile'] = await cache.hasChanged(
+          dirCollection,
+        );
 
         await cache(dirCollection);
 
         await Directory(join(directory.path, 'sub-dir')).create();
 
-        interactions['hasChangedAfterCreatingSubDir'] =
-            await cache.hasChanged(dirCollection);
+        interactions['hasChangedAfterCreatingSubDir'] = await cache.hasChanged(
+          dirCollection,
+        );
 
         await cache(dirCollection);
 
-        await File(join(directory.path, 'new-file.txt'))
-            .writeAsString('change');
+        await File(
+          join(directory.path, 'new-file.txt'),
+        ).writeAsString('change');
 
-        interactions['hasChangedAfterFileChanged'] =
-            await cache.hasChanged(dirCollection);
+        interactions['hasChangedAfterFileChanged'] = await cache.hasChanged(
+          dirCollection,
+        );
 
         await cache(dirCollection);
         await Directory(join(directory.path, 'sub-dir')).delete();
 
         await File(join(directory.path, 'sub-dir')).writeAsString('');
 
-        interactions['hasChangedAfterSubDirTurnedIntoFile'] =
-            await cache.hasChanged(dirCollection);
+        interactions['hasChangedAfterSubDirTurnedIntoFile'] = await cache
+            .hasChanged(dirCollection);
 
         await cache(dirCollection);
 
         await Directory('another-dir').create();
         await File(join('another-dir', 'something')).writeAsString("let's go");
 
-        interactions['hasChangedAfterCreatingOtherDirAndFile'] =
-            await cache.hasChanged(dirCollection);
+        interactions['hasChangedAfterCreatingOtherDirAndFile'] = await cache
+            .hasChanged(dirCollection);
       });
 
       // verify interactions
       expect(
-          interactions,
-          equals({
-            'hasChangedAfterCaching': false,
-            'hasChangedAfterAddingFiles': true,
-            'hasChangedAfterDeletingFile': true,
-            'hasChangedAfterFileChanged': true,
-            'hasChangedAfterCreatingSubDir': true,
-            'hasChangedAfterSubDirTurnedIntoFile': true,
-            'hasChangedAfterCreatingOtherDirAndFile': false,
-          }));
+        interactions,
+        equals({
+          'hasChangedAfterCaching': false,
+          'hasChangedAfterAddingFiles': true,
+          'hasChangedAfterDeletingFile': true,
+          'hasChangedAfterFileChanged': true,
+          'hasChangedAfterCreatingSubDir': true,
+          'hasChangedAfterSubDirTurnedIntoFile': true,
+          'hasChangedAfterCreatingOtherDirAndFile': false,
+        }),
+      );
     });
 
     test('caches only direct dir children unless recursive', () async {
@@ -315,8 +331,8 @@ void main([List<String> args = const []]) {
 
         await File(join('a', 'new-file.txt')).writeAsString('hey');
 
-        interactions['hasChangedAfterAddingFileAtRoot'] =
-            await cache.hasChanged(dirCollection);
+        interactions['hasChangedAfterAddingFileAtRoot'] = await cache
+            .hasChanged(dirCollection);
         interactions['hasChangedAfterAddingFileAtRootNonRecursive'] =
             await cache.hasChanged(dirCollectionNonRecursive);
 
@@ -325,8 +341,8 @@ void main([List<String> args = const []]) {
 
         await File(join('a', 'b', 'other-file.txt')).writeAsString('hi');
 
-        interactions['hasChangedAfterAddingFileInNestedDir'] =
-            await cache.hasChanged(dirCollection);
+        interactions['hasChangedAfterAddingFileInNestedDir'] = await cache
+            .hasChanged(dirCollection);
         interactions['hasChangedAfterAddingFileInNestedDirNonRecursive'] =
             await cache.hasChanged(dirCollectionNonRecursive);
 
@@ -335,23 +351,24 @@ void main([List<String> args = const []]) {
 
         await directory.delete();
 
-        interactions['hasChangedAfterDeletingNestedDir'] =
-            await cache.hasChanged(dirCollection);
+        interactions['hasChangedAfterDeletingNestedDir'] = await cache
+            .hasChanged(dirCollection);
         interactions['hasChangedAfterDeletingNestedDirNonRecursive'] =
             await cache.hasChanged(dirCollectionNonRecursive);
       });
 
       // verify interactions
       expect(
-          interactions,
-          equals({
-            'hasChangedAfterAddingFileAtRoot': true,
-            'hasChangedAfterAddingFileAtRootNonRecursive': true,
-            'hasChangedAfterAddingFileInNestedDir': true,
-            'hasChangedAfterAddingFileInNestedDirNonRecursive': false,
-            'hasChangedAfterDeletingNestedDir': true,
-            'hasChangedAfterDeletingNestedDirNonRecursive': false,
-          }));
+        interactions,
+        equals({
+          'hasChangedAfterAddingFileAtRoot': true,
+          'hasChangedAfterAddingFileAtRootNonRecursive': true,
+          'hasChangedAfterAddingFileInNestedDir': true,
+          'hasChangedAfterAddingFileInNestedDirNonRecursive': false,
+          'hasChangedAfterDeletingNestedDir': true,
+          'hasChangedAfterDeletingNestedDirNonRecursive': false,
+        }),
+      );
     });
 
     test('does not report changes if nothing changes between checks', () async {
@@ -379,13 +396,14 @@ void main([List<String> args = const []]) {
       });
 
       expect(
-          interactions,
-          equals({
-            'first check': true,
-            'second check': false,
-            'third check': false,
-            'fourth check': false,
-          }));
+        interactions,
+        equals({
+          'first check': true,
+          'second check': false,
+          'third check': false,
+          'fourth check': false,
+        }),
+      );
     });
 
     test('can cache, then delete cached file', () async {
@@ -404,11 +422,9 @@ void main([List<String> args = const []]) {
       });
 
       expect(
-          interactions,
-          equals({
-            'cached before': true,
-            'cached after': false,
-          }));
+        interactions,
+        equals({'cached before': true, 'cached after': false}),
+      );
     });
 
     test('can cache files and dirs, then clean cache completely', () async {
@@ -416,8 +432,9 @@ void main([List<String> args = const []]) {
       await withFileSystem(fs, () async {
         final fooFile = await File('foo.txt').writeAsString('hello');
         final myDir = await Directory('my-dir').create();
-        final myDirFooFile =
-            await File(join('my-dir', 'foo.json')).writeAsString('"bar"');
+        final myDirFooFile = await File(
+          join('my-dir', 'foo.json'),
+        ).writeAsString('"bar"');
 
         await cache(files([fooFile.path, myDir.path]));
 
@@ -429,34 +446,38 @@ void main([List<String> args = const []]) {
 
         interactions['fooFile is cached (after)'] = cache.contains(fooFile);
         interactions['myDir is cached (after)'] = cache.contains(myDir);
-        interactions['myDirFooFile is cached (after)'] =
-            cache.contains(myDirFooFile);
+        interactions['myDirFooFile is cached (after)'] = cache.contains(
+          myDirFooFile,
+        );
 
         // make sure the cache works after being clean
         await myDir.create();
         await cache(file('dartle.dart'));
         await cache(dir(myDir.path));
 
-        interactions['fooFile is cached (after clean)'] =
-            cache.contains(fooFile);
-        interactions['dartleFile is cached (after clean)'] =
-            cache.contains(File('dartle.dart'));
+        interactions['fooFile is cached (after clean)'] = cache.contains(
+          fooFile,
+        );
+        interactions['dartleFile is cached (after clean)'] = cache.contains(
+          File('dartle.dart'),
+        );
         interactions['myDir is cached (after clean)'] = cache.contains(myDir);
       });
 
       expect(
-          interactions,
-          equals({
-            'fooFile is cached': true,
-            'myDir is cached': false, // the collection contains files only
-            'myDirFooFile is cached': false,
-            'fooFile is cached (after)': false,
-            'myDir is cached (after)': false,
-            'myDirFooFile is cached (after)': false,
-            'fooFile is cached (after clean)': false,
-            'dartleFile is cached (after clean)': true,
-            'myDir is cached (after clean)': true,
-          }));
+        interactions,
+        equals({
+          'fooFile is cached': true,
+          'myDir is cached': false, // the collection contains files only
+          'myDirFooFile is cached': false,
+          'fooFile is cached (after)': false,
+          'myDir is cached (after)': false,
+          'myDirFooFile is cached (after)': false,
+          'fooFile is cached (after clean)': false,
+          'dartleFile is cached (after clean)': true,
+          'myDir is cached (after clean)': true,
+        }),
+      );
     });
 
     test('can cache files and dirs under a specific key', () async {
@@ -465,56 +486,77 @@ void main([List<String> args = const []]) {
       await withFileSystem(fs, () async {
         final fooFile = await File('foo.txt').writeAsString('hello');
         final myDir = await Directory('my-dir').create();
-        final myDirFooFile =
-            await File(join('my-dir', 'foo.json')).writeAsString('"bar"');
+        final myDirFooFile = await File(
+          join('my-dir', 'foo.json'),
+        ).writeAsString('"bar"');
 
         await cache(dir(myDir.path), key: testKey);
 
-        interactions['fooFile is cached (key)'] =
-            cache.contains(fooFile, key: testKey);
+        interactions['fooFile is cached (key)'] = cache.contains(
+          fooFile,
+          key: testKey,
+        );
         interactions['fooFile is cached (no key)'] = cache.contains(fooFile);
-        interactions['fooFile is cached (other key)'] =
-            cache.contains(fooFile, key: 'foo');
+        interactions['fooFile is cached (other key)'] = cache.contains(
+          fooFile,
+          key: 'foo',
+        );
 
-        interactions['myDir is cached (key)'] =
-            cache.contains(myDir, key: testKey);
+        interactions['myDir is cached (key)'] = cache.contains(
+          myDir,
+          key: testKey,
+        );
         interactions['myDir is cached (no key)'] = cache.contains(myDir);
-        interactions['myDir is cached (other key)'] =
-            cache.contains(myDir, key: 'foo');
+        interactions['myDir is cached (other key)'] = cache.contains(
+          myDir,
+          key: 'foo',
+        );
 
-        interactions['myDirFooFile is cached (key)'] =
-            cache.contains(myDirFooFile, key: testKey);
-        interactions['myDirFooFile is cached (no key)'] =
-            cache.contains(myDirFooFile);
-        interactions['myDirFooFile is cached (other key)'] =
-            cache.contains(myDirFooFile, key: 'foo');
+        interactions['myDirFooFile is cached (key)'] = cache.contains(
+          myDirFooFile,
+          key: testKey,
+        );
+        interactions['myDirFooFile is cached (no key)'] = cache.contains(
+          myDirFooFile,
+        );
+        interactions['myDirFooFile is cached (other key)'] = cache.contains(
+          myDirFooFile,
+          key: 'foo',
+        );
 
         await cache.clean(key: testKey);
 
-        interactions['fooFile is cached (after) (key)'] =
-            cache.contains(fooFile, key: testKey);
-        interactions['myDir is cached (after) (key)'] =
-            cache.contains(myDir, key: testKey);
-        interactions['myDirFooFile is cached (after) (key)'] =
-            cache.contains(myDirFooFile, key: testKey);
+        interactions['fooFile is cached (after) (key)'] = cache.contains(
+          fooFile,
+          key: testKey,
+        );
+        interactions['myDir is cached (after) (key)'] = cache.contains(
+          myDir,
+          key: testKey,
+        );
+        interactions['myDirFooFile is cached (after) (key)'] = cache.contains(
+          myDirFooFile,
+          key: testKey,
+        );
       });
 
       expect(
-          interactions,
-          equals({
-            'fooFile is cached (key)': false,
-            'fooFile is cached (no key)': false,
-            'fooFile is cached (other key)': false,
-            'myDir is cached (key)': true,
-            'myDir is cached (no key)': false,
-            'myDir is cached (other key)': false,
-            'myDirFooFile is cached (key)': true,
-            'myDirFooFile is cached (no key)': false,
-            'myDirFooFile is cached (other key)': false,
-            'fooFile is cached (after) (key)': false,
-            'myDir is cached (after) (key)': false,
-            'myDirFooFile is cached (after) (key)': false,
-          }));
+        interactions,
+        equals({
+          'fooFile is cached (key)': false,
+          'fooFile is cached (no key)': false,
+          'fooFile is cached (other key)': false,
+          'myDir is cached (key)': true,
+          'myDir is cached (no key)': false,
+          'myDir is cached (other key)': false,
+          'myDirFooFile is cached (key)': true,
+          'myDirFooFile is cached (no key)': false,
+          'myDirFooFile is cached (other key)': false,
+          'fooFile is cached (after) (key)': false,
+          'myDir is cached (after) (key)': false,
+          'myDirFooFile is cached (after) (key)': false,
+        }),
+      );
     });
 
     test('first-time task invocation has always changed', () async {
@@ -522,66 +564,78 @@ void main([List<String> args = const []]) {
     });
 
     test(
-        'task invocation has changed if it runs with arguments after no args invocation',
-        () async {
-      final interactions = <String, bool>{};
-      await withFileSystem(fs, () async {
-        await cache.cacheTaskInvocation('foo');
+      'task invocation has changed if it runs with arguments after no args invocation',
+      () async {
+        final interactions = <String, bool>{};
+        await withFileSystem(fs, () async {
+          await cache.cacheTaskInvocation('foo');
 
-        interactions['with one arg'] =
-            await cache.hasTaskInvocationChanged('foo', ['bar']);
-        interactions['with one other arg'] =
-            await cache.hasTaskInvocationChanged('foo', ['bz']);
-        interactions['with two args'] =
-            await cache.hasTaskInvocationChanged('foo', ['hey', 'ho']);
-        interactions['with no args'] =
-            await cache.hasTaskInvocationChanged('foo');
-      });
+          interactions['with one arg'] = await cache.hasTaskInvocationChanged(
+            'foo',
+            ['bar'],
+          );
+          interactions['with one other arg'] = await cache
+              .hasTaskInvocationChanged('foo', ['bz']);
+          interactions['with two args'] = await cache.hasTaskInvocationChanged(
+            'foo',
+            ['hey', 'ho'],
+          );
+          interactions['with no args'] = await cache.hasTaskInvocationChanged(
+            'foo',
+          );
+        });
 
-      expect(
+        expect(
           interactions,
           equals({
             'with one arg': true,
             'with one other arg': true,
             'with two args': true,
             'with no args': false,
-          }));
-    });
+          }),
+        );
+      },
+    );
 
-    test(
-        'task invocation has changed if it runs with different arguments '
+    test('task invocation has changed if it runs with different arguments '
         'after invocation with arguments', () async {
       final interactions = <String, bool>{};
       await withFileSystem(fs, () async {
         await cache.cacheTaskInvocation('foo', ['a', 'b']);
 
-        interactions['with one arg'] =
-            await cache.hasTaskInvocationChanged('foo', ['a']);
-        interactions['with one other arg'] =
-            await cache.hasTaskInvocationChanged('foo', ['b']);
-        interactions['with same args, different order'] =
-            await cache.hasTaskInvocationChanged('foo', ['b', 'a']);
-        interactions['with no args'] =
-            await cache.hasTaskInvocationChanged('foo');
-        interactions['with two different args'] =
-            await cache.hasTaskInvocationChanged('foo', ['x', 'y']);
+        interactions['with one arg'] = await cache.hasTaskInvocationChanged(
+          'foo',
+          ['a'],
+        );
+        interactions['with one other arg'] = await cache
+            .hasTaskInvocationChanged('foo', ['b']);
+        interactions['with same args, different order'] = await cache
+            .hasTaskInvocationChanged('foo', ['b', 'a']);
+        interactions['with no args'] = await cache.hasTaskInvocationChanged(
+          'foo',
+        );
+        interactions['with two different args'] = await cache
+            .hasTaskInvocationChanged('foo', ['x', 'y']);
         interactions['with two first args the same, but more args'] =
             await cache.hasTaskInvocationChanged('foo', ['a', 'b', 'c']);
-        interactions['with same args'] =
-            await cache.hasTaskInvocationChanged('foo', ['a', 'b']);
+        interactions['with same args'] = await cache.hasTaskInvocationChanged(
+          'foo',
+          ['a', 'b'],
+        );
       });
 
       expect(
-          interactions,
-          equals({
-            'with one arg': true,
-            'with one other arg': true,
-            'with same args, different order': true,
-            'with no args': true,
-            'with two different args': true,
-            'with two first args the same, but more args': true,
-            'with same args': false,
-          }));
+        interactions,
+        equals({
+          'with one arg': true,
+          'with one other arg': true,
+          'with same args, different order': true,
+          'with no args': true,
+          'with two different args': true,
+          'with two first args the same, but more args': true,
+          'with same args': false,
+        }),
+      );
     });
 
     test('task invocation can be removed', () async {
@@ -589,19 +643,19 @@ void main([List<String> args = const []]) {
       await withFileSystem(fs, () async {
         await cache.cacheTaskInvocation('foo');
 
-        interactions['invocation changed after caching it'] =
-            await cache.hasTaskInvocationChanged('foo');
+        interactions['invocation changed after caching it'] = await cache
+            .hasTaskInvocationChanged('foo');
 
         await cache.removeTaskInvocation('foo');
 
-        interactions['invocation changed after removed'] =
-            await cache.hasTaskInvocationChanged('foo');
+        interactions['invocation changed after removed'] = await cache
+            .hasTaskInvocationChanged('foo');
 
         // try another task with one arg
         await cache.cacheTaskInvocation('bar', ['a']);
 
-        interactions['invocation changed after cache (one arg)'] =
-            await cache.hasTaskInvocationChanged('bar', ['a']);
+        interactions['invocation changed after cache (one arg)'] = await cache
+            .hasTaskInvocationChanged('bar', ['a']);
 
         // remove wrong task
         await cache.removeTaskInvocation('foo');
@@ -617,14 +671,15 @@ void main([List<String> args = const []]) {
       });
 
       expect(
-          interactions,
-          equals({
-            'invocation changed after caching it': false,
-            'invocation changed after removed': true,
-            'invocation changed after cache (one arg)': false,
-            'invocation changed after removed wrong task': false,
-            'invocation changed after removed right task': true,
-          }));
+        interactions,
+        equals({
+          'invocation changed after caching it': false,
+          'invocation changed after removed': true,
+          'invocation changed after cache (one arg)': false,
+          'invocation changed after removed wrong task': false,
+          'invocation changed after removed right task': true,
+        }),
+      );
     });
 
     test('task invocation with tricky name can be removed', () async {
@@ -633,32 +688,33 @@ void main([List<String> args = const []]) {
       await withFileSystem(fs, () async {
         await cache.cacheTaskInvocation(trickyName);
 
-        interactions['invocation changed after caching it'] =
-            await cache.hasTaskInvocationChanged(trickyName);
+        interactions['invocation changed after caching it'] = await cache
+            .hasTaskInvocationChanged(trickyName);
 
         await cache.removeTaskInvocation(trickyName);
 
-        interactions['invocation changed after removed'] =
-            await cache.hasTaskInvocationChanged(trickyName);
+        interactions['invocation changed after removed'] = await cache
+            .hasTaskInvocationChanged(trickyName);
 
         // try with args
         await cache.cacheTaskInvocation(trickyName, ['a']);
 
-        interactions['invocation changed after cache (one arg)'] =
-            await cache.hasTaskInvocationChanged(trickyName, ['a']);
+        interactions['invocation changed after cache (one arg)'] = await cache
+            .hasTaskInvocationChanged(trickyName, ['a']);
 
-        interactions['invocation with different arg'] =
-            await cache.hasTaskInvocationChanged(trickyName, ['b']);
+        interactions['invocation with different arg'] = await cache
+            .hasTaskInvocationChanged(trickyName, ['b']);
       });
 
       expect(
-          interactions,
-          equals({
-            'invocation changed after caching it': false,
-            'invocation changed after removed': true,
-            'invocation changed after cache (one arg)': false,
-            'invocation with different arg': true,
-          }));
+        interactions,
+        equals({
+          'invocation changed after caching it': false,
+          'invocation changed after removed': true,
+          'invocation changed after cache (one arg)': false,
+          'invocation with different arg': true,
+        }),
+      );
     });
 
     test('tasks are cached in the correct locations', () async {
@@ -668,45 +724,54 @@ void main([List<String> args = const []]) {
       });
 
       await expectFileTree(
-          cache.rootDir,
-          {
-            'hashes/': '',
-            'tasks/': '',
-            'executables/': '',
-            'tasks/abc': '',
-            r'tasks/..$def': '',
-            'version': '',
-          },
-          fs: fs,
-          checkFileContents: false);
+        cache.rootDir,
+        {
+          'hashes/': '',
+          'tasks/': '',
+          'executables/': '',
+          'tasks/abc': '',
+          r'tasks/..$def': '',
+          'version': '',
+        },
+        fs: fs,
+        checkFileContents: false,
+      );
     });
 
-    test('on first run, detects whole file collection as having been added',
-        () async {
-      final changes = await withFileSystem(fs, () async {
-        for (final dynamic entity in [
-          Directory('src'),
-          File(join('src', 'dartle.dart')),
-          File(join('src', 'hello.txt')),
-          Directory(join('src', 'dir')),
-          File(join('src', 'dir', 'not-in-cache')),
-        ]) {
-          await entity.create();
-        }
+    test(
+      'on first run, detects whole file collection as having been added',
+      () async {
+        final changes = await withFileSystem(fs, () async {
+          for (final dynamic entity in [
+            Directory('src'),
+            File(join('src', 'dartle.dart')),
+            File(join('src', 'hello.txt')),
+            Directory(join('src', 'dir')),
+            File(join('src', 'dir', 'not-in-cache')),
+          ]) {
+            await entity.create();
+          }
 
-        final inputCollection = dirs(['src'], fileExtensions: {'dart', 'txt'});
+          final inputCollection = dirs(
+            ['src'],
+            fileExtensions: {'dart', 'txt'},
+          );
 
-        return await cache
-            .findChanges(inputCollection)
-            .map(fileChangeString)
-            .toList();
-      });
+          return await cache
+              .findChanges(inputCollection)
+              .map(fileChangeString)
+              .toList();
+        });
 
-      expect(
+        expect(
           changes.sorted().join(', '),
-          equals('added: src/, added: src/dartle.dart, added: src/dir/, '
-              'added: src/hello.txt'));
-    });
+          equals(
+            'added: src/, added: src/dartle.dart, added: src/dir/, '
+            'added: src/hello.txt',
+          ),
+        );
+      },
+    );
 
     test('caches files and detects changes one by one', () async {
       final interactions = <String, Object>{};
@@ -764,12 +829,13 @@ void main([List<String> args = const []]) {
         await file1InSomeDir.writeAsString(someContent);
         await file2InSomeDir.writeAsString(someContent);
         await dartleFile.delete();
-        interactions['changesAfterNewFilesAndDir'] = (await cache
-                .findChanges(inputCollection)
-                .map(fileChangeString)
-                .toList())
-            .sorted()
-            .join(', ');
+        interactions['changesAfterNewFilesAndDir'] =
+            (await cache
+                    .findChanges(inputCollection)
+                    .map(fileChangeString)
+                    .toList())
+                .sorted()
+                .join(', ');
 
         await cache(inputCollection);
 
@@ -792,21 +858,22 @@ void main([List<String> args = const []]) {
 
       // verify interactions
       expect(
-          interactions,
-          equals({
-            'changesAfterCaching': '',
-            'changesAfterActualChange': 'modified: src/dartle.dart',
-            'changesAfterRedundantChange': '',
-            'changesAfterNewFile': 'modified: src/, added: src/hello.txt',
-            'changesAfterNewFilesAndDir':
-                'added: src/dir/, added: src/dir/file1.txt, added: src/dir/file2.txt, '
-                    'deleted: src/dartle.dart, modified: src/, modified: src/hello.txt',
-            'changesAfterNewNestedDir':
-                'modified: src/dir/, added: src/dir/nested/',
-            'changesAfterDeletedAllFilesInDir':
-                'modified: src/, deleted: src/dir/, deleted: src/dir/file1.txt, '
-                    'deleted: src/dir/file2.txt, deleted: src/dir/nested/',
-          }));
+        interactions,
+        equals({
+          'changesAfterCaching': '',
+          'changesAfterActualChange': 'modified: src/dartle.dart',
+          'changesAfterRedundantChange': '',
+          'changesAfterNewFile': 'modified: src/, added: src/hello.txt',
+          'changesAfterNewFilesAndDir':
+              'added: src/dir/, added: src/dir/file1.txt, added: src/dir/file2.txt, '
+              'deleted: src/dartle.dart, modified: src/, modified: src/hello.txt',
+          'changesAfterNewNestedDir':
+              'modified: src/dir/, added: src/dir/nested/',
+          'changesAfterDeletedAllFilesInDir':
+              'modified: src/, deleted: src/dir/, deleted: src/dir/file1.txt, '
+              'deleted: src/dir/file2.txt, deleted: src/dir/nested/',
+        }),
+      );
     });
   });
 }

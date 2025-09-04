@@ -15,15 +15,15 @@ class DirectoryEntry {
   final Set<String> exclusions;
   final Set<String> fileExtensions;
 
-  DirectoryEntry(
-      {required this.path,
-      this.recurse = true,
-      this.includeHidden = false,
-      this.exclusions = const {},
-      Set<String> fileExtensions = const {}})
-      : fileExtensions = {
-          for (var e in fileExtensions) e.startsWith('.') ? e : '.$e'
-        };
+  DirectoryEntry({
+    required this.path,
+    this.recurse = true,
+    this.includeHidden = false,
+    this.exclusions = const {},
+    Set<String> fileExtensions = const {},
+  }) : fileExtensions = {
+         for (var e in fileExtensions) e.startsWith('.') ? e : '.$e',
+       };
 
   bool isWithin(String otherPath, {required bool isDir}) {
     final otherPathPosix = p.posix.canonicalize(otherPath);
@@ -63,13 +63,8 @@ class DirectoryEntry {
   }
 
   @override
-  String toString() => '(${[
-        'path: $path${recurse ? '/**' : ''}',
-        if (exclusions.isNotEmpty) 'exclusions: [${exclusions.join(', ')}]',
-        if (fileExtensions.isNotEmpty)
-          'fileExtensions: [${fileExtensions.join(', ')}]',
-        if (includeHidden) 'includeHidden: true',
-      ].join(', ')})';
+  String toString() =>
+      '(${['path: $path${recurse ? '/**' : ''}', if (exclusions.isNotEmpty) 'exclusions: [${exclusions.join(', ')}]', if (fileExtensions.isNotEmpty) 'fileExtensions: [${fileExtensions.join(', ')}]', if (includeHidden) 'includeHidden: true'].join(', ')})';
 }
 
 mixin ResolvedEntity {
@@ -77,8 +72,10 @@ mixin ResolvedEntity {
 
   String get path => entity.path;
 
-  FutureOr<T> use<T>(FutureOr<T> Function(File) onFile,
-      FutureOr<T> Function(Directory, Iterable<FileSystemEntity>) onDir);
+  FutureOr<T> use<T>(
+    FutureOr<T> Function(File) onFile,
+    FutureOr<T> Function(Directory, Iterable<FileSystemEntity>) onDir,
+  );
 
   @override
   bool operator ==(Object other) {
@@ -99,8 +96,10 @@ class _ResolvedFileEntry with ResolvedEntity {
   _ResolvedFileEntry(this.file);
 
   @override
-  FutureOr<T> use<T>(FutureOr<T> Function(File p1) onFile,
-      FutureOr<T> Function(Directory, Iterable<FileSystemEntity>) onDir) {
+  FutureOr<T> use<T>(
+    FutureOr<T> Function(File p1) onFile,
+    FutureOr<T> Function(Directory, Iterable<FileSystemEntity>) onDir,
+  ) {
     return onFile(file);
   }
 }
@@ -115,8 +114,10 @@ class _ResolvedDirEntry with ResolvedEntity {
   _ResolvedDirEntry(this.dir, this.children);
 
   @override
-  FutureOr<T> use<T>(FutureOr<T> Function(File) onFile,
-      FutureOr<T> Function(Directory, Iterable<FileSystemEntity>) onDir) {
+  FutureOr<T> use<T>(
+    FutureOr<T> Function(File) onFile,
+    FutureOr<T> Function(Directory, Iterable<FileSystemEntity>) onDir,
+  ) {
     return onDir(dir, children);
   }
 }
@@ -151,17 +152,20 @@ FileCollection dir(
   bool recurse = true,
   bool includeHidden = false,
   bool allowAbsolutePaths = false,
-}) =>
-    _FileCollection(
-        const {},
-        List.unmodifiable(_ensureValidDirs([
-          DirectoryEntry(
-              path: directory,
-              fileExtensions: fileExtensions,
-              exclusions: exclusions,
-              recurse: recurse,
-              includeHidden: includeHidden)
-        ], allowAbsolutePaths: allowAbsolutePaths)));
+}) => _FileCollection(
+  const {},
+  List.unmodifiable(
+    _ensureValidDirs([
+      DirectoryEntry(
+        path: directory,
+        fileExtensions: fileExtensions,
+        exclusions: exclusions,
+        recurse: recurse,
+        includeHidden: includeHidden,
+      ),
+    ], allowAbsolutePaths: allowAbsolutePaths),
+  ),
+);
 
 /// Create a [FileCollection] consisting of multiple directories, possibly
 /// filtering which files within each directory may be included.
@@ -188,23 +192,30 @@ FileCollection dirs(
   bool recurse = true,
   bool includeHidden = false,
   bool allowAbsolutePaths = false,
-}) =>
-    _FileCollection(
-        const {},
-        List.unmodifiable(_ensureValidDirs(
-            directories.map((d) => DirectoryEntry(
-                path: d,
-                fileExtensions: fileExtensions,
-                exclusions: exclusions,
-                recurse: recurse,
-                includeHidden: includeHidden)),
-            allowAbsolutePaths: allowAbsolutePaths)));
+}) => _FileCollection(
+  const {},
+  List.unmodifiable(
+    _ensureValidDirs(
+      directories.map(
+        (d) => DirectoryEntry(
+          path: d,
+          fileExtensions: fileExtensions,
+          exclusions: exclusions,
+          recurse: recurse,
+          includeHidden: includeHidden,
+        ),
+      ),
+      allowAbsolutePaths: allowAbsolutePaths,
+    ),
+  ),
+);
 
 /// A File collection including the given files as well as
 /// [DirectoryEntry]'s.
 FileCollection entities(
-        Iterable<String> files, Iterable<DirectoryEntry> directoryEntries) =>
-    _FileCollection(files.toSet(), directoryEntries.toList(growable: false));
+  Iterable<String> files,
+  Iterable<DirectoryEntry> directoryEntries,
+) => _FileCollection(files.toSet(), directoryEntries.toList(growable: false));
 
 /// A collection of [File] and [Directory] which can be used to declare a set
 /// of inputs or outputs for a [Task].
@@ -302,15 +313,19 @@ abstract class FileCollection {
             final nextDir = dirsToVisit.removeLast();
             if (entry.includes(nextDir.path, isDir: true)) {
               final children = await nextDir.list(followLinks: false).toList();
-              yield _ResolvedDirEntry(nextDir,
-                  children.where((f) => f is! File || _includeFile(entry, f)));
+              yield _ResolvedDirEntry(
+                nextDir,
+                children.where((f) => f is! File || _includeFile(entry, f)),
+              );
               dirsToVisit.addAll(children.whereType<Directory>());
             }
           } while (dirsToVisit.isNotEmpty);
         } else if (entry.includes(dir.path, isDir: true)) {
           final children = await dir.list(followLinks: false).toList();
           yield _ResolvedDirEntry(
-              dir, children.where((f) => f is! File || _includeFile(entry, f)));
+            dir,
+            children.where((f) => f is! File || _includeFile(entry, f)),
+          );
         }
       }
     }
@@ -347,21 +362,35 @@ abstract class FileCollection {
   /// Notice that this operation does not require looking at the file system.
   Set<String> intersection(FileCollection other) {
     final otherDirsInDirs = directories
-        .expand((d) => other.directories.where((od) =>
-            d.isWithin(od.path, isDir: true) &&
-            (od.fileExtensions.isEmpty ||
-                od.fileExtensions.intersection(d.fileExtensions).isNotEmpty)))
+        .expand(
+          (d) => other.directories.where(
+            (od) =>
+                d.isWithin(od.path, isDir: true) &&
+                (od.fileExtensions.isEmpty ||
+                    od.fileExtensions
+                        .intersection(d.fileExtensions)
+                        .isNotEmpty),
+          ),
+        )
         .map((e) => e.path);
     final dirsInOtherDirs = other.directories
-        .expand((od) => directories.where((d) =>
-            od.isWithin(d.path, isDir: true) &&
-            (d.fileExtensions.isEmpty ||
-                d.fileExtensions.intersection(od.fileExtensions).isNotEmpty)))
+        .expand(
+          (od) => directories.where(
+            (d) =>
+                od.isWithin(d.path, isDir: true) &&
+                (d.fileExtensions.isEmpty ||
+                    d.fileExtensions
+                        .intersection(od.fileExtensions)
+                        .isNotEmpty),
+          ),
+        )
         .map((e) => e.path);
-    final filesInOtherDirs = other.directories
-        .expand((d) => files.where((f) => d.isWithin(f, isDir: false)));
-    final otherFilesInDirs = directories
-        .expand((d) => other.files.where((f) => d.isWithin(f, isDir: false)));
+    final filesInOtherDirs = other.directories.expand(
+      (d) => files.where((f) => d.isWithin(f, isDir: false)),
+    );
+    final otherFilesInDirs = directories.expand(
+      (d) => other.files.where((f) => d.isWithin(f, isDir: false)),
+    );
     final filesIntersection = files
         .where((f) => other.includesFile(f))
         .toSet()
@@ -376,7 +405,9 @@ abstract class FileCollection {
     bool Function(String) filter;
     if (filters.isNotEmpty) {
       final extensions = filters.fold(
-          filters.first, (Set<String> a, Set<String> b) => a.intersection(b));
+        filters.first,
+        (Set<String> a, Set<String> b) => a.intersection(b),
+      );
       filter = (s) => extensions.any(s.endsWith);
     } else {
       filter = (s) => true;
@@ -449,36 +480,42 @@ String _ensurePosixPath(String path) {
   return p.posix.canonicalize(path);
 }
 
-Iterable<DirectoryEntry> _ensureValidDirs(Iterable<DirectoryEntry> dirs,
-    {bool allowAbsolutePaths = false}) sync* {
+Iterable<DirectoryEntry> _ensureValidDirs(
+  Iterable<DirectoryEntry> dirs, {
+  bool allowAbsolutePaths = false,
+}) sync* {
   final seenDirs = <String>{};
   for (final dir in dirs) {
     final pdir = _ensurePosixPath(dir.path);
     if (!allowAbsolutePaths && p.isAbsolute(pdir)) {
       throw DartleException(
-          message: 'Absolute directory not allowed: ${dir.path}');
+        message: 'Absolute directory not allowed: ${dir.path}',
+      );
     }
     for (final seen in seenDirs) {
       if (p.isWithin(seen, pdir)) {
         throw DartleException(
-            message: 'Non disjoint-directories: $seen includes ${dir.path}');
+          message: 'Non disjoint-directories: $seen includes ${dir.path}',
+        );
       }
     }
     if (!seenDirs.add(pdir)) {
       throw DartleException(message: 'Duplicate directory: ${dir.path}');
     }
     yield DirectoryEntry(
-        path: pdir,
-        recurse: dir.recurse,
-        includeHidden: dir.includeHidden,
-        exclusions: dir.exclusions,
-        fileExtensions: dir.fileExtensions);
+      path: pdir,
+      recurse: dir.recurse,
+      includeHidden: dir.includeHidden,
+      exclusions: dir.exclusions,
+      fileExtensions: dir.fileExtensions,
+    );
   }
 }
 
 extension _PathHelper on String {
-  static final pathSeparator =
-      Platform.isWindows ? RegExp(r'[/\\]') : RegExp(r'/');
+  static final pathSeparator = Platform.isWindows
+      ? RegExp(r'[/\\]')
+      : RegExp(r'/');
 
   /// check if this path represents a hidden location without allocating
   /// a new string (which the path package would force us to do).

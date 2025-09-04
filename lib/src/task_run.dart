@@ -48,8 +48,8 @@ class TaskResult {
 ///
 /// Notice that the full set of changes are only collected if a
 /// [Task] action requires them.
-typedef IncrementalAction = FutureOr<void> Function(List<String> args,
-    [ChangeSet? changeSet]);
+typedef IncrementalAction =
+    FutureOr<void> Function(List<String> args, [ChangeSet? changeSet]);
 
 /// Calls [runTask] with each given task that must run.
 ///
@@ -73,10 +73,12 @@ typedef IncrementalAction = FutureOr<void> Function(List<String> args,
 ///
 /// This method does not throw any Exception, failures are returned
 /// as [TaskResult] instances with errors.
-Future<List<TaskResult>> runTasks(List<ParallelTasks> tasks,
-    {required bool parallelize,
-    bool disableCache = false,
-    bool force = false}) async {
+Future<List<TaskResult>> runTasks(
+  List<ParallelTasks> tasks, {
+  required bool parallelize,
+  bool disableCache = false,
+  bool force = false,
+}) async {
   if (logger.isLoggable(Level.FINE)) {
     final execMode = parallelize
         ? 'in parallel where possible, using separate Isolates for parallelizable Tasks'
@@ -84,14 +86,20 @@ Future<List<TaskResult>> runTasks(List<ParallelTasks> tasks,
     logger.fine('Will execute tasks $execMode');
   }
 
-  return await _run(tasks,
-      parallelize: parallelize, disableCache: disableCache, force: force);
+  return await _run(
+    tasks,
+    parallelize: parallelize,
+    disableCache: disableCache,
+    force: force,
+  );
 }
 
-Future<List<TaskResult>> _run(List<ParallelTasks> tasks,
-    {required bool parallelize,
-    required bool disableCache,
-    required bool force}) async {
+Future<List<TaskResult>> _run(
+  List<ParallelTasks> tasks, {
+  required bool parallelize,
+  required bool disableCache,
+  required bool force,
+}) async {
   final results = <TaskResult>[];
   final phaseResults = <TaskResult>[];
   final phaseErrors = <ExceptionAndStackTrace>[];
@@ -102,7 +110,8 @@ Future<List<TaskResult>> _run(List<ParallelTasks> tasks,
     final isNewPhase = parTasks.phase != currentPhase;
     if (isNewPhase) {
       phaseErrors.addAll(
-          await _onNewPhaseStarted(phaseResults, currentPhase, disableCache));
+        await _onNewPhaseStarted(phaseResults, currentPhase, disableCache),
+      );
       phaseResults.clear();
       currentPhase = parTasks.phase;
       if (phaseErrors.isNotEmpty) {
@@ -112,15 +121,24 @@ Future<List<TaskResult>> _run(List<ParallelTasks> tasks,
     }
     final useIsolate = parallelize && parTasks.mustRunCount > 1;
 
-    logger.fine(() =>
-        "Scheduling tasks ${parTasks.tasks.map((t) => t.task.name)}"
-        " to run ${useIsolate ? 'in parallel using isolates' : 'concurrently'}");
+    logger.fine(
+      () =>
+          "Scheduling tasks ${parTasks.tasks.map((t) => t.task.name)}"
+          " to run ${useIsolate ? 'in parallel using isolates' : 'concurrently'}",
+    );
 
-    final futureResults = CancellableFuture.stream(parTasks.tasks
-        .where(_taskMustRun)
-        .map((pTask) => () => runTask(pTask.invocation,
-            runInIsolate: useIsolate,
-            allowIncremental: !force && !disableCache)));
+    final futureResults = CancellableFuture.stream(
+      parTasks.tasks
+          .where(_taskMustRun)
+          .map(
+            (pTask) =>
+                () => runTask(
+                  pTask.invocation,
+                  runInIsolate: useIsolate,
+                  allowIncremental: !force && !disableCache,
+                ),
+          ),
+    );
 
     await for (final result in futureResults) {
       results.add(result);
@@ -134,7 +152,8 @@ Future<List<TaskResult>> _run(List<ParallelTasks> tasks,
   }
 
   phaseErrors.addAll(
-      await _onNewPhaseStarted(phaseResults, currentPhase, disableCache));
+    await _onNewPhaseStarted(phaseResults, currentPhase, disableCache),
+  );
 
   if (results.any((r) => r.isFailure) || phaseErrors.isNotEmpty) {
     final all = results
@@ -152,8 +171,11 @@ Future<List<TaskResult>> _run(List<ParallelTasks> tasks,
 /// Run a task unconditionally.
 ///
 /// The task's [Task.runCondition] is not checked or used by this method.
-Future<TaskResult> runTask(TaskInvocation invocation,
-    {required bool runInIsolate, bool allowIncremental = true}) async {
+Future<TaskResult> runTask(
+  TaskInvocation invocation, {
+  required bool runInIsolate,
+  bool allowIncremental = true,
+}) async {
   final task = invocation.task;
   final runCondition = task.runCondition;
 
@@ -164,14 +186,19 @@ Future<TaskResult> runTask(TaskInvocation invocation,
   if (allowIncremental &&
       runCondition is RunOnChanges &&
       task.action is IncrementalAction) {
-    changeSet =
-        await _prepareIncrementalAction(stopwatch, task.name, runCondition);
+    changeSet = await _prepareIncrementalAction(
+      stopwatch,
+      task.name,
+      runCondition,
+    );
   }
 
   final action = _createTaskAction(task, runInIsolate && task.isParallelizable);
 
-  logger.log(task.name.startsWith('_') ? Level.FINE : Level.INFO,
-      "Running task '${style(task.name, LogStyle.bold)}'");
+  logger.log(
+    task.name.startsWith('_') ? Level.FINE : Level.INFO,
+    "Running task '${style(task.name, LogStyle.bold)}'",
+  );
 
   stopwatch.reset();
 
@@ -183,8 +210,10 @@ Future<TaskResult> runTask(TaskInvocation invocation,
     result = TaskResult(invocation);
   } catch (e, st) {
     stopwatch.stop();
-    result = TaskResult(invocation,
-        ExceptionAndStackTrace(e is Exception ? e : Exception(e), st));
+    result = TaskResult(
+      invocation,
+      ExceptionAndStackTrace(e is Exception ? e : Exception(e), st),
+    );
 
     // other tasks should be cancelled if there's a failure
     currentCancellableContext()?.cancel();
@@ -193,18 +222,22 @@ Future<TaskResult> runTask(TaskInvocation invocation,
     final completionReason = result.isSuccess
         ? 'successfully'
         : result.isCancelled
-            ? 'due to being cancelled'
-            : 'with errors';
+        ? 'due to being cancelled'
+        : 'with errors';
     logger.log(
-        profile,
-        "Task '${task.name}' completed "
-        '$completionReason in ${elapsedTime(stopwatch)}');
+      profile,
+      "Task '${task.name}' completed "
+      '$completionReason in ${elapsedTime(stopwatch)}',
+    );
   }
   return result;
 }
 
 Future<ChangeSet?> _prepareIncrementalAction(
-    Stopwatch stopwatch, String taskName, RunOnChanges runCondition) async {
+  Stopwatch stopwatch,
+  String taskName,
+  RunOnChanges runCondition,
+) async {
   if (!await runCondition.cache.hasTask(taskName)) {
     return null;
   }
@@ -218,19 +251,23 @@ Future<ChangeSet?> _prepareIncrementalAction(
       .toList();
 
   logger.log(
-      profile,
-      () =>
-          "Collected ${inputChanges.length} input and ${outputChanges.length} output "
-          "change(s) for '$taskName' in ${elapsedTime(stopwatch)}");
+    profile,
+    () =>
+        "Collected ${inputChanges.length} input and ${outputChanges.length} output "
+        "change(s) for '$taskName' in ${elapsedTime(stopwatch)}",
+  );
 
   return ChangeSet(inputChanges, outputChanges);
 }
 
 bool _taskMustRun(TaskWithStatus pTask) {
   final willRun = pTask.mustRun;
-  logger.fine(() => "Task '${pTask.task.name}' will "
-      "${willRun ? 'run' : 'be skipped'} because it has status "
-      '${pTask.status}');
+  logger.fine(
+    () =>
+        "Task '${pTask.task.name}' will "
+        "${willRun ? 'run' : 'be skipped'} because it has status "
+        '${pTask.status}',
+  );
   return willRun;
 }
 
@@ -241,13 +278,15 @@ MaybeIncrementalAction _createTaskAction(Task task, bool runInIsolate) {
 }
 
 Future<List<ExceptionAndStackTrace>> _onNewPhaseStarted(
-    List<TaskResult> phaseResults,
-    TaskPhase? phaseEnded,
-    bool disableCache) async {
+  List<TaskResult> phaseResults,
+  TaskPhase? phaseEnded,
+  bool disableCache,
+) async {
   if (phaseResults.isEmpty || disableCache) return const [];
   logger.fine(() {
-    final phaseMsg =
-        phaseEnded == null ? '' : " after phase '${phaseEnded.name}' ended";
+    final phaseMsg = phaseEnded == null
+        ? ''
+        : " after phase '${phaseEnded.name}' ended";
     return 'Running post-run actions$phaseMsg.';
   });
   return await runTasksPostRun(phaseResults);
@@ -260,19 +299,24 @@ ExceptionAndStackTrace? _toDisplayError(TaskResult result) {
   final error = exSt.exception;
   DartleException dartleException;
   if (error is FutureCancelled) {
-    dartleException =
-        DartleException(message: '$prefix was cancelled', exitCode: 4);
+    dartleException = DartleException(
+      message: '$prefix was cancelled',
+      exitCode: 4,
+    );
   } else if (error is DartleException) {
     dartleException = error.withMessage('$prefix failed: ${error.message}');
   } else {
-    dartleException =
-        DartleException(message: '$prefix failed: $error', exitCode: 2);
+    dartleException = DartleException(
+      message: '$prefix failed: $error',
+      exitCode: 2,
+    );
   }
   return exSt.withException(dartleException);
 }
 
 Future<List<ExceptionAndStackTrace>> runTasksPostRun(
-    List<TaskResult> results) async {
+  List<TaskResult> results,
+) async {
   final errors = <ExceptionAndStackTrace>[];
   for (final result in results) {
     try {
@@ -298,9 +342,10 @@ Future<void> runTaskPostRun(TaskResult taskResult) async {
     rethrow;
   } finally {
     logger.log(
-        profile,
-        "Post-run action of task '${task.name}' completed "
-        "${!isError ? 'successfully' : 'with errors'}"
-        ' in ${elapsedTime(stopwatch)}');
+      profile,
+      "Post-run action of task '${task.name}' completed "
+      "${!isError ? 'successfully' : 'with errors'}"
+      ' in ${elapsedTime(stopwatch)}',
+    );
   }
 }

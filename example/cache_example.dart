@@ -11,10 +11,12 @@ Future<void> main(List<String> args) async {
   final cache = DartleCache('dartle-cache');
 
   final parser = ArgParser()
-    ..addOption('log-level',
-        abbr: 'l',
-        valueHelp: 'one of debug|info|warn',
-        allowed: const {'debug', 'info', 'warn'})
+    ..addOption(
+      'log-level',
+      abbr: 'l',
+      valueHelp: 'one of debug|info|warn',
+      allowed: const {'debug', 'info', 'warn'},
+    )
     ..addOption('key', abbr: 'k')
     ..addCommand('clean')
     ..addCommand('cache')
@@ -48,22 +50,31 @@ Future<void> main(List<String> args) async {
       case "diff":
         for (final directory in cmd.arguments) {
           logger.info('Checking $directory');
-          await for (final change
-              in cache.findChanges(dir(directory), key: key)) {
-            log.severe(ColoredLogMessage(
+          await for (final change in cache.findChanges(
+            dir(directory),
+            key: key,
+          )) {
+            log.severe(
+              ColoredLogMessage(
                 '${change.path} has been ${change.kind.name}',
-                colorFor(change.kind)));
+                colorFor(change.kind),
+              ),
+            );
           }
         }
     }
-    log.severe(AnsiMessage(const [
-      AnsiMessagePart.code(ansi.styleBold),
-      AnsiMessagePart.text('All done!')
-    ]));
+    log.severe(
+      AnsiMessage(const [
+        AnsiMessagePart.code(ansi.styleBold),
+        AnsiMessagePart.text('All done!'),
+      ]),
+    );
   } else {
-    log.severe('ERROR! No command selected.\n\n'
-        'Usage:\n  cache_example [-options] <clean|cache|diff> dir'
-        'Options:\n${parser.usage}');
+    log.severe(
+      'ERROR! No command selected.\n\n'
+      'Usage:\n  cache_example [-options] <clean|cache|diff> dir'
+      'Options:\n${parser.usage}',
+    );
   }
 }
 

@@ -25,33 +25,41 @@ enum DartTestOutput {
 }
 
 Future<void> runTests(
-    Iterable<String> dartTestOptions, DartTestOutput testOutput,
-    [List<String> testsToRun = const []]) async {
+  Iterable<String> dartTestOptions,
+  DartTestOutput testOutput, [
+  List<String> testsToRun = const [],
+]) async {
   if (testsToRun.isNotEmpty) {
     final s = testsToRun.length == 1 ? '' : 's';
-    logger.info('Running ${testsToRun.length} modified test file$s. '
-        'Use ":--all" to force all tests to run.');
+    logger.info(
+      'Running ${testsToRun.length} modified test file$s. '
+      'Use ":--all" to force all tests to run.',
+    );
   }
   int code;
   switch (testOutput) {
     case DartTestOutput.dartleReporter:
       final jsonReporter = JsonReporter();
       code = await exec(
-          Process.start('dart', [
-            'test',
-            '--reporter',
-            'json',
-            ...dartTestOptions,
-            ...testsToRun
-          ]),
-          name: 'Dart Tests',
-          onStdoutLine: jsonReporter.call,
-          onStderrLine: jsonReporter.error);
+        Process.start('dart', [
+          'test',
+          '--reporter',
+          'json',
+          ...dartTestOptions,
+          ...testsToRun,
+        ]),
+        name: 'Dart Tests',
+        onStdoutLine: jsonReporter.call,
+        onStderrLine: jsonReporter.error,
+      );
       jsonReporter.close();
       break;
     case DartTestOutput.dart:
-      final proc = await Process.start(
-          'dart', ['test', ...dartTestOptions, ...testsToRun]);
+      final proc = await Process.start('dart', [
+        'test',
+        ...dartTestOptions,
+        ...testsToRun,
+      ]);
       final stdoutFuture = stdout.addStream(proc.stdout);
       final stderrFuture = stderr.addStream(proc.stderr);
       code = await proc.exitCode;
@@ -60,8 +68,9 @@ Future<void> runTests(
       break;
     case DartTestOutput.printOnFailure:
       code = await execProc(
-          Process.start('dart', ['test', ...dartTestOptions, ...testsToRun]),
-          name: 'Dart Tests');
+        Process.start('dart', ['test', ...dartTestOptions, ...testsToRun]),
+        name: 'Dart Tests',
+      );
       break;
   }
   if (code != 0) failBuild(reason: 'Tests failed');
@@ -80,7 +89,8 @@ class _TestData {
         '${style(test.name, LogStyle.bold)}';
   }
 
-  String get description => '${colorize(location, LogColor.red)}'
+  String get description =>
+      '${colorize(location, LogColor.red)}'
       '${_errorDetail(error)}';
 
   String get _position {
@@ -95,7 +105,7 @@ class _TestData {
     final trace = event.stackTrace.isEmpty
         ? ''
         : '\n'
-            '${event.stackTrace.split('\n').map((e) => '      $e').join('\n')}';
+              '${event.stackTrace.split('\n').map((e) => '      $e').join('\n')}';
     return '\n    ${event.error}$trace';
   }
 }
@@ -134,8 +144,8 @@ class JsonReporter {
   var _skippedCount = 0;
 
   JsonReporter([Function(String)? write])
-      : _write = write ?? stdout.write,
-        _ansi = Ansi(write ?? stdout.write) {
+    : _write = write ?? stdout.write,
+      _ansi = Ansi(write ?? stdout.write) {
     _write('\n');
   }
 
@@ -212,14 +222,19 @@ class JsonReporter {
     _ansi.cleanLines(_threads.length + 1);
     _write('Tests finished in  ${elapsedTime(_stopWatch)}\n${_status()}\n');
     if (_failureCount > 0) {
-      _write('${colorize('Failed Tests:\n', LogColor.red)}'
-          '${_failedTests.map((e) => '  * ${e.description}').join('\n')}\n');
+      _write(
+        '${colorize('Failed Tests:\n', LogColor.red)}'
+        '${_failedTests.map((e) => '  * ${e.description}').join('\n')}\n',
+      );
       if (_errorLines.isNotEmpty) {
-        _write(colorize(
+        _write(
+          colorize(
             '====== stderr ======\n'
             '${_errorLines.join('\n')}\n'
             '====================\n',
-            LogColor.red));
+            LogColor.red,
+          ),
+        );
       }
     }
   }
@@ -228,13 +243,14 @@ class JsonReporter {
     final color = _failureCount > 0
         ? LogColor.red
         : _skippedCount > 0
-            ? LogColor.yellow
-            : LogColor.green;
+        ? LogColor.yellow
+        : LogColor.green;
     return colorize(
-        '${_successCount.pad(6)} OK, '
-        '${_failureCount.pad(6)} FAILED, '
-        '${_skippedCount.pad(6)} SKIPPED',
-        color);
+      '${_successCount.pad(6)} OK, '
+      '${_failureCount.pad(6)} FAILED, '
+      '${_skippedCount.pad(6)} SKIPPED',
+      color,
+    );
   }
 }
 

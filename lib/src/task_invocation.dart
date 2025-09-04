@@ -13,7 +13,7 @@ class TaskInvocation {
   final String _name;
 
   TaskInvocation(this.task, [this.args = const <String>[], String? name])
-      : _name = name ?? task.name;
+    : _name = name ?? task.name;
 
   /// The invocation task name (may be different from the actual task's name).
   String get name => _name;
@@ -28,8 +28,11 @@ class TaskInvocation {
 ///
 /// Assumes all Dartle CLI options have been "consumed" already, and are not
 /// included in the tasksInvocation.
-List<TaskInvocation> parseInvocation(List<String> tasksInvocation,
-    Map<String, TaskWithDeps> taskMap, Options options) {
+List<TaskInvocation> parseInvocation(
+  List<String> tasksInvocation,
+  Map<String, TaskWithDeps> taskMap,
+  Options options,
+) {
   final invocations = <TaskInvocation>[];
   TaskWithDeps? currentTask;
   var followsTask = false;
@@ -42,8 +45,10 @@ List<TaskInvocation> parseInvocation(List<String> tasksInvocation,
       if (isValid) {
         invocations.add(TaskInvocation(currentTask, currentArgs));
       } else {
-        errors.add("Invalid arguments for task '${currentTask.name}': "
-            '$currentArgs - ${currentTask.argsValidator.helpMessage()}');
+        errors.add(
+          "Invalid arguments for task '${currentTask.name}': "
+          '$currentArgs - ${currentTask.argsValidator.helpMessage()}',
+        );
       }
     }
   }
@@ -78,7 +83,7 @@ List<TaskInvocation> parseInvocation(List<String> tasksInvocation,
     } else {
       final message = errors.length > 1
           ? 'Several invocation problems found:\n'
-              '${errors.map((err) => '  * $err').join('\n')}'
+                '${errors.map((err) => '  * $err').join('\n')}'
           : 'Invocation problem: ${errors[0]}';
       throw DartleException(message: message);
     }
@@ -88,9 +93,13 @@ List<TaskInvocation> parseInvocation(List<String> tasksInvocation,
 }
 
 TaskWithDeps? _findTaskByName(
-    Map<String, TaskWithDeps> taskMap, String nameSpec) {
-  final name =
-      findMatchingByWords(nameSpec, taskMap.keys.toList(growable: false));
+  Map<String, TaskWithDeps> taskMap,
+  String nameSpec,
+) {
+  final name = findMatchingByWords(
+    nameSpec,
+    taskMap.keys.toList(growable: false),
+  );
   if (name == null) return null;
   return taskMap[name];
 }

@@ -110,7 +110,8 @@ final _parser = ArgParser()
     'show-task-graph',
     abbr: 'g',
     negatable: false,
-    help: 'Show the task graph for this build. '
+    help:
+        'Show the task graph for this build. '
         'Does not run any tasks when enabled.',
   )
   ..addFlag(
@@ -154,7 +155,8 @@ final _parser = ArgParser()
   );
 
 /// Dartle usage message.
-String get dartleUsage => '''
+String get dartleUsage =>
+    '''
 Dartle $dartleVersion
 
 https://github.com/renatoathaydes/dartle
@@ -186,8 +188,9 @@ Options parseOptions(List<String> args) {
     parseResult = _parser.parse(args);
   } on FormatException catch (e) {
     throw DartleException(
-        message: '${e.message}.. run with the -h flag to see usage.',
-        exitCode: 4);
+      message: '${e.message}.. run with the -h flag to see usage.',
+      exitCode: 4,
+    );
   }
 
   if (parseResult.wasParsed('help')) {

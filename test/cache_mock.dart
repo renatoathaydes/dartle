@@ -12,8 +12,10 @@ class CacheMock implements DartleCache {
   String get rootDir => throw UnimplementedError();
 
   @override
-  Future<void> cacheTaskInvocation(String name,
-      [List<String> args = const []]) {
+  Future<void> cacheTaskInvocation(
+    String name, [
+    List<String> args = const [],
+  ]) {
     throw UnimplementedError();
   }
 
@@ -33,8 +35,10 @@ class CacheMock implements DartleCache {
   }
 
   @override
-  Future<bool> hasChanged(FileCollection fileCollection,
-      {String key = ''}) async {
+  Future<bool> hasChanged(
+    FileCollection fileCollection, {
+    String key = '',
+  }) async {
     if (throwOnAnyCheck) {
       throw Exception('hasChanged($fileCollection, key=$key)');
     }
@@ -46,8 +50,10 @@ class CacheMock implements DartleCache {
   }
 
   @override
-  Stream<FileChange> findChanges(FileCollection fileCollection,
-      {String key = ''}) {
+  Stream<FileChange> findChanges(
+    FileCollection fileCollection, {
+    String key = '',
+  }) {
     throw UnimplementedError();
   }
 
@@ -57,8 +63,10 @@ class CacheMock implements DartleCache {
   }
 
   @override
-  Future<bool> hasTaskInvocationChanged(String name,
-      [List<String> args = const []]) async {
+  Future<bool> hasTaskInvocationChanged(
+    String name, [
+    List<String> args = const [],
+  ]) async {
     if (throwOnAnyCheck) {
       throw Exception('hasTaskInvocationChanged($name, $args)');
     }
@@ -96,7 +104,9 @@ class CacheMock implements DartleCache {
 
   @override
   Future<void> removeNotMatching(
-      Set<String> taskNames, Set<String> keys) async {
+    Set<String> taskNames,
+    Set<String> keys,
+  ) async {
     if (throwOnAnyCheck) {
       throw Exception('removeNotMatching($taskNames, $keys)');
     }

@@ -9,10 +9,11 @@ import 'run_condition.dart';
 import 'task.dart';
 
 void showTasksInfo(
-    List<ParallelTasks> executableTasks,
-    Map<String, TaskWithDeps> taskMap,
-    Set<Task> defaultTasks,
-    Options options) {
+  List<ParallelTasks> executableTasks,
+  Map<String, TaskWithDeps> taskMap,
+  Set<Task> defaultTasks,
+  Options options,
+) {
   if (options.showTasks) {
     showAll(executableTasks, taskMap, defaultTasks);
     stdout.writeln();
@@ -26,25 +27,34 @@ void showTasksInfo(
   stdout.writeln();
 }
 
-void showAll(List<ParallelTasks> executableTasks, Map<String, Task> taskMap,
-    Set<Task> defaultTasks) {
+void showAll(
+  List<ParallelTasks> executableTasks,
+  Map<String, Task> taskMap,
+  Set<Task> defaultTasks,
+) {
   final defaultSet = defaultTasks.map((t) => t.name).toSet();
   final taskList = taskMap.values.toList()
     ..sort((t1, t2) => t1.name.compareTo(t2.name));
-  final tasksByName = lastBy(executableTasks.expand((t) => t.tasks),
-      (TaskWithStatus t) => t.task.name);
+  final tasksByName = lastBy(
+    executableTasks.expand((t) => t.tasks),
+    (TaskWithStatus t) => t.task.name,
+  );
 
   void show(TaskPhase phase, Iterable<Task> taskList) {
-    print(colorize(
+    print(
+      colorize(
         style('==> ${phase.name.capitalized} Phase:', LogStyle.italic),
-        LogColor.blue));
+        LogColor.blue,
+      ),
+    );
     if (taskList.isEmpty) {
       print('  No tasks in this phase.');
     } else {
       final verbose = logger.isLoggable(Level.FINE);
       for (final task in taskList) {
-        final desc =
-            task.description.isEmpty ? '' : '\n      ${task.description}';
+        final desc = task.description.isEmpty
+            ? ''
+            : '\n      ${task.description}';
         final io = !verbose || task.runCondition == const AlwaysRun()
             ? ''
             : '\n      runCondition: ${task.runCondition}';
@@ -55,8 +65,10 @@ void showAll(List<ParallelTasks> executableTasks, Map<String, Task> taskMap,
             ? style(' [default]', LogStyle.dim)
             : '';
         final status = (tasksByName[task.name]?.status).describe();
-        print('  * ${style(task.name, LogStyle.bold)}$isDefault$status'
-            '$desc$io$args');
+        print(
+          '  * ${style(task.name, LogStyle.bold)}$isDefault$status'
+          '$desc$io$args',
+        );
       }
     }
   }
@@ -89,8 +101,11 @@ extension StatusDescribe on TaskStatus? {
   }
 }
 
-void showTaskGraph(List<ParallelTasks> executableTasks,
-    Map<String, TaskWithDeps> taskMap, Set<Task> defaultTasks) {
+void showTaskGraph(
+  List<ParallelTasks> executableTasks,
+  Map<String, TaskWithDeps> taskMap,
+  Set<Task> defaultTasks,
+) {
   print('Tasks Graph:\n');
 
   final seenTasks = <String>{};
@@ -105,19 +120,20 @@ void showTaskGraph(List<ParallelTasks> executableTasks,
         final branch = topLevel
             ? '-'
             : lastTask
-                ? '\\---'
-                : firstTask
-                    ? '+---'
-                    : '|---';
+            ? '\\---'
+            : firstTask
+            ? '+---'
+            : '|---';
         stdout.write('$indent$branch ${task.name}');
       }
       if (notSeenYet) {
         stdout.writeln();
         printTasks(
-            task.directDependencies.map((t) => taskMap[t]!).toList()
-              ..sort((t1, t2) => t1.name.compareTo(t2.name)),
-            topLevel ? '  ' : indent + (lastTask ? '     ' : '|     '),
-            false);
+          task.directDependencies.map((t) => taskMap[t]!).toList()
+            ..sort((t1, t2) => t1.name.compareTo(t2.name)),
+          topLevel ? '  ' : indent + (lastTask ? '     ' : '|     '),
+          false,
+        );
       } else if (!topLevel) {
         stdout.writeln(task.dependencies.isNotEmpty ? ' ...' : '');
       }

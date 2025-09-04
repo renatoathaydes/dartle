@@ -95,8 +95,9 @@ void main() async {
 
   group('download', () {
     test('can download simple text file', () async {
-      final text =
-          await downloadText(Uri.parse('http://localhost:$port/plain'));
+      final text = await downloadText(
+        Uri.parse('http://localhost:$port/plain'),
+      );
       expect(text, equals('Plain text'));
       final headers = await waitForReceivedHeaders();
       expect(headers['Accept']?.join(','), equals('plain/text'));
@@ -104,8 +105,9 @@ void main() async {
 
     test('can download text file in custom (latin1) encoding', () async {
       final text = await downloadText(
-          Uri.parse('http://localhost:$port/latin1'),
-          encoding: latin1);
+        Uri.parse('http://localhost:$port/latin1'),
+        encoding: latin1,
+      );
       expect(text, equals('ËØ'));
       final headers = await waitForReceivedHeaders();
       expect(headers['Accept']?.join(','), equals('plain/text'));
@@ -113,22 +115,31 @@ void main() async {
 
     test('fails on 404 by default', () async {
       expect(
-          () => downloadText(Uri.parse('http://localhost:$port/wrong')),
-          throwsA(isA<HttpCodeException>()
+        () => downloadText(Uri.parse('http://localhost:$port/wrong')),
+        throwsA(
+          isA<HttpCodeException>()
               .having((e) => e.statusCode, 'statusCode', 404)
-              .having((e) => e.uri.toString(), 'uri',
-                  'http://localhost:$port/wrong')));
+              .having(
+                (e) => e.uri.toString(),
+                'uri',
+                'http://localhost:$port/wrong',
+              ),
+        ),
+      );
     });
 
     test('does not fail on 404 if 404 considered success', () async {
-      final text = await downloadText(Uri.parse('http://localhost:$port/wrong'),
-          isSuccessfulStatusCode: (code) => code == 404);
+      final text = await downloadText(
+        Uri.parse('http://localhost:$port/wrong'),
+        isSuccessfulStatusCode: (code) => code == 404,
+      );
       expect(text, equals('Not found'));
     });
 
     test('can download valid JSON', () async {
-      final dynamic json =
-          await downloadJson(Uri.parse('http://localhost:$port/json'));
+      final dynamic json = await downloadJson(
+        Uri.parse('http://localhost:$port/json'),
+      );
       expect(json['json'], isTrue);
       final headers = await waitForReceivedHeaders();
       expect(headers['Accept']?.join(','), equals('application/json'));

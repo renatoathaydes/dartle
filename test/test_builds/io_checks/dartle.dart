@@ -13,14 +13,24 @@ final incInputs = dir('inc-inputs', fileExtensions: const {'txt'});
 final incOutputs = dir('inc-outputs', fileExtensions: const {'txt'});
 
 final buildTasks = {
-  Task(base64, runCondition: RunOnChanges(inputs: inputs, outputs: outputs)),
-  Task(const ExampleIncrementalAction().call,
-      name: 'incremental',
-      runCondition: RunOnChanges(inputs: incInputs, outputs: incOutputs)),
+  Task(
+    base64,
+    runCondition: RunOnChanges(inputs: inputs, outputs: outputs),
+  ),
+  Task(
+    const ExampleIncrementalAction().call,
+    name: 'incremental',
+    runCondition: RunOnChanges(inputs: incInputs, outputs: incOutputs),
+  ),
 };
 
-void main(List<String> args) async =>
-    await run(args, tasks: {...buildTasks, createCleanTask(tasks: buildTasks)});
+void main(List<String> args) async => await run(
+  args,
+  tasks: {
+    ...buildTasks,
+    createCleanTask(tasks: buildTasks),
+  },
+);
 
 Future base64(_) async {
   final inputDir = inputs.directories.first.path;

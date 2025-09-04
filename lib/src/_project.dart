@@ -68,7 +68,8 @@ void main(List<String> args) {
 }
 ''';
 
-String _basicPubSpec(String name) => '''
+String _basicPubSpec(String name) =>
+    '''
 name: ${name.replaceAll('-', '_')}
 description: Build script for this project. Check Dartle Documentation at https://renatoathaydes.github.io/dartle-website/.
 version: 0.0.0
@@ -86,8 +87,11 @@ Never abort(int code) {
 }
 
 Future<void> runPubGet(_) async {
-  await execProc(Process.start('dart', const ['pub', 'get']),
-      name: 'Dart pub get', successMode: StreamRedirectMode.stdoutAndStderr);
+  await execProc(
+    Process.start('dart', const ['pub', 'get']),
+    name: 'Dart pub get',
+    successMode: StreamRedirectMode.stdoutAndStderr,
+  );
 }
 
 Future<void> checkProjectInit(bool doNotExit, [bool pubGet = true]) async {
@@ -102,8 +106,10 @@ Future<void> checkProjectInit(bool doNotExit, [bool pubGet = true]) async {
     await onNoDartleFile(doNotExit);
   }
   if (pubGet && !await _findDartToolDir()) {
-    logger.info('Dart dependencies not downloaded yet. Executing '
-        "'dart pub get'");
+    logger.info(
+      'Dart dependencies not downloaded yet. Executing '
+      "'dart pub get'",
+    );
     await runPubGet(const []);
   }
 }
@@ -118,8 +124,11 @@ Future<bool> _findDartToolDir() async {
   return e != null;
 }
 
-Future<FileSystemEntity?> _findEntity(String name,
-    {required bool dir, int maxDepth = 4}) async {
+Future<FileSystemEntity?> _findEntity(
+  String name, {
+  required bool dir,
+  int maxDepth = 4,
+}) async {
   var depth = 0;
   var currentDir = Directory.current;
   FileSystemEntity entity(String p) => dir ? Directory(p) : File(p);
@@ -134,8 +143,10 @@ Future<FileSystemEntity?> _findEntity(String name,
 }
 
 Future<void> onNoPubSpec(bool doNotExit) async {
-  stdout.write('There is no pubspec.yaml file in the current directory.\n'
-      'Would you like to create one [y/N]? ');
+  stdout.write(
+    'There is no pubspec.yaml file in the current directory.\n'
+    'Would you like to create one [y/N]? ',
+  );
   final answer = stdin.readLineSync()?.toLowerCase();
   if (answer == 'y' || answer == 'yes') {
     await _createPubSpec();
@@ -148,8 +159,10 @@ Future<void> onNoPubSpec(bool doNotExit) async {
 }
 
 Future<void> onNoDartleFile(bool doNotExit) async {
-  stdout.write('There is no dartle.dart file in the current directory.\n'
-      'Would you like to create one [y/N]? ');
+  stdout.write(
+    'There is no dartle.dart file in the current directory.\n'
+    'Would you like to create one [y/N]? ',
+  );
   final answer = stdin.readLineSync()?.toLowerCase();
   if (answer == 'y' || answer == 'yes') {
     await _createNewProject();
@@ -176,22 +189,26 @@ Future<void> _createNewBasicProject() async {
   await _createPubSpec();
   await File('dartle.dart').writeAsString(_basicDartleFile, flush: true);
   await Directory('dartle-src').create();
-  await File(p.join('dartle-src', 'tasks.dart'))
-      .writeAsString(_basicTaskFile, flush: true);
+  await File(
+    p.join('dartle-src', 'tasks.dart'),
+  ).writeAsString(_basicTaskFile, flush: true);
   await Directory('source').create();
-  await File(p.join('source', 'input.txt'))
-      .writeAsString(_basicInputFile, flush: true);
+  await File(
+    p.join('source', 'input.txt'),
+  ).writeAsString(_basicInputFile, flush: true);
 }
 
 Future<void> _createPubSpec() async {
   await File(pubspec).writeAsString(
-      _basicPubSpec(p.basename(Directory.current.path)),
-      flush: true);
+    _basicPubSpec(p.basename(Directory.current.path)),
+    flush: true,
+  );
 }
 
 Future<void> _createNewDartProject() async {
   logger.fine(
-      'pubspec already exists, creating Dartle Project with Dart support');
+    'pubspec already exists, creating Dartle Project with Dart support',
+  );
   await File('dartle.dart').writeAsString(_dartDartleFile, flush: true);
 
   // don't worry if this errors, it means the pubspec probably already

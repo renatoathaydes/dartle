@@ -22,8 +22,9 @@ _NameAction _resolveNameAction(Function(List<String>) action, String name) {
   final funName = '$action';
   final firstQuote = funName.indexOf("'");
   if (firstQuote > 0) {
-    final match =
-        _functionNamePatttern.firstMatch(funName.substring(firstQuote + 1));
+    final match = _functionNamePatttern.firstMatch(
+      funName.substring(firstQuote + 1),
+    );
     if (match != null) {
       final inferredName = match.group(0) ?? '';
       // likely generated from JS lambda if it looks like 'main___closure',
@@ -35,8 +36,10 @@ _NameAction _resolveNameAction(Function(List<String>) action, String name) {
   }
 
   if (name.isEmpty) {
-    throw ArgumentError('Task name cannot be inferred. Either give the task '
-        'a name explicitly or use a top-level function as its action');
+    throw ArgumentError(
+      'Task name cannot be inferred. Either give the task '
+      'a name explicitly or use a top-level function as its action',
+    );
   }
 
   return _NameAction(name, action);
@@ -77,8 +80,9 @@ class TaskPhase implements Comparable<TaskPhase> {
   ///
   factory TaskPhase.custom(int index, String name) {
     final phases = currentZoneTaskPhases;
-    final existingPhaseByIndex =
-        phases.firstWhereOrNull((p) => p.index == index);
+    final existingPhaseByIndex = phases.firstWhereOrNull(
+      (p) => p.index == index,
+    );
     final existingPhaseByName = phases.firstWhereOrNull((p) => p.name == name);
     if (existingPhaseByIndex != null &&
         existingPhaseByIndex == existingPhaseByName) {
@@ -86,14 +90,18 @@ class TaskPhase implements Comparable<TaskPhase> {
     }
     if (existingPhaseByIndex != null) {
       throw DartleException(
-          message: "Attempting to create new phase '$name' "
-              "with existing index $index, which is used for phase "
-              "'${existingPhaseByIndex.name}'");
+        message:
+            "Attempting to create new phase '$name' "
+            "with existing index $index, which is used for phase "
+            "'${existingPhaseByIndex.name}'",
+      );
     }
     if (existingPhaseByName != null) {
       throw DartleException(
-          message: "Attempting to create new phase '$name' "
-              "with existing name '$name'");
+        message:
+            "Attempting to create new phase '$name' "
+            "with existing name '$name'",
+      );
     }
     final phase = TaskPhase._(index, name);
     phases.add(phase);
@@ -188,8 +196,8 @@ class Task {
     this.runCondition = const AlwaysRun(),
     this.argsValidator = const DoNotAcceptArgs(),
     this.phase = TaskPhase.build,
-  })  : _nameAction = _resolveNameAction(action, name),
-        _dependsOn = dependsOn;
+  }) : _nameAction = _resolveNameAction(action, name),
+       _dependsOn = dependsOn;
 
   /// The name of this task.
   String get name => _nameAction.name;
@@ -251,7 +259,7 @@ class TaskWithDeps implements Task, Comparable<TaskWithDeps> {
   final Set<String> dependencySet;
 
   TaskWithDeps(this._task, [this.dependencies = const <TaskWithDeps>[]])
-      : dependencySet = dependencies.map((t) => t.name).toSet();
+    : dependencySet = dependencies.map((t) => t.name).toSet();
 
   @override
   _NameAction get _nameAction => _task._nameAction;
@@ -317,13 +325,15 @@ class TaskWithDeps implements Task, Comparable<TaskWithDeps> {
   @override
   set _dependsOn(Set<String> dependsOn) {
     throw UnsupportedError(
-        'cannot modify dependencies of task after build is running');
+      'cannot modify dependencies of task after build is running',
+    );
   }
 
   @override
   void dependsOn(Set<String> taskNames) {
     throw UnsupportedError(
-        'cannot modify dependencies of task after build is running');
+      'cannot modify dependencies of task after build is running',
+    );
   }
 }
 
@@ -334,7 +344,7 @@ enum TaskStatus {
   dependencyIsOutOfDate,
   affectedByDeletionTask,
   outOfDate,
-  forced
+  forced,
 }
 
 extension TaskStatusString on TaskStatus {
@@ -431,13 +441,11 @@ class ArgsCount with ArgsValidator {
   final int _min;
   final int _max;
 
-  const ArgsCount.count(int count)
-      : _min = count,
-        _max = count;
+  const ArgsCount.count(int count) : _min = count, _max = count;
 
   const ArgsCount.range({required int min, required int max})
-      : _min = min,
-        _max = max;
+    : _min = min,
+      _max = max;
 
   @override
   String helpMessage() => _min == _max
@@ -467,24 +475,29 @@ Map<String, TaskWithDeps> createTaskMap(Iterable<Task> tasks) {
 }
 
 void _collectTransitiveDependencies(
-    String taskName,
-    Map<String, Task> tasksByName,
-    Map<String, TaskWithDeps> result,
-    Set<String> visited,
-    String ind) {
+  String taskName,
+  Map<String, Task> tasksByName,
+  Map<String, TaskWithDeps> result,
+  Set<String> visited,
+  String ind,
+) {
   if (result.containsKey(taskName)) return;
 
   final task = tasksByName[taskName];
   if (task == null) {
     visited.add(taskName);
     throw DartleException(
-        message: "Task with name '$taskName' does not exist "
-            "(dependency path: [${visited.join(' -> ')}])");
+      message:
+          "Task with name '$taskName' does not exist "
+          "(dependency path: [${visited.join(' -> ')}])",
+    );
   }
   if (!visited.add(taskName)) {
     throw DartleException(
-        message: "Task dependency cycle detected: "
-            "[${[...visited, taskName].join(' -> ')}]");
+      message:
+          "Task dependency cycle detected: "
+          "[${[...visited, taskName].join(' -> ')}]",
+    );
   }
 
   final dependencies = <TaskWithDeps>[];
@@ -494,7 +507,8 @@ void _collectTransitiveDependencies(
     if (depTask == null) {
       // should never happen!!
       throw DartleException(
-          message: 'Cannot resolve dependencies of task $dep');
+        message: 'Cannot resolve dependencies of task $dep',
+      );
     }
     _taskWithTransitiveDeps(depTask, dependencies);
   }
@@ -526,7 +540,8 @@ typedef DeletionTasksByTask = Map<String, Set<String>>;
 /// Returns the tasks affected by deletion tasks, so that the engine can
 /// detect when it must run a task due to deletions.
 Future<DeletionTasksByTask> verifyTaskInputsAndOutputsConsistency(
-    Map<String, TaskWithDeps> taskMap) async {
+  Map<String, TaskWithDeps> taskMap,
+) async {
   final inputsByTask = <TaskWithDeps, FileCollection>{};
   final outputsByTask = <TaskWithDeps, FileCollection>{};
   final deletionsByTask = <TaskWithDeps, FileCollection>{};
@@ -555,9 +570,10 @@ Future<DeletionTasksByTask> verifyTaskInputsAndOutputsConsistency(
       }
       final intersectInsOuts = ins.intersection(otherOuts);
       if (intersectInsOuts.isNotEmpty) {
-        dependencyErrors
-            .add("Task '${task.name}' must dependOn '${otherTask.name}' "
-                '(clashing outputs: $intersectInsOuts)');
+        dependencyErrors.add(
+          "Task '${task.name}' must dependOn '${otherTask.name}' "
+          '(clashing outputs: $intersectInsOuts)',
+        );
       }
     });
   });
@@ -572,9 +588,11 @@ Future<DeletionTasksByTask> verifyTaskInputsAndOutputsConsistency(
         if (intersection.isNotEmpty) {
           tasksAffectedByDeletion.accumulate(task.name, deletionTask.name);
           if (!task.phase.isAfter(deletionTask.phase)) {
-            phaseErrors.add("Task '${deletionTask.name}' "
-                "(phase '${deletionTask.phase.name}') deletes $io of "
-                "'${task.name}' (phase '${task.phase.name}'): $intersection");
+            phaseErrors.add(
+              "Task '${deletionTask.name}' "
+              "(phase '${deletionTask.phase.name}') deletes $io of "
+              "'${task.name}' (phase '${task.phase.name}'): $intersection",
+            );
             return true;
           }
         }
@@ -590,8 +608,10 @@ Future<DeletionTasksByTask> verifyTaskInputsAndOutputsConsistency(
   if (dependencyErrors.isNotEmpty || phaseErrors.isNotEmpty) {
     final error = StringBuffer();
     if (dependencyErrors.isNotEmpty) {
-      error.writeln("The following tasks have implicit dependencies due to "
-          "their inputs depending on other tasks' outputs:");
+      error.writeln(
+        "The following tasks have implicit dependencies due to "
+        "their inputs depending on other tasks' outputs:",
+      );
       error.writeln(dependencyErrors.map((e) => '  * $e.').join('\n'));
       error.writeln('\nPlease add the dependencies explicitly.');
     }
@@ -599,12 +619,16 @@ Future<DeletionTasksByTask> verifyTaskInputsAndOutputsConsistency(
       if (error.isNotEmpty) {
         error.writeln();
       }
-      error.writeln("The following tasks delete inputs or outputs of another "
-          "task that does not run on a later phase, hence could corrupt those "
-          "tasks execution:");
+      error.writeln(
+        "The following tasks delete inputs or outputs of another "
+        "task that does not run on a later phase, hence could corrupt those "
+        "tasks execution:",
+      );
       error.writeln(phaseErrors.map((e) => '  * $e.').join('\n'));
-      error.writeln('\nPlease change the task phases so that deletion tasks '
-          "run on earlier phases (typically 'setup') than other tasks.");
+      error.writeln(
+        '\nPlease change the task phases so that deletion tasks '
+        "run on earlier phases (typically 'setup') than other tasks.",
+      );
     }
     throw DartleException(message: error.toString());
   }
@@ -622,21 +646,29 @@ Future<DeletionTasksByTask> verifyTaskInputsAndOutputsConsistency(
 /// Any inconsistencies will cause a [DartleException] to be thrown by
 /// this method.
 Future<void> verifyTaskPhasesConsistency(
-    Map<String, TaskWithDeps> taskMap) async {
+  Map<String, TaskWithDeps> taskMap,
+) async {
   final errors = <String>{};
 
   // a task's dependencies must be in the same or earlier phases
   for (final task in taskMap.values) {
-    task.dependencies.where((dep) => dep.phase.isAfter(task.phase)).forEach(
-        (t) => errors.add("Task '${task.name}' in phase '${task.phase.name}' "
-            "cannot depend on '${t.name}' in phase '${t.phase.name}'"));
+    task.dependencies
+        .where((dep) => dep.phase.isAfter(task.phase))
+        .forEach(
+          (t) => errors.add(
+            "Task '${task.name}' in phase '${task.phase.name}' "
+            "cannot depend on '${t.name}' in phase '${t.phase.name}'",
+          ),
+        );
   }
 
   if (errors.isNotEmpty) {
     throw DartleException(
-        message: "The following tasks have dependency on tasks which are in an "
-            "incompatible build phase:\n"
-            '${errors.map((e) => '  * $e.').join('\n')}\n');
+      message:
+          "The following tasks have dependency on tasks which are in an "
+          "incompatible build phase:\n"
+          '${errors.map((e) => '  * $e.').join('\n')}\n',
+    );
   }
 
   final phases = TaskPhase.currentZoneTaskPhases;
@@ -649,28 +681,33 @@ Future<void> verifyTaskPhasesConsistency(
   if (errors.isNotEmpty) {
     final phaseNames = phases.map((p) => p.name).join(', ');
     throw DartleException(
-        message: "The following tasks do not belong to any of the phases in "
-            "the current Dart Zone, which are $phaseNames}:\n"
-            '${errors.map((e) => '  * $e.').join('\n')}\n');
+      message:
+          "The following tasks do not belong to any of the phases in "
+          "the current Dart Zone, which are $phaseNames}:\n"
+          '${errors.map((e) => '  * $e.').join('\n')}\n',
+    );
   }
 }
 
 /// Create a "clean" task that removes all outputs of the given tasks.
-Task createCleanTask(
-    {String name = 'clean',
-    String description = '',
-    required Iterable<Task> tasks,
-    TaskPhase phase = TaskPhase.setup}) {
+Task createCleanTask({
+  String name = 'clean',
+  String description = '',
+  required Iterable<Task> tasks,
+  TaskPhase phase = TaskPhase.setup,
+}) {
   final allOutputs = tasks
       .map((e) => e.runCondition)
       .whereType<FilesCondition>()
       .map((e) => e.outputs)
       .toList(growable: false);
-  return Task((_) async => await ignoreExceptions(() => deleteOutputs(tasks)),
-      runCondition: RunToDelete(MultiFileCollection(allOutputs)),
-      name: name,
-      phase: phase,
-      description: description);
+  return Task(
+    (_) async => await ignoreExceptions(() => deleteOutputs(tasks)),
+    runCondition: RunToDelete(MultiFileCollection(allOutputs)),
+    name: name,
+    phase: phase,
+    description: description,
+  );
 }
 
 extension _MultiMapUtils<K, V> on Map<K, Set<V>> {

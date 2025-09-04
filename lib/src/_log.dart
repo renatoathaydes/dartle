@@ -137,8 +137,11 @@ bool get colorfulLog => _colorfulLog;
 ///
 /// If this call was accepted (i.e. first call), this method returns true,
 /// otherwise it returns false.
-bool activateLogging(log.Level level,
-    {bool colorfulLog = true, String? logName}) {
+bool activateLogging(
+  log.Level level, {
+  bool colorfulLog = true,
+  String? logName,
+}) {
   if (!_loggingActivated) {
     _loggingActivated = true;
     _colorfulLog = colorfulLog;
@@ -146,8 +149,9 @@ bool activateLogging(log.Level level,
       _logName = logName;
     }
     log.Logger.root.level = level;
-    _logSubscription =
-        log.Logger.root.onRecord.listen(colorfulLog ? _logColored : _log);
+    _logSubscription = log.Logger.root.onRecord.listen(
+      colorfulLog ? _logColored : _log,
+    );
     return true;
   }
   return false;

@@ -14,13 +14,14 @@ class StdStreamConsumer {
   final bool Function(String) filter;
   final _LinesAccumulator _linesAccumulator;
 
-  StdStreamConsumer(
-      {this.printToStdout = false,
-      this.printToStderr = false,
-      this.keepLines = false,
-      this.filter = filterNothing})
-      : _linesAccumulator =
-            keepLines ? _ActualLinesAccumulator() : _LinesAccumulator();
+  StdStreamConsumer({
+    this.printToStdout = false,
+    this.printToStderr = false,
+    this.keepLines = false,
+    this.filter = filterNothing,
+  }) : _linesAccumulator = keepLines
+           ? _ActualLinesAccumulator()
+           : _LinesAccumulator();
 
   /// Consume a line of text.
   void call(String line) {

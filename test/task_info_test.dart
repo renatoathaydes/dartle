@@ -13,12 +13,14 @@ void main() {
     ]) {
       test('example $ex', () {
         expect(
-            computeDependenciesCount(
-                invoked: ex.invoked,
-                defaults: ex.defaults,
-                executables: ex.executables,
-                upToDate: ex.upToDate),
-            equals(ex.expected));
+          computeDependenciesCount(
+            invoked: ex.invoked,
+            defaults: ex.defaults,
+            executables: ex.executables,
+            upToDate: ex.upToDate,
+          ),
+          equals(ex.expected),
+        );
       });
     }
   });
