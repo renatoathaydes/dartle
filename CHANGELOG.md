@@ -2,6 +2,11 @@
 
 ## done, waiting for next release
 
+# 0.34.0
+
+- added a new hook: `onEverythingUpToDate`. Allows customizing the message shown when "Everything is up-to-date".
+- require Dart SDK 3.9.0 to benefit from Dart performance improvements.
+
 # 0.33.0
 
 ### Dartle Cache
