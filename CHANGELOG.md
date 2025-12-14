@@ -2,6 +2,11 @@
 
 ## done, waiting for next release
 
+# 0.34.1
+
+- fixed Dart test runner error when test result could not be found.
+- Print final test result counts at the end after list of failed tests. 
+
 # 0.34.0
 
 - added a new hook: `onEverythingUpToDate`. Allows customizing the message shown when "Everything is up-to-date".
