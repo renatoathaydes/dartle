@@ -7,7 +7,7 @@
 /// tasks, such as copying/moving/transforming files and executing commands,
 /// but as build files are just regular Dart, any `dev_dependencies` can be
 /// used in build files.
-library dartle;
+library;
 
 export 'src/_log.dart'
     show activateLogging, profile, LogColor, ColoredLogMessage;

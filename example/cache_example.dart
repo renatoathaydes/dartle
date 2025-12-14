@@ -89,7 +89,7 @@ LogColor colorFor(ChangeKind kind) {
   }
 }
 
-Level logLevel(value) {
+Level logLevel(Object? value) {
   switch (value) {
     case 'debug':
       return Level.FINE;

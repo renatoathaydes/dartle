@@ -2,7 +2,7 @@
 /// into a binary executable automatically when it changes.
 ///
 /// This library is used to implement the installable 'dartle' command.
-library dartlex;
+library;
 
 export 'src/dartlex/dartlex.dart';
 export 'src/dartlex/exec.dart';
