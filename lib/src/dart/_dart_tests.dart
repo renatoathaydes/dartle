@@ -160,7 +160,10 @@ class JsonReporter {
     if (event is SuiteEvent) {
       _suiteById[event.suite.id] = event.suite;
     } else if (event is ErrorEvent) {
-      final test = _threads.firstWhere((t) => t?.test.id == event.testID);
+      final test = _threads.firstWhere(
+        (t) => t?.test.id == event.testID,
+        orElse: () => null,
+      );
       test?.error = event;
     } else if (event is TestStartEvent) {
       _push(_TestData(event.test, _suiteById[event.test.suiteID]));
@@ -215,12 +218,12 @@ class JsonReporter {
     for (var i = 0; i < _threads.length; i++) {
       _write('T${i.pad(3)} - ${_threads[i]?.location ?? 'IDLE'}\n');
     }
-    _write('${_status()}');
+    _write(_status());
   }
 
   void close() {
     _ansi.cleanLines(_threads.length + 1);
-    _write('Tests finished in  ${elapsedTime(_stopWatch)}\n${_status()}\n');
+    _write('Tests finished in  ${elapsedTime(_stopWatch)}\n\n');
     if (_failureCount > 0) {
       _write(
         '${colorize('Failed Tests:\n', LogColor.red)}'
@@ -236,10 +239,11 @@ class JsonReporter {
           ),
         );
       }
+      _write('\n${_status()}\n');
     }
   }
 
-  String? _status() {
+  String _status() {
     final color = _failureCount > 0
         ? LogColor.red
         : _skippedCount > 0
