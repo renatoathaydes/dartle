@@ -2,6 +2,8 @@
 
 ## done, waiting for next release
 
+- added `dirEntry` function to make creating `DirectoryEntry` less verbose.
+
 # 0.34.1
 
 - fixed Dart test runner error when test result could not be found.

@@ -105,7 +105,7 @@ Future<TaskWithDeps> _createDartCompileTask() async {
 
   final runCompileCondition = RunOnChanges(
     inputs: entities(buildSetupFiles, [
-      DirectoryEntry(path: 'dartle-src', fileExtensions: const {'.dart'}),
+      dirEntry('dartle-src', extensions: const {'.dart'}),
     ]),
     outputs: file(_cachedDartlex.path),
   );

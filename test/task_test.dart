@@ -230,9 +230,7 @@ void main() {
     final deleteTaskBad = Task(
       noop,
       name: 'deleteBad',
-      runCondition: RunToDelete(
-        entities(['out2.txt'], [DirectoryEntry(path: 'out')]),
-      ),
+      runCondition: RunToDelete(entities(['out2.txt'], [dirEntry('out')])),
     );
 
     test('if a task outputs are used as inputs for other task, '

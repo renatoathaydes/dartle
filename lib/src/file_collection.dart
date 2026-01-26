@@ -5,6 +5,21 @@ import 'package:path/path.dart' as p;
 
 import 'error.dart';
 
+/// Create a [DirectoryEntry].
+DirectoryEntry dirEntry(
+  String path, {
+  bool recurse = true,
+  bool includeHidden = false,
+  Set<String> exclusions = const {},
+  Set<String> extensions = const {},
+}) => DirectoryEntry(
+  path: path,
+  recurse: recurse,
+  includeHidden: includeHidden,
+  exclusions: exclusions,
+  fileExtensions: extensions,
+);
+
 /// A directory entry, usually used within a [FileCollection].
 ///
 /// See [file], [files], [dir], [dirs], [entities].
