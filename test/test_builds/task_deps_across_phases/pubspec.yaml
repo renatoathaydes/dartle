@@ -1,0 +1,12 @@
+name: task_deps_across_phases
+description: Build script for this project. Check Dartle Documentation at https://renatoathaydes.github.io/dartle-website/.
+version: 0.0.0
+publish_to: none
+
+environment:
+  sdk: ^3.10.0
+
+dev_dependencies:
+  dartle: ^0.34.0
+dependencies:
+  path: ^1.9.1
