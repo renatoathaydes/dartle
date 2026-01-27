@@ -33,7 +33,8 @@ Future<void> _assertCountBytesOutput() async {
   final bytesContents = await File(
     p.join(_buildDirectory, 'target', 'bytes.txt'),
   ).readAsString();
-  expect(bytesContents, equals('14'));
+  // on Windows, it seems to include the `\r` byte from the newline sequence
+  expect(bytesContents, equals(Platform.isWindows ? '15' : '14'));
 }
 
 void main() {
