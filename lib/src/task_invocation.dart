@@ -33,23 +33,32 @@ List<TaskInvocation> parseInvocation(
   Map<String, TaskWithDeps> taskMap,
   Options options,
 ) {
-  final invocations = <TaskInvocation>[];
+  final invocations = <String, TaskInvocation>{};
   TaskWithDeps? currentTask;
   var followsTask = false;
-  final errors = <String>[];
+  final requiredTasks = <String>{};
+  final errors = <String>{};
   var currentArgs = <String>[];
 
-  void addCurrentInvocation() {
+  void addInvocationOf(TaskWithDeps task) {
+    if (invocations.containsKey(task.name)) {
+      errors.add("Cannot invoke task more than once: '${task.name}'");
+      return;
+    }
+    final isValid = task.argsValidator.validate(currentArgs);
+    if (isValid) {
+      invocations[task.name] = TaskInvocation(task, currentArgs);
+    } else {
+      errors.add(
+        "Invalid arguments for task '${task.name}': "
+        '$currentArgs - ${task.argsValidator.helpMessage()}',
+      );
+    }
+  }
+
+  void addInvocationForCurrentTask() {
     if (currentTask != null) {
-      final isValid = currentTask.argsValidator.validate(currentArgs);
-      if (isValid) {
-        invocations.add(TaskInvocation(currentTask, currentArgs));
-      } else {
-        errors.add(
-          "Invalid arguments for task '${currentTask.name}': "
-          '$currentArgs - ${currentTask.argsValidator.helpMessage()}',
-        );
-      }
+      addInvocationOf(currentTask);
     }
   }
 
@@ -66,14 +75,24 @@ List<TaskInvocation> parseInvocation(
       if (task == null) {
         errors.add("Task '$word' does not exist");
       } else {
-        addCurrentInvocation();
+        addInvocationForCurrentTask();
         currentTask = task;
         currentArgs = <String>[];
+        // transitive requirements are not allowed, hence we do not recurse.
+        requiredTasks.addAll(task.requirements);
       }
     }
   }
 
-  addCurrentInvocation();
+  addInvocationForCurrentTask();
+
+  for (final name in requiredTasks.where(
+    (name) => !invocations.containsKey(name),
+  )) {
+    logger.fine(() => "'Adding required task to invocation: '$name'");
+    // null-safe: requirements are already validated elsewhere.
+    addInvocationOf(taskMap[name]!);
+  }
 
   if (errors.isNotEmpty) {
     if (options.showInfoOnly) {
@@ -84,12 +103,12 @@ List<TaskInvocation> parseInvocation(
       final message = errors.length > 1
           ? 'Several invocation problems found:\n'
                 '${errors.map((err) => '  * $err').join('\n')}'
-          : 'Invocation problem: ${errors[0]}';
+          : 'Invocation problem: ${errors.first}';
       throw DartleException(message: message);
     }
   }
 
-  return invocations;
+  return invocations.values.toList();
 }
 
 TaskWithDeps? _findTaskByName(

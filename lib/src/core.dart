@@ -342,7 +342,7 @@ Future<TaskWithStatus> _createTaskWithStatus(
 
 bool _anyDepMustRun(TaskWithDeps task, Map<String, TaskWithStatus> statuses) {
   final mustRunDeps = task.dependencies.where(
-    (element) => statuses[element.name]?.mustRun ?? false,
+    (dep) => statuses[dep.name]?.mustRun ?? false,
   );
   if (mustRunDeps.isNotEmpty) {
     logger.fine(

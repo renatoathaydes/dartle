@@ -22,14 +22,16 @@ final _d = Task(
   dependsOn: {'a'},
   argsValidator: const ArgsCount.count(1),
 );
+final _e = Task(noop, name: 'e', requires: const {'a'});
 
 // TaskWithDeps includes transitive dependencies
 final _aw = TaskWithDeps(_a, [_bw, _cw]);
 final _bw = TaskWithDeps(_b);
 final _cw = TaskWithDeps(_c);
 final _dw = TaskWithDeps(_d, [_bw, _cw, _aw]);
+final _ew = TaskWithDeps(_e, [_bw, _cw, _aw]);
 
-final taskMap = {'a': _aw, 'b': _bw, 'c': _cw, 'd': _dw};
+final taskMap = {'a': _aw, 'b': _bw, 'c': _cw, 'd': _dw, 'e': _ew};
 
 void main() {
   group('task invocations can be parsed correctly', () {
@@ -93,6 +95,18 @@ void main() {
         ],
       ),
     );
+    test('task with requirements - requirement is automatically invoked', () {
+      expect(parseInvocation(['e'], taskMap, const Options()), [
+        equalsInvocation('e', []),
+        equalsInvocation('a', []),
+      ]);
+    });
+    test('task with requirements - requirement may be invoked explicitly', () {
+      expect(parseInvocation(['a', 'e'], taskMap, const Options()), [
+        equalsInvocation('a', []),
+        equalsInvocation('e', []),
+      ]);
+    });
   });
 
   group('tasks can be sorted in execution order', () {
