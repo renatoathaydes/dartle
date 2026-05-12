@@ -12,7 +12,7 @@ final tasks = [
   Task(noop, name: 'g', dependsOn: {'c'}),
   Task(noop, name: 'h', phase: TaskPhase.tearDown),
   Task(noop, name: 'i', dependsOn: {'d'}),
-  Task(noop, name: 'j'),
+  Task(noop, name: 'j', requires: {'e'}),
   Task(noop, name: 'k', dependsOn: {'a'}),
   Task(noop, name: 'l', argsValidator: const AcceptAnyArgs()),
   Task(noop, name: 'm', runCondition: RunAtMostEvery(Duration(seconds: 4))),

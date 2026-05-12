@@ -443,6 +443,8 @@ class ParallelTasks {
 
   int get length => tasks.length;
 
+  bool get empty => length == 0;
+
   TaskPhase? get phase => tasks.firstOrNull?.task.phase;
 
   void add(TaskWithStatus taskWithStatus) {

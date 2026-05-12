@@ -4,6 +4,27 @@ import 'package:dartle/dartle.dart';
 import 'package:dartle/dartlex.dart';
 import 'package:test/test.dart';
 
+const taskGraph = r'''
+- a
+  +--- b
+  |     \--- f
+  |          +--- g
+  |          |     \--- c
+  |          |          +--- d
+  |          |          |--- e
+  |          |          \--- m
+  |          \--- n
+  \--- c ...
+- h
+- i
+  \--- d
+- j
+- k
+  \--- a ...
+- l
+- o
+''';
+
 void main() {
   group('Build information', () {
     // create a snapshot so we can run the build quickly, several times
@@ -87,6 +108,24 @@ void main() {
       expect(proc.stderr, isEmpty);
     });
 
+    test('logs expected output for single task with requirement', () async {
+      var proc = await runExampleDartBuild(const ['--no-color', 'j']);
+      expect(
+        proc.stdout[0],
+        contains(
+          'Executing 2 tasks out of a total of 15 tasks:'
+          ' 1 task selected, 1 requirement',
+        ),
+      );
+      expect(proc.stdout[1], contains("Running task 'e'"));
+      expect(proc.stdout[2], contains("Running task 'j'"));
+      expect(proc.stdout[3], startsWith('✔ Build succeeded in '));
+      expect(proc.stdout[3], endsWith(' ms'));
+      expect(proc.stdout.length, equals(4));
+      expect(proc.exitCode, equals(0));
+      expect(proc.stderr, isEmpty);
+    });
+
     test('can show all tasks', () async {
       var proc = await runExampleDartBuild(const [
         '-s',
@@ -156,30 +195,13 @@ The following tasks were selected to run, in order:
     test('can show task graph', () async {
       var proc = await runExampleDartBuild(const ['-g', '--no-color']);
 
-      final expectedOutput = r'''
+      const expectedOutput =
+          '''
 ======== Showing build information only, no tasks will be executed ========
 
 Tasks Graph:
 
-- a
-  +--- b
-  |     \--- f
-  |          +--- g
-  |          |     \--- c
-  |          |          +--- d
-  |          |          |--- e
-  |          |          \--- m
-  |          \--- n
-  \--- c ...
-- h
-- i
-  \--- d
-- j
-- k
-  \--- a ...
-- l
-- o
-
+$taskGraph
 The following tasks were selected to run, in order:
 
   d
@@ -191,6 +213,27 @@ The following tasks were selected to run, in order:
               f
                   b
                       a
+''';
+
+      expect(proc.stdout.join('\n'), equals(expectedOutput));
+      expect(proc.exitCode, equals(0));
+      expect(proc.stderr, isEmpty);
+    });
+
+    test('can show task graph with requirement', () async {
+      var proc = await runExampleDartBuild(const ['j', '-g', '--no-color']);
+
+      const expectedOutput =
+          '''
+======== Showing build information only, no tasks will be executed ========
+
+Tasks Graph:
+
+$taskGraph
+The following tasks were selected to run, in order:
+
+  e (requirement)
+  j
 ''';
 
       expect(proc.stdout.join('\n'), equals(expectedOutput));

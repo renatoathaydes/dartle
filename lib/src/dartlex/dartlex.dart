@@ -36,7 +36,10 @@ Future<void> runDartlex(
 
   final compileTask = await _createDartCompileTask();
   final recompileCondition = compileTask.runCondition as RunOnChanges;
-  final compileDartlexInvocation = TaskInvocation(compileTask);
+  final compileDartlexInvocation = TaskInvocation(
+    compileTask,
+    reason: InvocationReason.synthetic,
+  );
 
   if (await recompileCondition.shouldRun(compileDartlexInvocation)) {
     logger.info(

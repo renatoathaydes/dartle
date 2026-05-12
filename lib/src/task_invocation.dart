@@ -6,17 +6,33 @@ import 'task.dart';
 
 const taskArgumentPrefix = ':';
 
+enum InvocationReason {
+  calledByUser,
+  byDefault,
+  requirement,
+  dependency,
+  synthetic,
+}
+
 class TaskInvocation {
   final TaskWithDeps task;
   final List<String> args;
-
+  final InvocationReason reason;
   final String _name;
 
-  TaskInvocation(this.task, [this.args = const <String>[], String? name])
-    : _name = name ?? task.name;
+  TaskInvocation(
+    this.task, {
+    this.args = const <String>[],
+    String? name,
+    this.reason = InvocationReason.calledByUser,
+  }) : _name = name ?? task.name;
 
   /// The invocation task name (may be different from the actual task's name).
   String get name => _name;
+
+  /// Whether this task was not directly invoked, but included by an invoked
+  /// task's requirements.
+  bool get byRequirement => reason == InvocationReason.requirement;
 
   @override
   String toString() {
@@ -31,23 +47,33 @@ class TaskInvocation {
 List<TaskInvocation> parseInvocation(
   List<String> tasksInvocation,
   Map<String, TaskWithDeps> taskMap,
-  Options options,
-) {
+  Options options, [
+  bool usingDefaultTasks = false,
+]) {
   final invocations = <String, TaskInvocation>{};
-  TaskWithDeps? currentTask;
+  (TaskWithDeps task, String nameSpec)? current;
   var followsTask = false;
   final requiredTasks = <String>{};
   final errors = <String>{};
   var currentArgs = <String>[];
 
-  void addInvocationOf(TaskWithDeps task) {
+  void addInvocationOf(
+    TaskWithDeps task,
+    String nameSpec,
+    InvocationReason reason,
+  ) {
     if (invocations.containsKey(task.name)) {
       errors.add("Cannot invoke task more than once: '${task.name}'");
       return;
     }
     final isValid = task.argsValidator.validate(currentArgs);
     if (isValid) {
-      invocations[task.name] = TaskInvocation(task, currentArgs);
+      invocations[task.name] = TaskInvocation(
+        task,
+        args: currentArgs,
+        name: nameSpec,
+        reason: reason,
+      );
     } else {
       errors.add(
         "Invalid arguments for task '${task.name}': "
@@ -57,14 +83,20 @@ List<TaskInvocation> parseInvocation(
   }
 
   void addInvocationForCurrentTask() {
-    if (currentTask != null) {
-      addInvocationOf(currentTask);
+    if (current != null) {
+      addInvocationOf(
+        current.$1,
+        current.$2,
+        usingDefaultTasks
+            ? InvocationReason.byDefault
+            : InvocationReason.calledByUser,
+      );
     }
   }
 
   for (var word in tasksInvocation) {
     if (word.startsWith(taskArgumentPrefix)) {
-      if (currentTask != null) {
+      if (current != null) {
         currentArgs.add(word.substring(1));
       } else if (!followsTask) {
         errors.add("Argument should follow a task: '$word'");
@@ -76,7 +108,7 @@ List<TaskInvocation> parseInvocation(
         errors.add("Task '$word' does not exist");
       } else {
         addInvocationForCurrentTask();
-        currentTask = task;
+        current = (task, word);
         currentArgs = <String>[];
         // transitive requirements are not allowed, hence we do not recurse.
         requiredTasks.addAll(task.requirements);
@@ -91,7 +123,7 @@ List<TaskInvocation> parseInvocation(
   )) {
     logger.fine(() => "'Adding required task to invocation: '$name'");
     // null-safe: requirements are already validated elsewhere.
-    addInvocationOf(taskMap[name]!);
+    addInvocationOf(taskMap[name]!, name, InvocationReason.requirement);
   }
 
   if (errors.isNotEmpty) {

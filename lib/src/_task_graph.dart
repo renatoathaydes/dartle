@@ -155,11 +155,19 @@ void showExecutableTasks(List<ParallelTasks> executableTasks) {
     for (final pTasks in executableTasks) {
       for (final task in pTasks.tasks) {
         stdout.write(indentation);
-        stdout.writeln(task.invocation.name);
+        stdout.writeln(_taskText(task));
       }
       indentation += '    ';
     }
   }
+}
+
+String _taskText(TaskWithStatus task) {
+  final name = task.task.name;
+  if (task.invocation.byRequirement) {
+    return '$name ${style('(requirement)', LogStyle.italic)}';
+  }
+  return name;
 }
 
 extension _CapitalString on String {

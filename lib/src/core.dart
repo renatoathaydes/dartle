@@ -146,11 +146,13 @@ Future<List<ParallelTasks>> runBasic(
   }
 
   var tasksInvocation = options.tasksInvocation;
+  var usingDefaultTasks = false;
   final directTasksCount = tasksInvocation
       .where((name) => !name.startsWith(taskArgumentPrefix))
       .length;
   if (directTasksCount == 0 && defaultTasks.isNotEmpty) {
     tasksInvocation = defaultTasks.map((t) => t.name).toList();
+    usingDefaultTasks = true;
   }
   final taskMap = createTaskMap(tasks);
   final tasksAffectedByDeletion = await verifyTaskInputsAndOutputsConsistency(
@@ -159,7 +161,7 @@ Future<List<ParallelTasks>> runBasic(
   await verifyTaskPhasesConsistency(taskMap);
   final executableTasks = await _getExecutableTasks(
     taskMap,
-    tasksInvocation,
+    (tasksInvocation, usingDefaultTasks),
     options,
     tasksAffectedByDeletion,
   );
@@ -174,13 +176,7 @@ Future<List<ParallelTasks>> runBasic(
     showTasksInfo(executableTasks, taskMap, defaultTasks, options);
   } else {
     if (logger.isLoggable(log.Level.INFO)) {
-      logTasksInfo(
-        tasks,
-        executableTasks,
-        options.tasksInvocation,
-        directTasksCount,
-        defaultTasks,
-      );
+      logTasksInfo(tasks, executableTasks);
     }
 
     try {
@@ -235,17 +231,23 @@ Future<void> _runAll(
 
 Future<List<ParallelTasks>> _getExecutableTasks(
   Map<String, TaskWithDeps> taskMap,
-  List<String> tasksInvocation,
+  (List<String> tasks, bool usingDefaultTasks) invocation,
   Options options,
   DeletionTasksByTask tasksAffectedByDeletion,
 ) async {
+  final (tasksInvocation, usingDefaultTasks) = invocation;
   if (tasksInvocation.isEmpty) {
     if (!options.showInfoOnly) {
       logger.warning('No tasks were requested and no default tasks exist.');
     }
     return const [];
   }
-  final invocations = parseInvocation(tasksInvocation, taskMap, options);
+  final invocations = parseInvocation(
+    tasksInvocation,
+    taskMap,
+    options,
+    usingDefaultTasks,
+  );
 
   // also force tasks if the cache is disabled
   final force = options.forceTasks || options.disableCache;
@@ -304,7 +306,11 @@ Future<List<ParallelTasks>> getInOrderOfExecution(
 
   for (final inv in invocations) {
     for (final dep in inv.task.dependencies) {
-      if (seenTasks.add(dep.name)) await addInvocation(TaskInvocation(dep));
+      if (seenTasks.add(dep.name)) {
+        await addInvocation(
+          TaskInvocation(dep, reason: InvocationReason.dependency),
+        );
+      }
     }
     if (seenTasks.add(inv.name)) await addInvocation(inv);
   }
