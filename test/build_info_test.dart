@@ -233,7 +233,7 @@ $taskGraph
 The following tasks were selected to run, in order:
 
   e (requirement)
-  j
+      j
 ''';
 
       expect(proc.stdout.join('\n'), equals(expectedOutput));

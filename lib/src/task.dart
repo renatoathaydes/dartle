@@ -457,14 +457,16 @@ class ParallelTasks {
   /// Returns true the given task can be included in this group of tasks.
   ///
   /// If a task can be included, it means that it does not have any
-  /// dependency on tasks in this group and that it belongs to the same phase
-  /// as other tasks in this group, hence it can run in parallel with
-  /// the other tasks.
+  /// dependency or requirement on tasks in this group and that it belongs to
+  /// the same phase as other tasks in this group, hence it can run in parallel
+  /// with the other tasks.
   bool canInclude(TaskWithDeps task) {
     for (final t in invocations.map((i) => i.task)) {
       if (t.phase.index != task.phase.index) return false;
       if (t._dependsOn.contains(task.name)) return false;
       if (task._dependsOn.contains(t.name)) return false;
+      if (t._requires.contains(task.name)) return false;
+      if (task._requires.contains(t.name)) return false;
     }
     return true;
   }
