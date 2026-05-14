@@ -21,7 +21,7 @@ void main(List<String> args) {
   ).task;
   final cleanupTask = createCleanWorkingDirsTask();
 
-  checkImportsTask.dependsOn(const {'cleanWorkingDirs'});
+  dartleDart.test.dependsOn(const {'cleanWorkingDirs'});
   distributionTask.dependsOn({dartleDart.compileExe.name});
   dartleDart.analyzeCode.dependsOn(const {
     'generateDartSources',
