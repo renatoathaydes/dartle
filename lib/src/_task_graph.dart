@@ -97,6 +97,8 @@ extension StatusDescribe on TaskStatus? {
         return colorize(' [out-of-date]', LogColor.yellow);
       case TaskStatus.forced:
         return colorize(' [forced]', LogColor.yellow);
+      case TaskStatus.requirementOfUpToDateTask:
+        return colorize(' [requirement-of-up-to-date]', LogColor.green);
     }
   }
 }

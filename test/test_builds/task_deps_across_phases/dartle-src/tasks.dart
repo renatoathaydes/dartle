@@ -8,10 +8,13 @@ const target = 'target';
 final outputFile = p.join(target, 'output.txt');
 final bytesFile = p.join(target, 'bytes.txt');
 
+final prepareSomethingTask = Task((_) {}, name: 'prepareSomething');
+
 final createOutputTask = Task(
   createOutput,
   description: 'Creates an output file',
   phase: TaskPhase.build,
+  requires: {'prepareSomething'},
   runCondition: RunOnChanges(inputs: sources, outputs: file(outputFile)),
 );
 

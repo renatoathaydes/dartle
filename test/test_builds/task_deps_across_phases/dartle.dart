@@ -6,6 +6,7 @@ void main(List<String> args) {
   run(
     args,
     tasks: {
+      prepareSomethingTask,
       createOutputTask,
       countOutputTask,
       createCleanTask(

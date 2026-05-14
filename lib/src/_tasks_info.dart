@@ -54,7 +54,7 @@ void logTasksInfo(Set<Task> tasks, List<ParallelTasks> executableTasks) {
   logger.info(
     'Executing $runnableTasksPhrase out of a total of $totalTasksPhrase: '
     '${reasonPhrases.isEmpty ? '' : reasonPhrases.join(', ')}'
-    '${reasonPhrases.isEmpty ? upToDatePhrase : ', $upToDatePhrase'}',
+    '${reasonPhrases.isEmpty || upToDatePhrase.isEmpty ? upToDatePhrase : ', $upToDatePhrase'}',
   );
 }
 

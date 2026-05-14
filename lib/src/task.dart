@@ -386,6 +386,7 @@ enum TaskStatus {
   affectedByDeletionTask,
   outOfDate,
   forced,
+  requirementOfUpToDateTask,
 }
 
 /// The kind of a relationship between two tasks.
@@ -418,12 +419,20 @@ extension TaskStatusString on TaskStatus {
 /// Task with its status, including its current invocation.
 class TaskWithStatus {
   final TaskWithDeps task;
-  final TaskStatus status;
   final TaskInvocation invocation;
+
+  /// The task current status. This may be changed while tasks's status
+  /// are still being computed.
+  TaskStatus status;
 
   TaskWithStatus(this.task, this.status, this.invocation);
 
-  bool get mustRun => status != TaskStatus.upToDate;
+  bool get upToDate => const {
+    TaskStatus.upToDate,
+    TaskStatus.requirementOfUpToDateTask,
+  }.contains(status);
+
+  bool get mustRun => !upToDate;
 
   @override
   String toString() {
@@ -439,7 +448,7 @@ class ParallelTasks {
 
   int get mustRunCount => tasks.where((t) => t.mustRun).length;
 
-  int get upToDateCount => tasks.where((t) => !t.mustRun).length;
+  int get upToDateCount => tasks.where((t) => t.upToDate).length;
 
   int get length => tasks.length;
 
@@ -781,15 +790,20 @@ Iterable<Task> _requiredTasks(
     if (req == null) {
       throw DartleException(
         message:
-            "'Task '${task.name}' requires non-existing task: '$requirement'",
+            "Task '${task.name}' requires non-existing task: '$requirement'",
       );
     } else {
-      if (req.requirements.isNotEmpty) {
-        throw DartleException(
-          message:
-              "'Task '${req.name}' cannot be a requirement of '${task.name}' "
-              "because it has requirements of its own, which is not allowed.",
-        );
+      for (final (tasks, kind) in [
+        (req.requirements, 'requirements'),
+        (req.dependencySet, 'dependencies'),
+      ]) {
+        if (tasks.isNotEmpty) {
+          throw DartleException(
+            message:
+                "Task '${req.name}' cannot be a requirement of '${task.name}' "
+                "because it has $kind of its own, which is not allowed.",
+          );
+        }
       }
     }
     yield req;

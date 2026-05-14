@@ -320,8 +320,8 @@ class TaskInvocationMatcher extends Matcher {
   @override
   bool matches(item, Map matchState) {
     if (item is TaskInvocation) {
-      return item.task.name == taskName &&
-          item.name == invokedTaskName &&
+      return item.name == taskName &&
+          item.nameSpec == invokedTaskName &&
           item.byRequirement == byRequirement &&
           const ListEquality().equals(item.args, args);
     }

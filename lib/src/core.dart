@@ -291,14 +291,27 @@ Future<List<ParallelTasks>> getInOrderOfExecution(
 
   final taskStatuses = <String, TaskWithStatus>{};
 
+  void markRequirementUpToDate(String requirement) {
+    taskStatuses[requirement]!.status = TaskStatus.requirementOfUpToDateTask;
+  }
+
   Future<void> addInvocation(TaskInvocation invocation) async {
-    final taskWithStatus = await _createTaskWithStatus(
+    var taskWithStatus = await _createTaskWithStatus(
       invocation,
       taskStatuses,
       forceTasks,
       tasksAffectedByDeletion,
     );
     taskStatuses[invocation.name] = taskWithStatus;
+    if (taskWithStatus.upToDate &&
+        const {
+          InvocationReason.calledByUser,
+          InvocationReason.byDefault,
+        }.contains(invocation.reason)) {
+      for (final req in invocation.task.requirements) {
+        markRequirementUpToDate(req);
+      }
+    }
     addTaskToParallelTasks(taskWithStatus);
   }
 

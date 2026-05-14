@@ -15,20 +15,20 @@ enum InvocationReason {
 }
 
 class TaskInvocation {
+  final String? nameSpec;
   final TaskWithDeps task;
   final List<String> args;
   final InvocationReason reason;
-  final String _name;
 
   TaskInvocation(
     this.task, {
     this.args = const <String>[],
-    String? name,
+    this.nameSpec,
     this.reason = InvocationReason.calledByUser,
-  }) : _name = name ?? task.name;
+  });
 
-  /// The invocation task name (may be different from the actual task's name).
-  String get name => _name;
+  /// The task name.
+  String get name => task.name;
 
   /// Whether this task was not directly invoked, but included by an invoked
   /// task's requirements.
@@ -36,7 +36,7 @@ class TaskInvocation {
 
   @override
   String toString() {
-    return 'TaskInvocation{task: $name, args: $args}';
+    return 'TaskInvocation{task: $name, args: $args, reason: ${reason.name}}';
   }
 }
 
@@ -71,7 +71,7 @@ List<TaskInvocation> parseInvocation(
       invocations[task.name] = TaskInvocation(
         task,
         args: currentArgs,
-        name: nameSpec,
+        nameSpec: nameSpec,
         reason: reason,
       );
     } else {
@@ -84,9 +84,10 @@ List<TaskInvocation> parseInvocation(
 
   void addInvocationForCurrentTask() {
     if (current != null) {
+      final (task, nameSpec) = current;
       addInvocationOf(
-        current.$1,
-        current.$2,
+        task,
+        nameSpec,
         usingDefaultTasks
             ? InvocationReason.byDefault
             : InvocationReason.calledByUser,
