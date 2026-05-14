@@ -394,7 +394,18 @@ enum TaskStatus {
   affectedByDeletionTask,
   outOfDate,
   forced,
-  requirementOfUpToDateTask,
+  requirementOfUpToDateTask;
+
+  @override
+  String toString() => switch (this) {
+    TaskStatus.upToDate => 'up-to-date',
+    TaskStatus.alwaysRuns => 'always-runs',
+    TaskStatus.dependencyIsOutOfDate => 'dependency-out-of-date',
+    TaskStatus.affectedByDeletionTask => 'affected-by-deletion-task',
+    TaskStatus.outOfDate => 'out-of-date',
+    TaskStatus.forced => 'forced',
+    TaskStatus.requirementOfUpToDateTask => 'requirement-of-up-to-date',
+  };
 }
 
 /// The kind of a relationship between two tasks.
