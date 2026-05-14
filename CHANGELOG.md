@@ -2,6 +2,11 @@
 
 ## done, waiting for next release
 
+# 1.0.0
+
+- `Task` can now have `requires`, i.e. tasks that are also required to run if the task runs, but without
+   introducing a strong dependency between them.
+- improved `elapsedTime` function to display durations using spaced verbal units.
 - added `dirEntry` function to make creating `DirectoryEntry` less verbose.
 
 # 0.34.1
