@@ -181,9 +181,17 @@ extension TaskPhaseString on TaskPhase {
 /// A Dartle task whose action is provided by user code in order to execute
 /// some logic during a build run.
 class Task {
+  /// A description of this task.
+  /// Arguments should be described by the [argsValidator].
   final String description;
+
+  /// A [RunCondition] determines whether this task should run.
   final RunCondition runCondition;
+
+  /// The [ArgsValidator] describes and validates task arguments.
   final ArgsValidator argsValidator;
+
+  /// The [TaskPhase] groups tasks into build phases.
   final TaskPhase phase;
   Set<String> _dependsOn;
   Set<String> _requires;
@@ -226,7 +234,7 @@ class Task {
 
   /// Get this task's requirements.
   ///
-  /// A required task must not have requirements of its own.
+  /// A required task must not have requirements or dependencies of its own.
   ///
   /// The returned Set is immutable. To add dependencies, use [requires].
   Set<String> get requirements => Set.unmodifiable(_requires);
