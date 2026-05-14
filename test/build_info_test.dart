@@ -101,8 +101,10 @@ void main() {
         ),
       );
       expect(proc.stdout[1], contains("Running task 'd'"));
-      expect(proc.stdout[2], startsWith('✔ Build succeeded in '));
-      expect(proc.stdout[2], endsWith(' ms'));
+      expect(
+        proc.stdout[2],
+        matches('✔ Build succeeded in (\\d{1,3}ms)?((,\\s)?\\d{1,3}μs)?'),
+      );
       expect(proc.stdout.length, equals(3));
       expect(proc.exitCode, equals(0));
       expect(proc.stderr, isEmpty);
@@ -119,8 +121,10 @@ void main() {
       );
       expect(proc.stdout[1], contains("Running task 'e'"));
       expect(proc.stdout[2], contains("Running task 'j'"));
-      expect(proc.stdout[3], startsWith('✔ Build succeeded in '));
-      expect(proc.stdout[3], endsWith(' ms'));
+      expect(
+        proc.stdout[3],
+        matches('✔ Build succeeded in (\\d{1,3}ms)?((,\\s)?\\d{1,3}μs)?'),
+      );
       expect(proc.stdout.length, equals(4));
       expect(proc.exitCode, equals(0));
       expect(proc.stderr, isEmpty);

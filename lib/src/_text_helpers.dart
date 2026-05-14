@@ -52,12 +52,52 @@ String? findMatchingByWords(String searchText, List<String> options) {
   return result.isEmpty ? null : result;
 }
 
-String elapsedTime(Stopwatch stopwatch) {
-  final millis = stopwatch.elapsedMilliseconds;
-  if (millis > 1000) {
-    final secs = (millis * 1e-3).toStringAsPrecision(4);
-    return '$secs seconds';
-  } else {
-    return '$millis ms';
+/// Calls [elapsedTimeIn] with the value of `stopwatch.elapsed`.
+String elapsedTime(Stopwatch stopwatch) => elapsedTimeIn(stopwatch.elapsed);
+
+/// Formats the given duration using spaced verbal units with a `,` between
+/// each unit.
+///
+/// For example, `23h, 32m, 45s`, `1s, 250ms`, `10ms, 850μs`.
+///
+/// Units:
+///
+/// - `d` for days
+/// - `h` for hours
+/// - `m` for minutes
+/// - `s` for seconds
+/// - `ms` for milliseconds
+/// - `μs` for microseconds
+///
+/// Durations longer than *one minute* do not display `ms` and `μs`.
+/// Durations longer than *one second* do not display `μs`.
+String elapsedTimeIn(Duration d) {
+  final builder = StringBuffer();
+  final (days, hours, mins, secs, millis, micros) = (
+    d.inDays,
+    d.inHours % 24,
+    d.inMinutes % 60,
+    d.inSeconds % 60,
+    d.inMilliseconds % 1_000,
+    d.inMicroseconds % 1_000,
+  );
+
+  void append(String unit, num value) {
+    if (builder.isNotEmpty) builder.write(', ');
+    builder.write(value);
+    builder.write(unit);
   }
+
+  if (days > 0) append('d', days);
+  if (0 < hours && hours < 24) append('h', hours);
+  if (0 < mins && mins < 60) append('m', mins);
+  if (0 < secs && secs < 60) append('s', secs);
+  if (days > 0 || hours > 0 || mins > 0) return builder.toString();
+  if (0 < millis && millis < 1_000) append('ms', millis);
+  if (secs > 0) return builder.toString();
+  if (0 < micros && micros < 1_000) append('μs', micros);
+
+  if (builder.isEmpty) return '0μs';
+
+  return builder.toString();
 }

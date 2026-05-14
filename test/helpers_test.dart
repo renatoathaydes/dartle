@@ -507,4 +507,106 @@ void main([List<String> args = const []]) {
       });
     });
   });
+
+  group('elapsedTime', () {
+    test('microseconds to milliseconds', () {
+      expect(
+        [
+          Duration.zero,
+          Duration(microseconds: 1),
+          Duration(microseconds: 10),
+          Duration(microseconds: 100),
+          Duration(microseconds: 256),
+          Duration(microseconds: 999),
+          Duration(milliseconds: 1),
+          Duration(milliseconds: 2),
+          Duration(milliseconds: 100),
+          Duration(milliseconds: 1, microseconds: 1),
+          Duration(milliseconds: 123, microseconds: 456),
+          Duration(milliseconds: 999, microseconds: 999),
+        ].map(elapsedTimeIn).toList(),
+        equals([
+          '0μs',
+          '1μs',
+          '10μs',
+          '100μs',
+          '256μs',
+          '999μs',
+          '1ms',
+          '2ms',
+          '100ms',
+          '1ms, 1μs',
+          '123ms, 456μs',
+          '999ms, 999μs',
+        ]),
+      );
+    });
+
+    test('seconds', () {
+      expect(
+        [
+          Duration(seconds: 1),
+          Duration(seconds: 2),
+          Duration(seconds: 30),
+          Duration(seconds: 59),
+          Duration(seconds: 1, microseconds: 1),
+          Duration(seconds: 4, milliseconds: 54, microseconds: 843),
+        ].map(elapsedTimeIn).toList(),
+        equals(['1s', '2s', '30s', '59s', '1s', '4s, 54ms']),
+      );
+    });
+
+    test('minutes', () {
+      expect(
+        [
+          Duration(minutes: 1),
+          Duration(minutes: 2),
+          Duration(minutes: 30),
+          Duration(minutes: 59),
+          Duration(minutes: 2, seconds: 1),
+          Duration(minutes: 50, seconds: 40, milliseconds: 1),
+        ].map(elapsedTimeIn).toList(),
+        equals(['1m', '2m', '30m', '59m', '2m, 1s', '50m, 40s']),
+      );
+    });
+
+    test('hours', () {
+      expect(
+        [
+          Duration(hours: 1),
+          Duration(hours: 2),
+          Duration(hours: 23),
+          Duration(hours: 23, minutes: 59),
+          Duration(hours: 2, seconds: 1),
+          Duration(
+            hours: 23,
+            minutes: 32,
+            seconds: 45,
+            milliseconds: 1,
+            microseconds: 2,
+          ),
+        ].map(elapsedTimeIn).toList(),
+        equals(['1h', '2h', '23h', '23h, 59m', '2h, 1s', '23h, 32m, 45s']),
+      );
+    });
+
+    test('days', () {
+      expect(
+        [
+          Duration(days: 1),
+          Duration(days: 2),
+          Duration(days: 30),
+          Duration(
+            days: 365,
+            hours: 2,
+            minutes: 32,
+            seconds: 45,
+            milliseconds: 1,
+            microseconds: 2,
+          ),
+        ].map(elapsedTimeIn).toList(),
+        equals(['1d', '2d', '30d', '365d, 2h, 32m, 45s']),
+      );
+    });
+  });
 }

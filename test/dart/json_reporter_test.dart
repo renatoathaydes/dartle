@@ -35,7 +35,7 @@ void main() {
         equals(Ansi.clearLine),
         equals(Ansi.moveUp),
         equals(Ansi.clearLine),
-        matches('Tests finished in\\s+\\d+ ms\n.*'),
+        matches('Tests finished in\\s+(\\d{1,3}ms)?((,\\s)?\\d{1,3}μs)?\n.*'),
       ]),
     );
   });
@@ -130,7 +130,7 @@ void main() {
         equals(Ansi.clearLine),
         equals(Ansi.moveUp),
         equals(Ansi.clearLine),
-        matches('Tests finished in\\s+\\d+ ms\n.*'),
+        matches('Tests finished in\\s+(\\d{1,3}ms)?((,\\s)?\\d{1,3}μs)?\n.*'),
       ]),
     );
   });
