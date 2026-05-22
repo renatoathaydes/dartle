@@ -2,6 +2,7 @@ import 'package:collection/collection.dart' show IterableIntegerExtension;
 
 import '_log.dart';
 import 'task.dart';
+import 'task_invocation.dart';
 
 /// Hook that will be called when a build is finished because everything is
 /// up-to-date.
@@ -16,25 +17,8 @@ void _onEverythingUpToDate() {
   );
 }
 
-int computeDependenciesCount({
-  required int invoked,
-  required int defaults,
-  required int executables,
-  required int upToDate,
-}) {
-  final total = executables + upToDate;
-  final askedFor = (invoked == 0) ? defaults : invoked;
-  return total - askedFor;
-}
-
-void logTasksInfo(
-  Set<Task> tasks,
-  List<ParallelTasks> executableTasks,
-  List<String> tasksInvocation,
-  int directTasksCount,
-  Set<Task> defaultTasks,
-) {
-  if (directTasksCount == 0 && defaultTasks.isEmpty) {
+void logTasksInfo(Set<Task> tasks, List<ParallelTasks> executableTasks) {
+  if (executableTasks.every((pt) => pt.empty)) {
     return;
   }
 
@@ -44,40 +28,54 @@ void logTasksInfo(
     return onEverythingUpToDate();
   }
 
+  final countByReason = {
+    for (final reason in InvocationReason.values)
+      reason: executableTasks
+          .map((t) => t.invocations.where((inv) => inv.reason == reason).length)
+          .sum,
+  };
+
   final totalTasksCount = tasks.length;
   final upToDateCount = executableTasks.map((t) => t.upToDateCount).sum;
-  final dependenciesCount = computeDependenciesCount(
-    invoked: tasksInvocation.length,
-    defaults: defaultTasks.length,
-    executables: runnableTasksCount,
-    upToDate: upToDateCount,
-  );
-
-  String taskPhrase(
-    int count, [
-    String singular = 'task',
-    String plural = 'tasks',
-  ]) => '$count ${count == 1 ? singular : plural}';
 
   // build log phrases
-  final totalTasksPhrase = taskPhrase(totalTasksCount);
-  final requestedTasksPhrase = directTasksCount == 0
-      ? '${taskPhrase(defaultTasks.length)} (${colorize('default', LogColor.gray)})'
-      : '${taskPhrase(directTasksCount)} selected';
-  final runnableTasksPhrase = style(
-    taskPhrase(runnableTasksCount),
-    LogStyle.bold,
-  );
-  final dependenciesPhrase = dependenciesCount == 0
-      ? ''
-      : ', ${taskPhrase(dependenciesCount, 'dependency', 'dependencies')}';
+  final totalTasksPhrase = _phrase(totalTasksCount);
+  final runnableTasksPhrase = style(_phrase(runnableTasksCount), LogStyle.bold);
+
+  final reasonPhrases = [
+    for (final e in countByReason.entries)
+      _reportCount(e.value, one: _one(e.key), many: _many(e.key)),
+  ].where((e) => e.isNotEmpty);
+
   final upToDatePhrase = upToDateCount > 0
-      ? ', $upToDateCount ${colorize('up-to-date', LogColor.green)}'
+      ? '$upToDateCount ${colorize('up-to-date', LogColor.green)}'
       : '';
 
   logger.info(
-    'Executing $runnableTasksPhrase out of a total of '
-    '$totalTasksPhrase: $requestedTasksPhrase'
-    '$dependenciesPhrase$upToDatePhrase',
+    'Executing $runnableTasksPhrase out of a total of $totalTasksPhrase: '
+    '${reasonPhrases.isEmpty ? '' : reasonPhrases.join(', ')}'
+    '${reasonPhrases.isEmpty || upToDatePhrase.isEmpty ? upToDatePhrase : ', $upToDatePhrase'}',
   );
 }
+
+String _phrase(int count, [String one = 'task', String many = 'tasks']) =>
+    '$count ${count == 1 ? one : many}';
+
+String _reportCount(int count, {required String one, required String many}) =>
+    count == 0 ? '' : _phrase(count, one, many);
+
+String _one(InvocationReason reason) => switch (reason) {
+  InvocationReason.calledByUser => 'task selected',
+  InvocationReason.byDefault => 'task (${colorize('default', LogColor.gray)})',
+  InvocationReason.requirement => 'requirement',
+  InvocationReason.dependency => 'dependency',
+  InvocationReason.synthetic => 'synthetic',
+};
+
+String _many(InvocationReason reason) => switch (reason) {
+  InvocationReason.calledByUser => 'tasks selected',
+  InvocationReason.byDefault => 'tasks (${colorize('default', LogColor.gray)})',
+  InvocationReason.requirement => 'requirements',
+  InvocationReason.dependency => 'dependencies',
+  InvocationReason.synthetic => 'synthetic',
+};

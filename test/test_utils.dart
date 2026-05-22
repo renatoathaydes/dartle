@@ -42,7 +42,10 @@ FutureOr<R> withFileSystem<R>(
 }
 
 TaskInvocation taskInvocation(String name, [List<String> args = const []]) {
-  return TaskInvocation(TaskWithDeps(Task((_) => null, name: name)), args);
+  return TaskInvocation(
+    TaskWithDeps(Task((_) => null, name: name)),
+    args: args,
+  );
 }
 
 /// Change Windows path to Unix path if needed.

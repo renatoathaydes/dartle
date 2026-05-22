@@ -319,6 +319,46 @@ void main() {
         );
       },
     );
+
+    test('tasks cannot require task that has requirements', () {
+      expect(
+        () => verifyTaskPhasesConsistency({
+          'req': TaskWithDeps(Task(noop, name: 'req')),
+          'foo': TaskWithDeps(Task(noop, name: 'foo', requires: {'req'})),
+          'bar': TaskWithDeps(Task(noop, name: 'bar', requires: {'foo'})),
+        }),
+        throwsA(
+          isA<DartleException>().having(
+            (e) => e.message,
+            'error message',
+            equals(
+              "Task 'foo' cannot be a requirement of 'bar' because it has "
+              "requirements of its own, which is not allowed.",
+            ),
+          ),
+        ),
+      );
+    });
+
+    test('tasks cannot require task that has dependencies', () {
+      expect(
+        () => verifyTaskPhasesConsistency({
+          'b': _bw,
+          'req': TaskWithDeps(Task(noop, name: 'req'), [_bw]),
+          'foo': TaskWithDeps(Task(noop, name: 'foo', requires: {'req'})),
+        }),
+        throwsA(
+          isA<DartleException>().having(
+            (e) => e.message,
+            'error message',
+            equals(
+              "Task 'req' cannot be a requirement of 'foo' because it has "
+              "dependencies of its own, which is not allowed.",
+            ),
+          ),
+        ),
+      );
+    });
   });
 
   group('Task Phase Verification', () {

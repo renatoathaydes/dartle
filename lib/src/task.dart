@@ -181,11 +181,20 @@ extension TaskPhaseString on TaskPhase {
 /// A Dartle task whose action is provided by user code in order to execute
 /// some logic during a build run.
 class Task {
+  /// A description of this task.
+  /// Arguments should be described by the [argsValidator].
   final String description;
+
+  /// A [RunCondition] determines whether this task should run.
   final RunCondition runCondition;
+
+  /// The [ArgsValidator] describes and validates task arguments.
   final ArgsValidator argsValidator;
+
+  /// The [TaskPhase] groups tasks into build phases.
   final TaskPhase phase;
   Set<String> _dependsOn;
+  Set<String> _requires;
   final _NameAction _nameAction;
 
   Task(
@@ -196,8 +205,10 @@ class Task {
     this.runCondition = const AlwaysRun(),
     this.argsValidator = const DoNotAcceptArgs(),
     this.phase = TaskPhase.build,
+    Set<String> requires = const {},
   }) : _nameAction = _resolveNameAction(action, name),
-       _dependsOn = dependsOn;
+       _dependsOn = dependsOn,
+       _requires = requires;
 
   /// The name of this task.
   String get name => _nameAction.name;
@@ -209,10 +220,24 @@ class Task {
     _dependsOn = {...taskNames, ..._dependsOn};
   }
 
+  /// Add requirements on other tasks.
+  ///
+  /// This method must be called before Dartle starts running a build.
+  void requires(Set<String> taskNames) {
+    _requires = {...taskNames, ..._requires};
+  }
+
   /// Get this task's dependencies.
   ///
   /// The returned Set is immutable. To add dependencies, use [dependsOn].
   Set<String> get depends => Set.unmodifiable(_dependsOn);
+
+  /// Get this task's requirements.
+  ///
+  /// A required task must not have requirements or dependencies of its own.
+  ///
+  /// The returned Set is immutable. To add dependencies, use [requires].
+  Set<String> get requirements => Set.unmodifiable(_requires);
 
   /// The action this task performs.
   ///
@@ -258,7 +283,7 @@ class TaskWithDeps implements Task, Comparable<TaskWithDeps> {
   /// Set of dependency names.
   final Set<String> dependencySet;
 
-  TaskWithDeps(this._task, [this.dependencies = const <TaskWithDeps>[]])
+  TaskWithDeps(this._task, [this.dependencies = const []])
     : dependencySet = dependencies.map((t) => t.name).toSet();
 
   @override
@@ -281,7 +306,13 @@ class TaskWithDeps implements Task, Comparable<TaskWithDeps> {
   Set<String> get _dependsOn => dependencySet;
 
   @override
+  Set<String> get _requires => _task._requires;
+
+  @override
   Set<String> get depends => Set.unmodifiable(_dependsOn);
+
+  @override
+  Set<String> get requirements => Set.unmodifiable(_requires);
 
   /// The direct dependencies of this task.
   Set<String> get directDependencies => _task._dependsOn;
@@ -306,8 +337,12 @@ class TaskWithDeps implements Task, Comparable<TaskWithDeps> {
     const thisAfterOther = 1;
     if (phase.isBefore(other.phase)) return thisBeforeOther;
     if (phase.isAfter(other.phase)) return thisAfterOther;
-    if (_dependsOn.contains(other.name)) return thisAfterOther;
-    if (other._dependsOn.contains(name)) return thisBeforeOther;
+    if (dependencySet.contains(other.name)) {
+      return thisAfterOther;
+    }
+    if (other.dependencySet.contains(name)) {
+      return thisBeforeOther;
+    }
     return 0;
   }
 
@@ -335,6 +370,20 @@ class TaskWithDeps implements Task, Comparable<TaskWithDeps> {
       'cannot modify dependencies of task after build is running',
     );
   }
+
+  @override
+  set _requires(Set<String> tasks) {
+    throw UnsupportedError(
+      'cannot modify requirements of task after build is running',
+    );
+  }
+
+  @override
+  void requires(Set<String> taskNames) {
+    throw UnsupportedError(
+      'cannot modify requirements of task after build is running',
+    );
+  }
 }
 
 /// Status of a task.
@@ -345,6 +394,41 @@ enum TaskStatus {
   affectedByDeletionTask,
   outOfDate,
   forced,
+  requirementOfUpToDateTask;
+
+  @override
+  String toString() => switch (this) {
+    TaskStatus.upToDate => 'up-to-date',
+    TaskStatus.alwaysRuns => 'always-runs',
+    TaskStatus.dependencyIsOutOfDate => 'dependency-out-of-date',
+    TaskStatus.affectedByDeletionTask => 'affected-by-deletion-task',
+    TaskStatus.outOfDate => 'out-of-date',
+    TaskStatus.forced => 'forced',
+    TaskStatus.requirementOfUpToDateTask => 'requirement-of-up-to-date',
+  };
+}
+
+/// The kind of a relationship between two tasks.
+///
+/// This determines when a task should run given its own status and the status
+/// of another task.
+enum TaskRelationKind {
+  /// A requirement is a task that should run if the task requiring it runs.
+  ///
+  /// Unlike a [dependency], a requirement not being up-to-date is not enough
+  /// to force the task requiring it to also run. This means that if task A
+  /// requires task B, then:
+  ///   - task B runs if task A runs AND task B is not up-to-date.
+  ///   - if task A is invoked but up-to-date and task B is not invoked,
+  ///     task B will not run regardless of its own status.
+  requirement,
+
+  /// A dependency between tasks. If a task A depends on a task B, then:
+  ///   - if task A is invoked, task B will run if it is not up-to-date
+  ///     even if it was not invoked directly.
+  ///   - task B's status affects task A's. Even if task A is up-to-date, it may
+  ///     run if task B is not up-to-date (see [TaskStatus.dependencyIsOutOfDate]).
+  dependency,
 }
 
 extension TaskStatusString on TaskStatus {
@@ -354,12 +438,20 @@ extension TaskStatusString on TaskStatus {
 /// Task with its status, including its current invocation.
 class TaskWithStatus {
   final TaskWithDeps task;
-  final TaskStatus status;
   final TaskInvocation invocation;
+
+  /// The task current status. This may be changed while tasks's status
+  /// are still being computed.
+  TaskStatus status;
 
   TaskWithStatus(this.task, this.status, this.invocation);
 
-  bool get mustRun => status != TaskStatus.upToDate;
+  bool get upToDate => const {
+    TaskStatus.upToDate,
+    TaskStatus.requirementOfUpToDateTask,
+  }.contains(status);
+
+  bool get mustRun => !upToDate;
 
   @override
   String toString() {
@@ -375,9 +467,11 @@ class ParallelTasks {
 
   int get mustRunCount => tasks.where((t) => t.mustRun).length;
 
-  int get upToDateCount => tasks.where((t) => !t.mustRun).length;
+  int get upToDateCount => tasks.where((t) => t.upToDate).length;
 
   int get length => tasks.length;
+
+  bool get empty => length == 0;
 
   TaskPhase? get phase => tasks.firstOrNull?.task.phase;
 
@@ -391,14 +485,16 @@ class ParallelTasks {
   /// Returns true the given task can be included in this group of tasks.
   ///
   /// If a task can be included, it means that it does not have any
-  /// dependency on tasks in this group and that it belongs to the same phase
-  /// as other tasks in this group, hence it can run in parallel with
-  /// the other tasks.
+  /// dependency or requirement on tasks in this group and that it belongs to
+  /// the same phase as other tasks in this group, hence it can run in parallel
+  /// with the other tasks.
   bool canInclude(TaskWithDeps task) {
     for (final t in invocations.map((i) => i.task)) {
       if (t.phase.index != task.phase.index) return false;
       if (t._dependsOn.contains(task.name)) return false;
       if (task._dependsOn.contains(t.name)) return false;
+      if (t._requires.contains(task.name)) return false;
+      if (task._requires.contains(t.name)) return false;
     }
     return true;
   }
@@ -652,14 +748,13 @@ Future<void> verifyTaskPhasesConsistency(
 
   // a task's dependencies must be in the same or earlier phases
   for (final task in taskMap.values) {
-    task.dependencies
-        .where((dep) => dep.phase.isAfter(task.phase))
-        .forEach(
-          (t) => errors.add(
-            "Task '${task.name}' in phase '${task.phase.name}' "
-            "cannot depend on '${t.name}' in phase '${t.phase.name}'",
-          ),
-        );
+    _checkPhaseOrder(task.dependencies, task, errors);
+    _checkPhaseOrder(
+      _requiredTasks(task, taskMap),
+      task,
+      errors,
+      depVerb: 'require',
+    );
   }
 
   if (errors.isNotEmpty) {
@@ -686,6 +781,51 @@ Future<void> verifyTaskPhasesConsistency(
           "the current Dart Zone, which are $phaseNames}:\n"
           '${errors.map((e) => '  * $e.').join('\n')}\n',
     );
+  }
+}
+
+void _checkPhaseOrder(
+  Iterable<Task> deps,
+  TaskWithDeps task,
+  Set<String> errors, {
+  String depVerb = 'depend on',
+}) {
+  deps
+      .where((dep) => dep.phase.isAfter(task.phase))
+      .forEach(
+        (t) => errors.add(
+          "Task '${task.name}' in phase '${task.phase.name}' "
+          "cannot $depVerb '${t.name}' in phase '${t.phase.name}'",
+        ),
+      );
+}
+
+Iterable<Task> _requiredTasks(
+  Task task,
+  Map<String, TaskWithDeps> taskMap,
+) sync* {
+  for (final requirement in task.requirements) {
+    final req = taskMap[requirement];
+    if (req == null) {
+      throw DartleException(
+        message:
+            "Task '${task.name}' requires non-existing task: '$requirement'",
+      );
+    } else {
+      for (final (tasks, kind) in [
+        (req.requirements, 'requirements'),
+        (req.dependencySet, 'dependencies'),
+      ]) {
+        if (tasks.isNotEmpty) {
+          throw DartleException(
+            message:
+                "Task '${req.name}' cannot be a requirement of '${task.name}' "
+                "because it has $kind of its own, which is not allowed.",
+          );
+        }
+      }
+    }
+    yield req;
   }
 }
 

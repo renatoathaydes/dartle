@@ -5,24 +5,9 @@ import 'package:path/path.dart' as p;
 
 import 'error.dart';
 
-/// Create a [DirectoryEntry].
-DirectoryEntry dirEntry(
-  String path, {
-  bool recurse = true,
-  bool includeHidden = false,
-  Set<String> exclusions = const {},
-  Set<String> extensions = const {},
-}) => DirectoryEntry(
-  path: path,
-  recurse: recurse,
-  includeHidden: includeHidden,
-  exclusions: exclusions,
-  fileExtensions: extensions,
-);
-
 /// A directory entry, usually used within a [FileCollection].
 ///
-/// See [file], [files], [dir], [dirs], [entities].
+/// See [file], [files], [dir], [dirs], [entities], [dirEntry].
 class DirectoryEntry {
   final String path;
   final bool recurse;
@@ -223,6 +208,32 @@ FileCollection dirs(
       allowAbsolutePaths: allowAbsolutePaths,
     ),
   ),
+);
+
+/// Create a [DirectoryEntry].
+/// If `extensions` is not empty, only files with such extensions are
+/// resolved.
+///
+/// Files and directory names can be excluded by providing `exclusions`.
+///
+/// If `recurse` is set to `true` (the default), child directories are included.
+///
+/// If `includeHidden` is set to `true` (default is `false`), files and
+/// directories starting with a `.` are included, otherwise they are ignored.
+///
+/// Only relative (to the root project directory) directories are allowed.
+DirectoryEntry dirEntry(
+  String path, {
+  bool recurse = true,
+  bool includeHidden = false,
+  Set<String> exclusions = const {},
+  Set<String> extensions = const {},
+}) => DirectoryEntry(
+  path: _validatePosixPath(path),
+  recurse: recurse,
+  includeHidden: includeHidden,
+  exclusions: exclusions,
+  fileExtensions: extensions,
 );
 
 /// A File collection including the given files as well as
@@ -495,18 +506,24 @@ String _ensurePosixPath(String path) {
   return p.posix.canonicalize(path);
 }
 
+String _validatePosixPath(String path, {bool allowAbsolutePaths = false}) {
+  final pdir = _ensurePosixPath(path);
+  if (!allowAbsolutePaths && p.isAbsolute(pdir)) {
+    throw DartleException(message: 'Absolute directory not allowed: $pdir');
+  }
+  return pdir;
+}
+
 Iterable<DirectoryEntry> _ensureValidDirs(
   Iterable<DirectoryEntry> dirs, {
   bool allowAbsolutePaths = false,
 }) sync* {
   final seenDirs = <String>{};
   for (final dir in dirs) {
-    final pdir = _ensurePosixPath(dir.path);
-    if (!allowAbsolutePaths && p.isAbsolute(pdir)) {
-      throw DartleException(
-        message: 'Absolute directory not allowed: ${dir.path}',
-      );
-    }
+    final pdir = _validatePosixPath(
+      dir.path,
+      allowAbsolutePaths: allowAbsolutePaths,
+    );
     for (final seen in seenDirs) {
       if (p.isWithin(seen, pdir)) {
         throw DartleException(

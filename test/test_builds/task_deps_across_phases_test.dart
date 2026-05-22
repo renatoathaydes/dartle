@@ -6,10 +6,6 @@ import 'package:path/path.dart' as p;
 import 'package:test/test.dart';
 
 const _buildDirectory = 'test/test_builds/task_deps_across_phases';
-
-const oneTaskExecutingMessage =
-    'Executing 1 task out of a total of 3 tasks:'
-    ' 1 task (default)';
 const allUpToDate = 'Everything is up-to-date!';
 
 Future<void> _cleanupProject() async {
@@ -66,7 +62,13 @@ void main() {
     test('can run simple task and produce expected outputs', () async {
       var proc = await runDartBuild(const ['--no-color']);
       expect(proc.exitCode, equals(0));
-      expect(proc.stdout[0], contains(oneTaskExecutingMessage));
+      expect(
+        proc.stdout[0],
+        endsWith(
+          'Executing 2 tasks out of a total of 4 tasks:'
+          ' 1 task (default), 1 requirement',
+        ),
+      );
       expect(proc.stderr, isEmpty);
       expect(await _targetDirFiles().toList(), equals(['output.txt']));
     });
@@ -96,6 +98,32 @@ void main() {
         expect(outputFiles2, hasLength(2));
         expect(outputFiles2, containsAll(['output.txt', 'bytes.txt']));
         await _assertCountBytesOutput();
+      },
+    );
+
+    test(
+      'requirement task is not executed if main task is up-to-date',
+      () async {
+        // execute the default task so it becomes up-to-date
+        var proc = await runDartBuild(const ['--no-color', 'createOutput']);
+        expect(proc.exitCode, equals(0));
+        expect(
+          proc.stdout,
+          containsAll([
+            endsWith(
+              'Executing 2 tasks out of a total of 4 tasks:'
+              ' 1 task selected, 1 requirement',
+            ),
+            endsWith("Running task 'prepareSomething'"),
+            endsWith("Running task 'createOutput'"),
+          ]),
+        );
+
+        // now, trying to execute it again means the task is up-to-date
+        // so the task doesn't run, and hence its requirement doesn't run.
+        proc = await runDartBuild(const ['--no-color', 'createOutput']);
+        expect(proc.exitCode, equals(0));
+        expect(proc.stdout[0], endsWith(allUpToDate));
       },
     );
   });

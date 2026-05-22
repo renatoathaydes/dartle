@@ -82,22 +82,23 @@ void showAll(
 
 extension StatusDescribe on TaskStatus? {
   String describe() {
-    switch (this) {
-      case null:
-        return '';
-      case TaskStatus.upToDate:
-        return colorize(' [up-to-date]', LogColor.green);
-      case TaskStatus.alwaysRuns:
-        return style(' [always-runs]', LogStyle.dim);
-      case TaskStatus.affectedByDeletionTask:
-        return colorize(' [affected-by-deletion-task]', LogColor.yellow);
-      case TaskStatus.dependencyIsOutOfDate:
-        return colorize(' [dependency-out-of-date]', LogColor.yellow);
-      case TaskStatus.outOfDate:
-        return colorize(' [out-of-date]', LogColor.yellow);
-      case TaskStatus.forced:
-        return colorize(' [forced]', LogColor.yellow);
+    final colorOrStyle = switch (this) {
+      TaskStatus.upToDate => LogColor.green,
+      TaskStatus.alwaysRuns => LogStyle.dim,
+      TaskStatus.affectedByDeletionTask => LogColor.yellow,
+      TaskStatus.dependencyIsOutOfDate => LogColor.yellow,
+      TaskStatus.outOfDate => LogColor.yellow,
+      TaskStatus.forced => LogColor.yellow,
+      TaskStatus.requirementOfUpToDateTask => LogColor.green,
+      null => null,
+    };
+    if (colorOrStyle is LogColor) {
+      return colorize(' [$this]', colorOrStyle);
     }
+    if (colorOrStyle is LogStyle) {
+      return style(' [$this]', colorOrStyle);
+    }
+    return '';
   }
 }
 
@@ -155,11 +156,19 @@ void showExecutableTasks(List<ParallelTasks> executableTasks) {
     for (final pTasks in executableTasks) {
       for (final task in pTasks.tasks) {
         stdout.write(indentation);
-        stdout.writeln(task.invocation.name);
+        stdout.writeln(_taskText(task));
       }
       indentation += '    ';
     }
   }
+}
+
+String _taskText(TaskWithStatus task) {
+  final name = task.task.name;
+  if (task.invocation.byRequirement) {
+    return '$name ${style('(requirement)', LogStyle.italic)}';
+  }
+  return name;
 }
 
 extension _CapitalString on String {

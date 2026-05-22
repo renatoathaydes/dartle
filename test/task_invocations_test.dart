@@ -22,14 +22,25 @@ final _d = Task(
   dependsOn: {'a'},
   argsValidator: const ArgsCount.count(1),
 );
+final _e = Task(noop, name: 'e', requires: const {'a'});
+
+final _longName = Task(noop, name: 'aTaskWithLongName');
 
 // TaskWithDeps includes transitive dependencies
 final _aw = TaskWithDeps(_a, [_bw, _cw]);
 final _bw = TaskWithDeps(_b);
 final _cw = TaskWithDeps(_c);
 final _dw = TaskWithDeps(_d, [_bw, _cw, _aw]);
+final _ew = TaskWithDeps(_e, [_bw, _cw, _aw]);
 
-final taskMap = {'a': _aw, 'b': _bw, 'c': _cw, 'd': _dw};
+final taskMap = {
+  'a': _aw,
+  'b': _bw,
+  'c': _cw,
+  'd': _dw,
+  'e': _ew,
+  _longName.name: TaskWithDeps(_longName),
+};
 
 void main() {
   group('task invocations can be parsed correctly', () {
@@ -93,6 +104,28 @@ void main() {
         ],
       ),
     );
+    test('task with long name', () {
+      expect(parseInvocation([_longName.name], taskMap, const Options()), [
+        equalsInvocation(_longName.name, []),
+      ]);
+    });
+    test('task with long name can be invoked with shortcut name', () {
+      expect(parseInvocation(['aT'], taskMap, const Options()), [
+        equalsInvocation(_longName.name, [], invokedName: 'aT'),
+      ]);
+    });
+    test('task with requirements - requirement is automatically invoked', () {
+      expect(parseInvocation(['e'], taskMap, const Options()), [
+        equalsInvocation('e', [], byRequirement: false),
+        equalsInvocation('a', [], byRequirement: true),
+      ]);
+    });
+    test('task with requirements - requirement may be invoked explicitly', () {
+      expect(parseInvocation(['a', 'e'], taskMap, const Options()), [
+        equalsInvocation('a', [], byRequirement: false),
+        equalsInvocation('e', [], byRequirement: false),
+      ]);
+    });
   });
 
   group('tasks can be sorted in execution order', () {
@@ -256,24 +289,40 @@ void main() {
   });
 }
 
-TaskInvocationMatcher equalsInvocation(String taskName, List<String> args) =>
-    TaskInvocationMatcher(taskName, args);
+TaskInvocationMatcher equalsInvocation(
+  String taskName,
+  List<String> args, {
+  String? invokedName,
+  bool byRequirement = false,
+}) => TaskInvocationMatcher(taskName, args, invokedName, byRequirement);
 
 class TaskInvocationMatcher extends Matcher {
-  final String taskName;
+  final String taskName, invokedTaskName;
+  bool byRequirement;
   final List<String> args;
 
-  TaskInvocationMatcher(this.taskName, this.args);
+  TaskInvocationMatcher(
+    this.taskName,
+    this.args,
+    String? invokedName,
+    this.byRequirement,
+  ) : invokedTaskName = invokedName ?? taskName;
 
   @override
   Description describe(Description description) {
-    return description.add("task '$taskName', args $args");
+    var nameMatch = '';
+    if (taskName != invokedTaskName) {
+      nameMatch = ', invokedName: $invokedTaskName';
+    }
+    return description.add("task '$taskName'$nameMatch, args $args");
   }
 
   @override
   bool matches(item, Map matchState) {
     if (item is TaskInvocation) {
       return item.name == taskName &&
+          item.nameSpec == invokedTaskName &&
+          item.byRequirement == byRequirement &&
           const ListEquality().equals(item.args, args);
     }
     return false;
