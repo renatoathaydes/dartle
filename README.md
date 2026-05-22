@@ -9,15 +9,20 @@ A simple _task runner_/_build system_/_build library_ written in Dart.
 
 ## Purpose
 
-The goal with Dartle is to define a (sometimes large) number of tasks where only a few of them
-are explicitly invoked by a human. This is accomplished by defining task phases and
-declaring interdependencies between tasks.
+Dartle allows defining a (sometimes large) number of tasks where only a few of them
+are explicitly invoked by a user.
 
 Dartle makes sure that every task that _needs to run_, but no others, actually run when you ask it to run
 one or more tasks.
 
+> Dartle knows which tasks need to run because tasks may declare their `RunCondition`, which normally means a task
+> only runs if its inputs/outputs have changed since the task's last execution.
+
+This means that, as a user, you only need to remember a few high level task names, everything else runs automatically
+as needed.
+
 Tasks on the same phase run in parallel, on their own [_isolates_](https://dart.dev/guides/language/concurrency#how-isolates-work),
-and if a task fails, all running tasks are immediately cancelled.
+and if a task fails, all running tasks are immediately canceled.
 
 ## What can I do with Dartle?
 
@@ -33,13 +38,13 @@ For example, Dartle's own build (which uses Dartle's own support for Dart) has t
  
 ```
 ======== Showing build information only, no tasks will be executed ========
-
+                                                                                                                                                                                                      
 Tasks declared in this build:
 
 ==> Setup Phase:
   * clean
       Deletes the outputs of all other tasks in this build.
-  * cleanWorkingDirs [up-to-date]
+  * cleanWorkingDirs
       Cleanup working dir before builds. Avoids caching generated files.
 ==> Build Phase:
   * analyzeCode [up-to-date]
@@ -50,12 +55,12 @@ Tasks declared in this build:
       Checks dart file imports are allowed
   * compileExe
       Compiles Dart executables declared in pubspec. Argument may specify the name(s) of the executable(s) to compile.
+  * distribution
+      Create binary executable distribution.
   * format [up-to-date]
       Formats all Dart source code.
   * generateDartSources [up-to-date]
       Generates Dart source files
-  * runBuildRunner [up-to-date]
-      Runs the Dart build_runner tool.
   * runPubGet [up-to-date]
       Runs "pub get" in order to update dependencies.
   * test [out-of-date]
@@ -65,15 +70,13 @@ Tasks declared in this build:
 
 The following tasks were selected to run, in order:
 
-  cleanWorkingDirs
+  generateDartSources
+      format
+      checkImports
       runPubGet
-      generateDartSources
-          runBuildRunner
-              checkImports
-              format
-                  analyzeCode
-                      test
-                          build
+          analyzeCode
+              test
+                  build
 ```
 
 > Note: Tasks on the same _column_ may run in parallel.
@@ -81,7 +84,7 @@ The following tasks were selected to run, in order:
 When you invoke, say, `dartle analyzeCode`, Dartle will make sure that the
 `analyseCode` task will run, but also that all its dependencies, `generateDartSources`,
 `format`, `checkImports` and `runPubGet` will run first as long as their `runCondition`
-requires them to run. If any of these tasks doesn't need to run, it is automatically
+requires them to run. If any of these tasks doesn't need to run, they are automatically
 skipped.
 
 Dartle has several `RunCondition`s to determine when a task is up-to-date or needs to run:
@@ -166,145 +169,13 @@ dartle <tasks>
 > `dartle` automatically re-compiles the `dartle.dart` script into an executable if necessary
 > to make builds run so fast they feel instant!
 
-### Selecting tasks
-
-If no task is explicitly invoked, Dartle runs the `defaultTasks` defined in the build, or does nothing if none was defined.
-
-To run specific task(s), give them as arguments when invoking `dartle`:
-
-```bash
-dartle hello bye
-```
-
-Output:
-
-```
-2020-02-06 20:53:26.917795 - dartle[main] - INFO - Executing 2 tasks out of a total of 4 tasks: 2 tasks selected, 0 due to dependencies
-2020-02-06 20:53:26.918155 - dartle[main] - INFO - Running task 'hello'
-Hello World!
-2020-02-06 20:53:26.918440 - dartle[main] - INFO - Running task 'bye'
-Bye!
-✔ Build succeeded in 3 ms
-```
-
-> Notice that Dartle will cache resources to make builds run faster.
-> It uses the `.dartle_tool/` directory, in the working directory, to manage the cache.
-> **You should not commit the `.dartle_tool/` directory into source control**.
-
-To provide arguments to a task, provide the argument immediately following the task invocation, prefixing it with `:`:
-
-```bash
-./dartle hello :Joe
-```
-
-Prints:
-
-```
-2020-02-06 20:55:00.502056 - dartle[main] - INFO - Executing 1 task out of a total of 4 tasks: 1 task selected, 0 due to dependencies
-2020-02-06 20:55:00.502270 - dartle[main] - INFO - Running task 'hello'
-Hello Joe!
-✔ Build succeeded in 1 ms
-```
-
-### Declaring tasks
-
-The preferred way to declare a task is by wrapping a top-level function, as shown in the example above.
-
-Basically:
-
-```dart
-import 'package:dartle/dartle.dart';
-
-final allTasks = {Task(hello)};
-
-main(List<String> args) async => run(args, tasks: allTasks);
-
-hello(_) => print("Hello Dartle!");
-```
-
-This allows the task to run in parallel with other tasks on different `Isolate`s (potentially on different CPU cores).
-
-> Notice that because the task may run on an `Isolate`, it must not depend on any global state. The function will not _see_ changes made from the main `Isolate` or any other.
-
-If that's not important, a lambda can be used, but in such case the task's name must be provided explicitly (because
-lambdas have no name):
-
-```dart
-import 'package:dartle/dartle.dart';
-
-final allTasks = {Task((_) => print("Hello Dartle!"), name: 'hello')};
-
-main(List<String> args) async => run(args, tasks: allTasks);
-```
-
-A Task's function should only take arguments if it declares an `ArgsValidator`, as shown in the example:
-
-```dart
-Task(hello, argsValidator: const ArgsCount.range(min: 0, max: 1))
-
-...
-
-hello(List<String> args) => ...
-```
-
-A Task will not be executed if its `argsValidator` is not satisfied (Dartle will fail the build if that happens).
-
-### Incremental Tasks
-
-For a Dartle task to become incremental, it only needs to have an action function that accepts an optional argument containing the `ChangeSet` since the last build.
-
-For example, the `hello` function from the previous example would need to be declared as shown below to become an incremental task:
-
-```dart
-hello(List<String> args, [ChangeSet? changeSet]) async {
-    // TODO inspect changes to know what needs to be done
-}
-```
-
-Importantly, the `ChangeSet` must be an optional argument, otherwise the function won't match the signature expected by Dartle.
-
-### Task dependencies and run conditions
-
-A Task can depend on other task(s), so that whenever it runs, its dependencies also run
-(as long as they are not up-to-date).
-
-In the example above, the `bye` task depends on the `hello` task:
-
-```dart
-Task(bye, dependsOn: const {'hello'})
-```
-
-This means that whenever `bye` runs, `hello` runs first.
-
-> Notice that tasks that have no dependencies between themselves can run _at the same time_ -
-> either on the same `Isolate` or in separate `Isolates` (use the `-p` flag to indicate that tasks may
-> run in different `Isolate`s when possible, i.e. when their action is a top-level function and there's no dependencies
-> with the other tasks).
-
-A task may be skipped if it's up-to-date according to its `RunCondition`. The example Dart file demonstrates that:
-
-```dart
-Task(encodeBase64,
-  description: 'Encodes input.txt in base64, writing to output.txt',
-  runCondition: RunOnChanges(
-    inputs: file('input.txt'),
-    outputs: file('output.txt'),
-  ))
-```
-
-The above task only runs if at least one of these conditions is true:
-
-* `output.txt` does not yet exist.
-* either `input.txt` or `output.txt` changed since last time this task ran.
-* the `-f` or `--force-tasks` flag is used.
-
-If a `RunCondition` is not provided, the task is always considered out-of-date.
-
-> To force all tasks to run, use the `-z` or `--reset-cache` flag.
+To force tasks to run, use the `-f | --force` flag, or the  `-z | --reset-cache` flag.
 
 ### Help
 
-For more help, run `dartle -h`. Proper documentation is going to be available soon! 
+The `dartle` command has a useful `-h | --help` flag.
+
+For more help, a tutorial, reference etc. check out the [Dartle Documentation](https://renatoathaydes.github.io/dartle-website/).
 
 ## Prior Art
 
