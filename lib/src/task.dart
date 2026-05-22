@@ -337,10 +337,10 @@ class TaskWithDeps implements Task, Comparable<TaskWithDeps> {
     const thisAfterOther = 1;
     if (phase.isBefore(other.phase)) return thisBeforeOther;
     if (phase.isAfter(other.phase)) return thisAfterOther;
-    if (_dependsOn.contains(other.name) || _requires.contains(other.name)) {
+    if (dependencySet.contains(other.name)) {
       return thisAfterOther;
     }
-    if (other._dependsOn.contains(name) || other._requires.contains(name)) {
+    if (other.dependencySet.contains(name)) {
       return thisBeforeOther;
     }
     return 0;

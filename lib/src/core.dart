@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:collection/collection.dart';
 import 'package:logging/logging.dart' as log;
 
 import '_log.dart';
@@ -261,13 +262,17 @@ Future<List<ParallelTasks>> _getExecutableTasks(
 }
 
 /// Get the tasks in the order that they should be executed, taking into account
-/// their dependencies and phases.
+/// their dependencies, requirements and phases.
 ///
 /// To know which tasks must run, call [TaskWithStatus.mustRun] on each returned
 /// task.
 ///
 /// Notice that when a task is out-of-date, all of its dependents also become
 /// out-of-date.
+/// A task that is only running because it's a requirement does NOT cause
+/// the task(s) requiring it to execute when they're not up-to-date, unlike
+/// with dependencies. Hence, requirements's status are only checked if the
+/// task(s) requiring it is not up-to-date.
 Future<List<ParallelTasks>> getInOrderOfExecution(
   List<TaskInvocation> invocations, [
   bool forceTasks = false,
@@ -275,27 +280,42 @@ Future<List<ParallelTasks>> getInOrderOfExecution(
   DeletionTasksByTask tasksAffectedByDeletion = const {},
 ]) async {
   // first of all, re-order tasks so that dependencies are in order
-  invocations.sort((a, b) => a.task.compareTo(b.task));
+  invocations.sort((a, b) {
+    final byTaskOrder = a.task.compareTo(b.task);
+    if (byTaskOrder != 0) return byTaskOrder;
+    if (a.byRequirement == b.byRequirement) return 0;
+    return a.byRequirement ? -1 : 1;
+  });
+  logger.fine(
+    () => 'Sorted tasks: ${invocations.map((t) => t.task.name).toList()}',
+  );
 
-  final result = <ParallelTasks>[];
-
-  void addTaskToParallelTasks(TaskWithStatus taskWithStatus) {
+  /// Add a task to the result.
+  /// If the current [ParallelTasks] was just finalized, it's returned.
+  ParallelTasks? addTaskToParallelTasks(
+    TaskWithStatus taskWithStatus,
+    List<ParallelTasks> result,
+  ) {
     final canRunInPreviousGroup =
         result.isNotEmpty && result.last.canInclude(taskWithStatus.task);
+    ParallelTasks? toFinalize;
     if (canRunInPreviousGroup) {
       result.last.add(taskWithStatus);
     } else {
+      if (result.isNotEmpty) {
+        toFinalize = result.last;
+      }
       result.add(ParallelTasks()..add(taskWithStatus));
     }
+    return toFinalize;
   }
 
   final taskStatuses = <String, TaskWithStatus>{};
 
-  void markRequirementUpToDate(String requirement) {
-    taskStatuses[requirement]!.status = TaskStatus.requirementOfUpToDateTask;
-  }
-
-  Future<void> addInvocation(TaskInvocation invocation) async {
+  Future<ParallelTasks?> addInvocation(
+    TaskInvocation invocation,
+    List<ParallelTasks> result,
+  ) async {
     var taskWithStatus = await _createTaskWithStatus(
       invocation,
       taskStatuses,
@@ -303,32 +323,89 @@ Future<List<ParallelTasks>> getInOrderOfExecution(
       tasksAffectedByDeletion,
     );
     taskStatuses[invocation.name] = taskWithStatus;
-    if (taskWithStatus.upToDate &&
-        const {
-          InvocationReason.calledByUser,
-          InvocationReason.byDefault,
-        }.contains(invocation.reason)) {
-      for (final req in invocation.task.requirements) {
-        markRequirementUpToDate(req);
-      }
-    }
-    addTaskToParallelTasks(taskWithStatus);
+    return addTaskToParallelTasks(taskWithStatus, result);
   }
 
   final seenTasks = <String>{};
 
+  Future<List<ParallelTasks>> handleParallelTasksRequirements(
+    ParallelTasks tasks,
+  ) async {
+    final requirements = tasks.tasks
+        .expand(
+          (t) => t.task.requirements.map(
+            (name) => seenTasks.contains(name)
+                ? null
+                : invocations.firstWhereOrNull((t) => t.name == name),
+          ),
+        )
+        .nonNulls
+        .toSet();
+    final result = <ParallelTasks>[];
+    for (final req in requirements.sortedBy((r) => r.task.phase)) {
+      await addInvocation(req, result);
+    }
+    return result;
+  }
+
+  final result = <ParallelTasks>[];
+
   for (final inv in invocations) {
     for (final dep in inv.task.dependencies) {
       if (seenTasks.add(dep.name)) {
-        await addInvocation(
+        final tasksToFinalize = await addInvocation(
           TaskInvocation(dep, reason: InvocationReason.dependency),
+          result,
         );
+        if (tasksToFinalize != null) {
+          final pTasks = await handleParallelTasksRequirements(tasksToFinalize);
+          _mergePtasks(pTasks, result);
+        }
       }
     }
-    if (seenTasks.add(inv.name)) await addInvocation(inv);
+    if (seenTasks.add(inv.name)) {
+      final tasksToFinalize = await addInvocation(inv, result);
+      if (tasksToFinalize != null) {
+        final pTasks = await handleParallelTasksRequirements(tasksToFinalize);
+        _mergePtasks(pTasks, result);
+      }
+    }
   }
 
+  _updateRequirementStatuses(result, taskStatuses);
+
   return result;
+}
+
+void _updateRequirementStatuses(
+  List<ParallelTasks> result,
+  Map<String, TaskWithStatus> taskStatuses,
+) {
+  for (final task
+      in result
+          .expand((p) => p.tasks)
+          .where((t) => t.invocation.byRequirement)) {
+    final shouldRunForAnyRequiringTask = taskStatuses.values
+        .where((t) => t.task.requirements.contains(task.task.name))
+        .any((t) => t.mustRun);
+    if (!shouldRunForAnyRequiringTask) {
+      task.status = TaskStatus.requirementOfUpToDateTask;
+    }
+  }
+}
+
+void _mergePtasks(List<ParallelTasks> tasks, List<ParallelTasks> result) {
+  if (tasks.isEmpty || result.isEmpty) return;
+  final currentPhase = result.first.phase;
+  var currentIndex = 0;
+  for (final pTasks in tasks) {
+    if (pTasks.phase == currentPhase) {
+      result.first.tasks.addAll(pTasks.tasks);
+    } else {
+      result.insert(currentIndex, pTasks);
+      currentIndex++;
+    }
+  }
 }
 
 Future<TaskWithStatus> _createTaskWithStatus(

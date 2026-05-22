@@ -122,7 +122,7 @@ List<TaskInvocation> parseInvocation(
   for (final name in requiredTasks.where(
     (name) => !invocations.containsKey(name),
   )) {
-    logger.fine(() => "'Adding required task to invocation: '$name'");
+    logger.fine(() => "Adding required task to invocation: '$name'");
     // null-safe: requirements are already validated elsewhere.
     addInvocationOf(taskMap[name]!, name, InvocationReason.requirement);
   }
