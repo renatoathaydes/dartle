@@ -473,7 +473,7 @@ class DartleCache {
     }
     ChangeKind? change;
     if (hashExists) {
-      if ((await file.lastModified()).isAfter(await hf.lastModified())) {
+      if (!(await file.lastModified()).isBefore(await hf.lastModified())) {
         logger.fine(
           () =>
               "Detected possibly stale cache for file '${file.path}', "
