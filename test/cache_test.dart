@@ -84,6 +84,30 @@ void main([List<String> args = const []]) {
       );
     });
 
+    test('does not check file hash if timestamp was not modified', () async {
+      await withFileSystem(fs, () async {
+        final dartleFile = File('dartle.dart');
+        final dartleFileCollection = files([dartleFile.path]);
+
+        await cache(dartleFileCollection);
+
+        // Corrupt the hash file on disk so that if DartleCache reads it,
+        // it would report that the file has changed because hashes differ.
+        final hf = File('test-cache/hashes/dartle.dart.sha');
+        await hf.writeAsBytes([0, 1, 2, 3]);
+
+        // DartleCache should detect that the file timestamp is not newer than
+        // the cached hash file timestamp, so it shouldn't inspect the hash.
+        expect(await cache.hasChanged(dartleFileCollection), isFalse);
+
+        // After touching the file, DartleCache should detect possibly stale cache,
+        // check the hash, find a mismatch (due to corrupted hash), and report changed.
+        await Future.delayed(const Duration(milliseconds: 10));
+        await dartleFile.writeAsString(dartleFileContents);
+        expect(await cache.hasChanged(dartleFileCollection), isTrue);
+      });
+    });
+
     test('caches absolute path file correctly', () async {
       await fs.file('foo.txt').writeAsString('FOO');
       await fs.directory('d1').create();
