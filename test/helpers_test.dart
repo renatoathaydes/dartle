@@ -421,27 +421,23 @@ void main([List<String> args = const []]) {
       expect(await downloadJson(uri), equals(const {'json': true}));
     }, timeout: const Timeout(Duration(seconds: 4)));
 
-    test(
-      'can overwrite header and report error',
-      () async {
-        final uri = Uri.parse('http://localhost:${httpServer!.port}/json');
-        // by sending an unexpected header, we should get a 400 bad request
-        expect(
-          downloadJson(
-            uri,
-            headers: (h) => h.add(HttpHeaders.acceptHeader, 'text/plain'),
+    test('can overwrite header and report error', () async {
+      final uri = Uri.parse('http://localhost:${httpServer!.port}/json');
+      // by sending an unexpected header, we should get a 400 bad request
+      expect(
+        downloadJson(
+          uri,
+          headers: (h) => h.add(HttpHeaders.acceptHeader, 'text/plain'),
+        ),
+        throwsA(
+          isA<HttpCodeException>().having(
+            (e) => e.statusCode,
+            'statusCode',
+            equals(400),
           ),
-          throwsA(
-            isA<HttpCodeException>().having(
-              (e) => e.statusCode,
-              'statusCode',
-              equals(400),
-            ),
-          ),
-        );
-      },
-      timeout: const Timeout(Duration(seconds: 4)),
-    );
+        ),
+      );
+    }, timeout: const Timeout(Duration(seconds: 4)));
   });
 
   group('tar', () {

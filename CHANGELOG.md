@@ -2,6 +2,10 @@
 
 ## done, waiting for next release
 
+# 1.0.1
+
+- improved `DartleCache` file timestamp check that avoids checking cached file's hash.
+
 # 1.0.0
 
 - `Task` can now have `requires`, i.e. tasks that are also required to run if the task runs, but without
