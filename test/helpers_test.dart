@@ -40,20 +40,26 @@ void main([List<String> args = const []]) {
   });
 
   test('findMatchingByWords', () {
-    expect(findMatchingByWords('', []), isNull);
-    expect(findMatchingByWords('', ['hi']), isNull);
-    expect(findMatchingByWords('', ['a', 'b', 'c']), isNull);
-    expect(findMatchingByWords('a', ['a', 'b', 'c']), equals('a'));
-    expect(findMatchingByWords('b', ['a', 'b', 'c']), equals('b'));
-    expect(findMatchingByWords('c', ['a', 'b', 'c']), equals('c'));
-    expect(findMatchingByWords('d', ['a', 'b', 'c']), isNull);
-    expect(findMatchingByWords('hi', ['hiWorld', 'hiYou']), isNull);
+    expect(findMatchingByWords('', []), isEmpty);
+    expect(findMatchingByWords('', ['hi']), isEmpty);
+    expect(findMatchingByWords('', ['a', 'b', 'c']), isEmpty);
+    expect(findMatchingByWords('a', ['a', 'b', 'c']), equals(['a']));
+    expect(findMatchingByWords('b', ['a', 'b', 'c']), equals(['b']));
+    expect(findMatchingByWords('c', ['a', 'b', 'c']), equals(['c']));
+    expect(findMatchingByWords('d', ['a', 'b', 'c']), isEmpty);
+    expect(
+      findMatchingByWords('hi', ['hiWorld', 'hiYou']),
+      equals(['hiWorld', 'hiYou']),
+    );
     expect(
       findMatchingByWords('hiWorld', ['hiWorld', 'hiYou']),
-      equals('hiWorld'),
+      equals(['hiWorld']),
     );
-    expect(findMatchingByWords('hiW', ['hiWorld', 'hiYou']), equals('hiWorld'));
-    expect(findMatchingByWords('hiY', ['hiWorld', 'hiYou']), equals('hiYou'));
+    expect(
+      findMatchingByWords('hiW', ['hiWorld', 'hiYou']),
+      equals(['hiWorld']),
+    );
+    expect(findMatchingByWords('hiY', ['hiWorld', 'hiYou']), equals(['hiYou']));
 
     expect(
       findMatchingByWords('', const [
@@ -63,7 +69,7 @@ void main([List<String> args = const []]) {
         'check',
         'fooBarFoo',
       ]),
-      isNull,
+      isEmpty,
     );
     expect(
       findMatchingByWords('fooBar', const [
@@ -73,7 +79,7 @@ void main([List<String> args = const []]) {
         'check',
         'fooBarFoo',
       ]),
-      equals('fooBar'),
+      equals(['fooBar']),
     );
     expect(
       findMatchingByWords('fooBarZ', const [
@@ -83,7 +89,7 @@ void main([List<String> args = const []]) {
         'check',
         'fooBarFoo',
       ]),
-      isNull,
+      isEmpty,
     );
     expect(
       findMatchingByWords('fBB', const [
@@ -93,7 +99,7 @@ void main([List<String> args = const []]) {
         'check',
         'fooBarFoo',
       ]),
-      'fooBarBaz',
+      equals(['fooBarBaz']),
     );
     expect(
       findMatchingByWords('foBaB', const [
@@ -103,7 +109,7 @@ void main([List<String> args = const []]) {
         'check',
         'fooBarFoo',
       ]),
-      'fooBarBaz',
+      equals(['fooBarBaz']),
     );
     expect(
       findMatchingByWords('fooBarB', const [
@@ -113,7 +119,7 @@ void main([List<String> args = const []]) {
         'check',
         'fooBarFoo',
       ]),
-      'fooBarBaz',
+      equals(['fooBarBaz']),
     );
     expect(
       findMatchingByWords('fooBarF', const [
@@ -123,7 +129,7 @@ void main([List<String> args = const []]) {
         'check',
         'fooBarFoo',
       ]),
-      equals('fooBarFoo'),
+      equals(['fooBarFoo']),
     );
     expect(
       findMatchingByWords('fooBFo', const [
@@ -133,7 +139,7 @@ void main([List<String> args = const []]) {
         'check',
         'fooBarFoo',
       ]),
-      equals('fooBarFoo'),
+      equals(['fooBarFoo']),
     );
     expect(
       findMatchingByWords('fooBarFoo', const [
@@ -143,7 +149,7 @@ void main([List<String> args = const []]) {
         'check',
         'fooBarFoo',
       ]),
-      equals('fooBarFoo'),
+      equals(['fooBarFoo']),
     );
     expect(
       findMatchingByWords('t', const [
@@ -153,7 +159,7 @@ void main([List<String> args = const []]) {
         'check',
         'fooBarFoo',
       ]),
-      equals('test'),
+      equals(['test']),
     );
     expect(
       findMatchingByWords('test', const [
@@ -163,7 +169,7 @@ void main([List<String> args = const []]) {
         'check',
         'fooBarFoo',
       ]),
-      equals('test'),
+      equals(['test']),
     );
     expect(
       findMatchingByWords('c', const [
@@ -173,7 +179,7 @@ void main([List<String> args = const []]) {
         'check',
         'fooBarFoo',
       ]),
-      equals('check'),
+      equals(['check']),
     );
     expect(
       findMatchingByWords('che', const [
@@ -183,7 +189,7 @@ void main([List<String> args = const []]) {
         'check',
         'fooBarFoo',
       ]),
-      equals('check'),
+      equals(['check']),
     );
     expect(
       findMatchingByWords('check', const [
@@ -193,7 +199,7 @@ void main([List<String> args = const []]) {
         'check',
         'fooBarFoo',
       ]),
-      equals('check'),
+      equals(['check']),
     );
     expect(
       findMatchingByWords('f', const [
@@ -203,7 +209,7 @@ void main([List<String> args = const []]) {
         'check',
         'fooBarFoo',
       ]),
-      isNull,
+      equals(['fooBar', 'fooBarBaz', 'fooBarFoo']),
     );
   });
 
