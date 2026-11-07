@@ -2,6 +2,8 @@
 
 ## done, waiting for next release
 
+# 1.1.0
+
 - better error message when invoking task using ambiguous words.
 - new file colleciton type: `FileCollectionWithExclusions`.
 - new operator `-` in `FileCollection` which takes a `Pattern` as argument.
