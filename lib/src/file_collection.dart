@@ -379,6 +379,14 @@ abstract class FileCollection {
     return union(other);
   }
 
+  /// Returns a [FileCollectionWithExclusions] using the given exclusions.
+  ///
+  /// A [String] in [exclusions] excludes only the identical path, while any
+  /// other [Pattern] excludes the paths it matches from the start.
+  FileCollection operator -(Pattern exclusions) {
+    return FileCollectionWithExclusions(this, exclusions);
+  }
+
   /// Compute the intersection between this collection and another.
   ///
   /// The result is a Set of all paths that, in theory, could contain
@@ -502,8 +510,62 @@ class MultiFileCollection extends FileCollection {
   }
 }
 
+/// A [FileCollection] that consists of a `main` [FileCollection],
+/// and a set of exclusions.
+///
+/// See [FileCollection.operator -] for how the exclusions are matched.
+final class FileCollectionWithExclusions extends FileCollection {
+  final FileCollection main;
+  final Pattern exclusions;
+  late final Set<String> _includedFiles;
+  late final List<DirectoryEntry> _includedDirs;
+
+  FileCollectionWithExclusions(this.main, Pattern exclusions)
+    : exclusions = _ensureCanonical(exclusions) {
+    _includedFiles = main.files
+        .where((f) => !_isExcluded(this.exclusions, f))
+        .toSet();
+    _includedDirs = main.directories
+        .where((d) => !_isExcluded(this.exclusions, d.path))
+        .toList(growable: false);
+  }
+
+  @override
+  List<DirectoryEntry> get directories => _includedDirs;
+
+  @override
+  Set<String> get files => _includedFiles;
+
+  @override
+  Stream<ResolvedEntity> resolve() async* {
+    await for (final entity in super.resolve()) {
+      if (!_isExcluded(exclusions, entity.path)) {
+        yield entity;
+      }
+    }
+  }
+}
+
 String _ensurePosixPath(String path) {
   return p.posix.canonicalize(path);
+}
+
+Pattern _ensureCanonical(Pattern pattern) {
+  if (pattern is String) _ensurePosixPath(pattern);
+  return pattern;
+}
+
+/// Whether [path] is excluded by [exclusions].
+///
+/// A [String] excludes only the path identical to it (ignoring differences
+/// in path separators) but must be passed in alreeady canonicalized.
+/// Any other [Pattern] excludes the paths it matches
+/// from the start.
+bool _isExcluded(Pattern exclusions, String path) {
+  if (exclusions is String) {
+    return exclusions == _ensurePosixPath(path);
+  }
+  return exclusions.matchAsPrefix(path) != null;
 }
 
 String _validatePosixPath(String path, {bool allowAbsolutePaths = false}) {

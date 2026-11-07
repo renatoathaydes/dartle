@@ -65,6 +65,86 @@ void main() {
       );
     }
 
+    test('can deleteAll (files and directories)', () async {
+      await _rebuildFileTree(outputsDir, {
+        'a.txt': 'a',
+        'sub': null,
+        'sub/b.txt': 'b',
+        'sub/deep': null,
+        'sub/deep/c.txt': 'c',
+      });
+
+      // the outputs dir also contains do_not_delete.md, which must be deleted
+      await deleteAll(dir(outputsDir.path));
+
+      expect(await outputsDir.exists(), isFalse);
+    });
+
+    test('can deleteAll (nothing to delete)', () async {
+      await deleteAll(dir(path.join(_buildDirectory, 'does-not-exist')));
+      await deleteAll(
+        files([path.join(_buildDirectory, 'does-not-exist.txt')]),
+      );
+
+      expect(
+        await outputsDir
+            .list()
+            .asyncMap((f) => path.relative(f.path, from: outputsDir.path))
+            .toList(),
+        equals(outputFilesAtStart.keys.toList()),
+      );
+    });
+
+    test('can deleteAll (with exclusions)', () async {
+      await _rebuildFileTree(outputsDir, {
+        'a.txt': 'a',
+        'keep.md': 'keep',
+        'sub': null,
+        'sub/b.txt': 'b',
+        'sub/keep.md': 'keep',
+      });
+
+      // exclude all markdown files from deletion
+      await deleteAll(dir(outputsDir.path) - RegExp(r'.*\.md$'));
+
+      expect(
+        await outputsDir
+            .list(recursive: true)
+            .asyncMap((f) => path.relative(f.path, from: outputsDir.path))
+            .toSet(),
+        equals({
+          'do_not_delete.md',
+          'keep.md',
+          'sub',
+          path.join('sub', 'keep.md'),
+        }),
+      );
+    });
+
+    test('can deleteAll (with string exclusion)', () async {
+      await _rebuildFileTree(outputsDir, {
+        'a.txt': 'a',
+        'keep.md': 'keep',
+        'keep.md.bak': 'keep',
+        'sub': null,
+        'sub/b.txt': 'b',
+        'sub/keep.md': 'keep',
+      });
+
+      // only the file with exactly this path is excluded, not files with a
+      // similar path (e.g. 'sub/keep.md' or 'keep.md.bak')
+      final excluded = path.join(outputsDir.path, 'keep.md');
+      await deleteAll(dir(outputsDir.path) - excluded);
+
+      expect(
+        await outputsDir
+            .list(recursive: true)
+            .asyncMap((f) => path.relative(f.path, from: outputsDir.path))
+            .toSet(),
+        equals({'keep.md'}),
+      );
+    });
+
     test('can run simple task and produce expected outputs', () async {
       var proc = await runExampleDartBuild(const ['--no-color', 'base64']);
       expect(proc.exitCode, equals(0));

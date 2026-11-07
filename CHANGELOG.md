@@ -2,6 +2,11 @@
 
 ## done, waiting for next release
 
+- better error message when invoking task using ambiguous words.
+- new file colleciton type: `FileCollectionWithExclusions`.
+- new operator `-` in `FileCollection` which takes a `Pattern` as argument.
+- allow specifying exclusions when calling `createCleanTask`.
+
 # 1.0.1
 
 - improved `DartleCache` file timestamp check that avoids checking cached file's hash.

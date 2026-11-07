@@ -830,11 +830,13 @@ Iterable<Task> _requiredTasks(
 }
 
 /// Create a "clean" task that removes all outputs of the given tasks.
+/// You may exclude file entities by path by providing an `exclusions` pattern.
 Task createCleanTask({
   String name = 'clean',
   String description = '',
   required Iterable<Task> tasks,
   TaskPhase phase = TaskPhase.setup,
+  Pattern exclusions = const NeverPattern(),
 }) {
   final allOutputs = tasks
       .map((e) => e.runCondition)
@@ -842,7 +844,9 @@ Task createCleanTask({
       .map((e) => e.outputs)
       .toList(growable: false);
   return Task(
-    (_) async => await ignoreExceptions(() => deleteOutputs(tasks)),
+    (_) async => await ignoreExceptions(
+      () => deleteOutputs(tasks, exclusions: exclusions),
+    ),
     runCondition: RunToDelete(MultiFileCollection(allOutputs)),
     name: name,
     phase: phase,
