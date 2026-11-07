@@ -23,13 +23,14 @@ List<String> splitWords(String text) {
   return result;
 }
 
-String? findMatchingByWords(String searchText, List<String> options) {
-  if (searchText.isEmpty) return null;
+List<String> findMatchingByWords(String searchText, List<String> options) {
+  if (searchText.isEmpty) return const [];
   var result = options.firstWhere((opt) => opt == searchText, orElse: () => '');
   // if there's an exact match, return it
-  if (result.isNotEmpty) return result;
+  if (result.isNotEmpty) return [result];
 
-  // no exact match found, try to find match by words after splitting the text
+  // no exact match found, try to find matches by words after splitting the text
+  final results = <String>[];
   final searchTerms = splitWords(searchText);
   optionsLoop:
   for (final option in options) {
@@ -41,15 +42,9 @@ String? findMatchingByWords(String searchText, List<String> options) {
       }
     }
     // if we get here, we have a match!
-    if (result.isEmpty) {
-      // only match so far
-      result = option;
-    } else {
-      // but there was already a match, so the search term is ambiguous!
-      return null;
-    }
+    results.add(option);
   }
-  return result.isEmpty ? null : result;
+  return results;
 }
 
 /// Calls [elapsedTimeIn] with the value of `stopwatch.elapsed`.

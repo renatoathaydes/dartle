@@ -104,9 +104,16 @@ List<TaskInvocation> parseInvocation(
       }
     } else {
       followsTask = true;
-      final task = _findTaskByName(taskMap, word);
+      final (task, matchingNames) = _findTaskByName(taskMap, word);
       if (task == null) {
-        errors.add("Task '$word' does not exist");
+        if (matchingNames.isEmpty) {
+          errors.add("Task '$word' does not exist");
+        } else {
+          errors.add(
+            "Invocation '$word' is ambiguous, "
+            "it could match tasks ${matchingNames.map((s) => '"$s"').join(', ')}",
+          );
+        }
       } else {
         addInvocationForCurrentTask();
         current = (task, word);
@@ -144,14 +151,15 @@ List<TaskInvocation> parseInvocation(
   return invocations.values.toList();
 }
 
-TaskWithDeps? _findTaskByName(
+(TaskWithDeps?, List<String>) _findTaskByName(
   Map<String, TaskWithDeps> taskMap,
   String nameSpec,
 ) {
-  final name = findMatchingByWords(
+  final names = findMatchingByWords(
     nameSpec,
     taskMap.keys.toList(growable: false),
   );
-  if (name == null) return null;
-  return taskMap[name];
+  if (names.isEmpty) return (null, names);
+  if (names.length == 1) return (taskMap[names.first], names);
+  return (null, names);
 }
