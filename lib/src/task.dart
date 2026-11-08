@@ -847,7 +847,9 @@ Task createCleanTask({
     (_) async => await ignoreExceptions(
       () => deleteOutputs(tasks, exclusions: exclusions),
     ),
-    runCondition: RunToDelete(MultiFileCollection(allOutputs)),
+    runCondition: RunToDelete(
+      FileCollectionWithExclusions(MultiFileCollection(allOutputs), exclusions),
+    ),
     name: name,
     phase: phase,
     description: description,

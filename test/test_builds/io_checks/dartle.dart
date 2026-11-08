@@ -29,6 +29,11 @@ void main(List<String> args) async => await run(
   tasks: {
     ...buildTasks,
     createCleanTask(tasks: buildTasks),
+    createCleanTask(
+      name: 'cleanWithExclusions',
+      tasks: buildTasks,
+      exclusions: RegExp(r'.*hello\.b64\.txt$'),
+    ),
   },
 );
 

@@ -11,7 +11,7 @@ import 'io_checks/dartle.dart';
 const _buildDirectory = 'test/test_builds/io_checks';
 
 const oneTaskExecutingMessage =
-    'Executing 1 task out of a total of 3 tasks:'
+    'Executing 1 task out of a total of 4 tasks:'
     ' 1 task selected';
 const allUpToDate = 'Everything is up-to-date!';
 
@@ -180,6 +180,42 @@ void main() {
 
       // cleaning again has no effect
       proc = await runExampleDartBuild(const ['--no-color', 'clean']);
+      expect(proc.exitCode, equals(0));
+      expect(proc.stdout[0], contains(allUpToDate));
+      expect(proc.stderr, isEmpty);
+    });
+
+    test('clean task with exclusions runs without validation errors', () async {
+      var proc = await runExampleDartBuild(const ['--no-color', 'base64']);
+      expect(proc.exitCode, equals(0));
+
+      proc = await runExampleDartBuild(const [
+        '--no-color',
+        'cleanWithExclusions',
+      ]);
+      expect(
+        proc.exitCode,
+        equals(0),
+        reason: 'STDOUT: ${proc.stdout}\nSTDERR: ${proc.stderr}',
+      );
+      expect(proc.stdout[0], contains(oneTaskExecutingMessage));
+      expect(proc.stderr, isEmpty);
+
+      // the excluded output is kept, everything else is deleted
+      expect(
+        await outputsDir
+            .list(recursive: true)
+            .asyncMap((f) => path.relative(f.path, from: outputsDir.path))
+            .toSet(),
+        equals({'do_not_delete.md', 'hello.b64.txt'}),
+      );
+
+      // the remaining excluded output is not something the task deletes,
+      // so running the clean task again has nothing to do
+      proc = await runExampleDartBuild(const [
+        '--no-color',
+        'cleanWithExclusions',
+      ]);
       expect(proc.exitCode, equals(0));
       expect(proc.stdout[0], contains(allUpToDate));
       expect(proc.stderr, isEmpty);
